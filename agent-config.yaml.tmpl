@@ -1,0 +1,33 @@
+---
+apiVersion: v1alpha1
+kind: AgentConfig
+metadata:
+	name: CLUSTERNAME
+rendezvousIP: NODEIP
+hosts:
+	- hostname: master-0
+		interfaces:
+			- name: ens1f0
+				macAddress: MACADDRESS
+		networkConfig:
+			interfaces:
+				- name: ens1f0
+					type: ethernet
+					state: up
+					mac-address: MACADDRESS
+					ipv4:
+						enabled: true
+						address:
+							- ip: NODEIP
+								prefix-length: NODEIPPREFIX
+						dhcp: false
+			dns-resolver:
+				config:
+					server:
+						- DNSSERVER
+			routes:
+				config:
+					- destination: 0.0.0.0/0
+						next-hop-address: GATEWAY
+						next-hop-interface: ens1f0
+						table-id: 254

@@ -1,0 +1,27 @@
+apiVersion: v1
+baseDomain: BASEDOMAIN
+compute:
+- name: worker
+  replicas: 0
+controlPlane:
+  name: master
+  replicas: 1
+metadata:
+  name: CLUSTERNAME
+networking:
+  networkType: OVNKubernetes
+  clusterNetwork:
+  - cidr: 10.132.0.0/14
+    hostPrefix: 23
+  serviceNetwork:
+  - 172.30.0.0/16
+proxy:
+  httpProxy: PROXY
+  httpsProxy: PROXY
+  noProxy: NOPROXY
+platform:
+  none: {}
+bootstrapInPlace:
+  InstallationDisk: DISKHINT
+pullSecret: PULLSECRET
+sshKey: SSHKEY
