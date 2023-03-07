@@ -22,7 +22,7 @@ then
   tar xfz $BASEDIR/openshift-install-linux.tar.gz openshift-install
 fi
 
-CLUSTER_WORKSPACE=$CLUSTER_WORKSPACE
+CLUSTER_WORKSPACE=$CLUSTERNAME
 
 mkdir -p $CLUSTER_WORKSPACE
 
