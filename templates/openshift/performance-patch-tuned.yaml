@@ -10,7 +10,7 @@ spec:
      data: |
        [main]
        summary=Configuration changes profile inherited from performance created tuned
-       include=openshift-node-performance-sno-perfprofile
+       include=openshift-node-performance-sno-performance-profile
        [bootloader]
        cmdline_pstate=
        [sysctl]
