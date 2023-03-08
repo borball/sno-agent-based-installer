@@ -19,6 +19,8 @@ oc get csv -A
 echo
 
 #day2: performance profile and tuned
+echo
+echo "Applying day2 operations...."
 envsubst < $TEMPLATES/openshift/day2/performance-profile.yaml.tmpl | oc apply -f -
 oc apply -f $TEMPLATES/openshift/day2/performance-patch-tuned.yaml
 
@@ -26,3 +28,5 @@ oc apply -f $TEMPLATES/openshift/day2/cluster-monitoring-cm.yaml
 oc patch operatorhub cluster --type json -p "$(cat $TEMPLATES/openshift/day2/patchoperatorhub.yaml)"
 oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
 oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
+echo
+echo "Done."
