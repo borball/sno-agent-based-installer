@@ -39,7 +39,7 @@ export CRIO=$(envsubst < $TEMPLATES/openshift/crio.conf |base64 -w0)
 export K8S=$(envsubst < $TEMPLATES/openshift/kubelet.conf |base64 -w0)
 envsubst < $TEMPLATES/openshift/02-master-workload-partitioning.yaml.tmpl > $CLUSTER_WORKSPACE/openshift/02-master-workload-partitioning.yaml
 
-$BASEDIR/openshift-install --dir $CLUSTER_WORKSPACE agent create image --log-level=debug
+$BASEDIR/openshift-install --dir $CLUSTER_WORKSPACE agent create image
 
 echo ""
 echo "------------------------------------------------"

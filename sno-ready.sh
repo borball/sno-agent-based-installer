@@ -4,8 +4,8 @@ if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" 
   echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
 
-machine_configs=("01-container-mount-namespace-and-kubelet-conf" "02-master-workload-partitioning" "04-accelerated-container-startup-master" "disable-chronyd")
-pps=("sno-perfprofile")
+machine_configs=("container-mount-namespace-and-kubelet-conf-master" "02-master-workload-partitioning" "04-accelerated-container-startup-master" "05-kdump-config-master" "06-kdump-enable-master" "99-crio-disable-wipe-master" "disable-chronyd")
+pps=("sno-performance-profile")
 tuneds=("performance-patch")
 
 RED='\033[0;31m'
