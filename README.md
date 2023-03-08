@@ -28,7 +28,6 @@ export ISOLATEDCPU=2-31,34-63
 
 ```shell
 #./sno-iso.sh
-
 You are going to download OpenShift installer 4.12.5
 WARNING Capabilities: %!!(MISSING)s(*types.Capabilities=<nil>) is ignored 
 INFO The rendezvous host IP (node0 IP) is 192.168.58.48 
@@ -51,11 +50,11 @@ kubeadmin password: sno148/auth/kubeadmin-password.
 
 ## Boot node from ISO
 
-Boot the node from tge generated ISO, OCP will be installed automatically.
+Boot the node from the generated ISO, OCP will be installed automatically.
 
 ## Day2 operations
 
-Some CRs are not supported in installation phase, those can/shall be done as day 2 operations once SNO is deployed.
+Some CRs are not supported in installation phase including PerformanceProfile, those can/shall be done as day 2 operations once SNO is deployed.
 
 ```shell
 #./sno-day2.sh
@@ -110,6 +109,7 @@ openshift-local-storage                local-storage-operator.v4.12.0-2023022809
 openshift-operator-lifecycle-manager   packageserver                                 Package Server            0.19.0                           Succeeded
 openshift-ptp                          ptp-operator.4.12.0-202302280915              PTP Operator              4.12.0-202302280915              Succeeded
 openshift-sriov-network-operator       sriov-network-operator.v4.12.0-202302280915   SR-IOV Network Operator   4.12.0-202302280915              Succeeded
+
 
 Applying day2 operations....
 performanceprofile.performance.openshift.io/sno-performance-profile created
