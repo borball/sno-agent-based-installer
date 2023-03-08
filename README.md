@@ -111,6 +111,7 @@ openshift-operator-lifecycle-manager   packageserver                            
 openshift-ptp                          ptp-operator.4.12.0-202302280915              PTP Operator              4.12.0-202302280915              Succeeded
 openshift-sriov-network-operator       sriov-network-operator.v4.12.0-202302280915   SR-IOV Network Operator   4.12.0-202302280915              Succeeded
 
+Applying day2 operations....
 performanceprofile.performance.openshift.io/sno-performance-profile created
 tuned.tuned.openshift.io/performance-patch created
 configmap/cluster-monitoring-config created
@@ -118,6 +119,7 @@ operatorhub.config.openshift.io/cluster patched
 console.operator.openshift.io/cluster patched
 network.operator.openshift.io/cluster patched
 
+Done.
 ```
 
 ## Validation
