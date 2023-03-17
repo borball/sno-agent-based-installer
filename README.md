@@ -3,32 +3,88 @@ Script to deploy SNO with Agent Based Installer
 
 ## Configuration
 
-Prepare config.cfg to fit your lab situation, example:
+Prepare config.yaml to fit your lab situation, example:
+
+IPv4 with vlan:
+
+```yaml
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: sno148
+
+host:
+  interface: ens1f0
+  stack: ipv4
+  hostname: sno148.outbound.vz.bos2.lab
+  ip: 192.168.58.48
+  dns: 192.168.58.15
+  gateway: 192.168.58.1
+  mac: b4:96:91:b4:9d:f0
+  prefix: 25
+  machine_network_cidr: 192.168.58.0/25
+  vlan:
+    enabled: true
+    name: ens1f0.58
+    id: 58
+  disk: /dev/nvme0n1
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+  http:
+  https:
+  noproxy:
+
+pull_secret: ./pull-secret.json
+ssh_key: /home/bzhai/.ssh/id_rsa.pub
 
 ```
-export BASEDOMAIN=outbound.vz.bos2.lab
-export CLUSTERNAME=sno148
-export MACADDRESS=b4:96:91:b4:9d:f0
-export NODEIP=192.168.58.48
-export NODEIPPREFIX=25
-export HOSTNAME=sno148.outbound.vz.bos2.lab
-export PULLSECRET=./pull-secret.json
-export SSHKEY=/home/bzhai/.ssh/id_rsa.pub
-export DISKHINT=/dev/nvme0n1
-export PROXY=
-export NOPROXY=
-export DNSSERVER=192.168.58.15
-export MACHINECIDR=192.168.58.0/25
-export GATEWAY=192.168.58.1
-export CPUSET=0-1,32-33
-export ISOLATEDCPU=2-31,34-63
-```
 
+IPv6 without vlan:
+
+```yaml
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: sno148
+
+host:
+  interface: ens1f0
+  stack: ipv6
+  hostname: sno148.outbound.vz.bos2.lab
+  ip: 2600:52:7:58::58
+  dns: 2600:52:7:58::15
+  gateway: 2600:52:7:58::1
+  mac: b4:96:91:b4:9d:f0
+  prefix: 64
+  machine_network_cidr: 2600:52:7:58::/64
+  vlan:
+    enabled: false
+    name: ens1f0.58
+    id: 58
+  disk: /dev/nvme0n1
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+  http:
+  https:
+  noproxy:
+
+pull_secret: ./pull-secret.json
+ssh_key: /home/bzhai/.ssh/id_rsa.pub
+
+```
 ## Generate ISO
 
 ```shell
 #./sno-iso.sh
-You are going to download OpenShift installer 4.12.5
+You are going to download OpenShift installer 4.12.6
 WARNING Capabilities: %!!(MISSING)s(*types.Capabilities=<nil>) is ignored 
 INFO The rendezvous host IP (node0 IP) is 192.168.58.48 
 INFO Extracting base ISO from release payload     
@@ -47,6 +103,17 @@ kubeadmin password: sno148/auth/kubeadmin-password.
 
 ```
 
+Or specify the config file and OCP version:
+
+```shell
+#./sno-iso.sh config-ipv6.yaml 4.12.4
+```
+
+Specify the config file only:
+
+```shell
+#./sno-iso.sh config-ipv6.yaml
+```
 
 ## Boot node from ISO
 
@@ -204,3 +271,6 @@ Checking crop-wipe.service:
 Completed the checking.
 
 ```
+
+## Why not Ansible?
+Not every user has ansible environment just in order to deploy a SNO.

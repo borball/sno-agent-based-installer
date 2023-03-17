@@ -1,0 +1,40 @@
+---
+apiVersion: v1alpha1
+kind: AgentConfig
+metadata:
+  name: sno148
+rendezvousIP: 2600:52:7:58::58
+hosts:
+  - hostname: sno148.outbound.vz.bos2.lab
+    interfaces:
+      - name: ens1f0
+        macAddress: b4:96:91:b4:9d:f0
+    rootDeviceHints:
+      deviceName: /dev/nvme0n1
+    networkConfig:
+      interfaces:
+        - name: ens1f0.58
+          type: vlan
+          state: up
+          vlan:
+            base-iface: ens1f0
+            id: 58
+          ipv6:
+            enabled: true
+            address:
+              - ip: 2600:52:7:58::58
+                prefix-length: 64
+            dhcp: false
+          ipv4:
+            enabled: false
+      dns-resolver:
+        config:
+          server:
+            - 2600:52:7:58::15
+      routes:
+        config:
+          - destination: ::/0
+            next-hop-address: 2600:52:7:58::1
+            next-hop-interface: ens1f0.58
+            table-id: 254
+      

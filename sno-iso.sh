@@ -1,52 +1,65 @@
 #!/bin/bash
 
-BASEDIR="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-TEMPLATES=$BASEDIR/templates
+basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+templates=$basedir/templates
 
-source ${BASEDIR}/config.cfg
+config_file=$1; shift
+ocp_release=$1; shift
 
-OCP_RELEASE=$1; shift
-
-if [ -z "$OCP_RELEASE" ]
+if [ -z "$config_file" ]
 then
-  OCP_RELEASE='stable-4.12'
+  config_file=config.yaml
 fi
 
-OCP_RELEASE_VERSION=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${OCP_RELEASE}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
-
-echo "You are going to download OpenShift installer ${OCP_RELEASE_VERSION}"
-
-if [ ! -f openshift-install-linux.tar.gz ]
+if [ -z "$ocp_release" ]
 then
-  curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${OCP_RELEASE_VERSION}/openshift-install-linux.tar.gz -o $BASEDIR/openshift-install-linux.tar.gz
-  tar xfz $BASEDIR/openshift-install-linux.tar.gz openshift-install
+  ocp_release='stable-4.12'
 fi
 
-CLUSTER_WORKSPACE=$CLUSTERNAME
+ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
 
-mkdir -p $CLUSTER_WORKSPACE
+echo "You are going to download OpenShift installer ${ocp_release_version}"
 
-export PULLSECRETJSON=$(cat $PULLSECRET |jq -c)
-export SSHKEYSTRING=$(cat $SSHKEY)
+if [ -f $basedir/openshift-install-linux.tar.gz ]
+  rm -f $basedir/openshift-install-linux.tar.gz
+then
+  curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.tar.gz
+  tar xfz $basedir/openshift-install-linux.tar.gz openshift-install
+fi
 
-envsubst < $TEMPLATES/install-config.yaml.tmpl > $CLUSTER_WORKSPACE/install-config.yaml
-envsubst < $TEMPLATES/agent-config.yaml.tmpl > $CLUSTER_WORKSPACE/agent-config.yaml
+cluster_name=$(yq '.cluster.name' $config_file)
+cluster_workspace=$cluster_name
 
-mkdir -p $CLUSTER_WORKSPACE/openshift
-cp $TEMPLATES/openshift/*.yaml $CLUSTER_WORKSPACE/openshift/
+mkdir -p $cluster_workspace
+mkdir -p $cluster_workspace/openshift
+cp $templates/openshift/*.yaml $cluster_workspace/openshift/
 
-export CRIO=$(envsubst < $TEMPLATES/openshift/crio.conf |base64 -w0)
-export K8S=$(envsubst < $TEMPLATES/openshift/kubelet.conf |base64 -w0)
-envsubst < $TEMPLATES/openshift/02-master-workload-partitioning.yaml.tmpl > $CLUSTER_WORKSPACE/openshift/02-master-workload-partitioning.yaml
+pull_secret=$(yq '.pull_secret' $config_file)
+export pull_secret=$(cat $pull_secret)
+ssh_key=$(yq '.ssh_key' $config_file)
+export ssh_key=$(cat $ssh_key)
 
-$BASEDIR/openshift-install --dir $CLUSTER_WORKSPACE agent create image
+stack=$(yq '.host.stack' $config_file)
+if [ ${stack} == "ipv4" ]; then
+  jinja2 $templates/agent-config-ipv4.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
+  jinja2 $templates/install-config-ipv4.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
+else
+  jinja2 $templates/agent-config-ipv6.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
+  jinja2 $templates/install-config-ipv6.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
+fi
+
+export crio_wp=$(jinja2 $templates/openshift/crio.conf $config_file |base64 -w0)
+export k8s_wp=$(jinja2 $templates/openshift/kubelet.conf $config_file |base64 -w0)
+jinja2 $templates/openshift/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+
+$basedir/openshift-install --dir $cluster_workspace agent create image --log-level=debug
 
 echo ""
 echo "------------------------------------------------"
-echo "Next step: Go to your BMC console and boot the node from ISO: $CLUSTER_WORKSPACE/agent.x86_64.iso."
+echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.x86_64.iso."
 echo ""
-echo "kubeconfig: $CLUSTER_WORKSPACE/auth/kubeconfig."
-echo "kubeadmin password: $CLUSTER_WORKSPACE/auth/kubeadmin-password."
+echo "kubeconfig: $cluster_workspace/auth/kubeconfig."
+echo "kubeadmin password: $cluster_workspace/auth/kubeadmin-password."
 echo ""
 echo "------------------------------------------------"
 

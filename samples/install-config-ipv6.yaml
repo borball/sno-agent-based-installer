@@ -1,5 +1,5 @@
 apiVersion: v1
-baseDomain: $BASEDOMAIN
+baseDomain: outbound.vz.bos2.lab
 compute:
 - name: worker
   replicas: 0
@@ -7,17 +7,17 @@ controlPlane:
   name: master
   replicas: 1
 metadata:
-  name: $CLUSTERNAME
+  name: sno148
 networking:
   networkType: OVNKubernetes
   clusterNetwork:
-  - cidr: "10.128.0.0/14"
-    hostPrefix: 23
+  - cidr: fd01::/48
+    hostPrefix: 64
   serviceNetwork:
-    - "172.30.0.0/16"
+    - fd02::/112
   machineNetwork:
-  - cidr: $MACHINECIDR
+  - cidr: 2600:52:7:58::/64
 platform:
   none: {}
-pullSecret: '$PULLSECRETJSON'
-sshKey: '$SSHKEYSTRING'
+pullSecret: ''
+sshKey: 'ssh-rsa bzhai@fedora'

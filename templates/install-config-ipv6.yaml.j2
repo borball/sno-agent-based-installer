@@ -1,0 +1,29 @@
+apiVersion: v1
+baseDomain: {{ cluster.domain }}
+compute:
+- name: worker
+  replicas: 0
+controlPlane:
+  name: master
+  replicas: 1
+metadata:
+  name: {{ cluster.name }}
+networking:
+  networkType: OVNKubernetes
+  clusterNetwork:
+  - cidr: fd01::/48
+    hostPrefix: 64
+  serviceNetwork:
+    - fd02::/112
+  machineNetwork:
+  - cidr: {{ host.machine_network_cidr }}
+{% if proxy.enabled -%}
+proxy:
+  httpProxy: {{ proxy.http }}
+  httpsProxy: {{ proxy.https }}
+  noProxy: {{  proxy.noproxy }}
+{% endif -%}
+platform:
+  none: {}
+pullSecret: '{{ environ('pull_secret') }}'
+sshKey: '{{ environ('ssh_key') }}'

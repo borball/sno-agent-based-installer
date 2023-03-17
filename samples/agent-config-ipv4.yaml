@@ -2,34 +2,39 @@
 apiVersion: v1alpha1
 kind: AgentConfig
 metadata:
-  name: $CLUSTERNAME
-rendezvousIP: $NODEIP
+  name: sno148
+rendezvousIP: 192.168.58.48
 hosts:
-  - hostname: $HOSTNAME
+  - hostname: sno148.outbound.vz.bos2.lab
     interfaces:
       - name: ens1f0
-        macAddress: $MACADDRESS
+        macAddress: b4:96:91:b4:9d:f0
     rootDeviceHints:
-      deviceName: $DISKHINT
+      deviceName: /dev/nvme0n1
     networkConfig:
+      
       interfaces:
         - name: ens1f0
           type: ethernet
           state: up
-          mac-address: $MACADDRESS
+          mac-address: b4:96:91:b4:9d:f0
           ipv4:
             enabled: true
             address:
-              - ip: $NODEIP
-                prefix-length: $NODEIPPREFIX
+              - ip: 192.168.58.48
+                prefix-length: 25
             dhcp: false
+          ipv6:
+            enabled: false
       dns-resolver:
         config:
           server:
-            - $DNSSERVER
+            - 192.168.58.15
       routes:
         config:
           - destination: 0.0.0.0/0
-            next-hop-address: $GATEWAY
+            next-hop-address: 192.168.58.1
             next-hop-interface: ens1f0
             table-id: 254
+
+      
