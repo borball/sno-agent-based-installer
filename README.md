@@ -1,6 +1,13 @@
 # sno-agent-based-installer
 Script to deploy SNO with Agent Based Installer
 
+## Dependencies
+Some software and tools are required to be installed before running the scripts:
+
+- nmstatectl: sudo dnf install /usr/bin/nmstatectl -y
+- yq: https://github.com/mikefarah/yq#install
+- jinja2: pip3 install jinja2-cli, pip3 install jinja2-cli[yaml] 
+ 
 ## Configuration
 
 Prepare config.yaml to fit your lab situation, example:

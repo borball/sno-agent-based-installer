@@ -1,11 +1,21 @@
 #!/bin/bash
 
-BASEDIR="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-source ${BASEDIR}/config.cfg
-CLUSTER_WORKSPACE=$CLUSTERNAME
-TEMPLATES=$BASEDIR/templates
+if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
+  echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+fi
 
-export KUBECONFIG=$CLUSTER_WORKSPACE/auth/kubeconfig
+basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+templates=$basedir/templates
+
+config_file=$1; shift
+if [ -z "$config_file" ]
+then
+  config_file=config.yaml
+fi
+
+cluster_name=$(yq '.cluster.name' $config_file)
+cluster_workspace=$cluster_name
+export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 oc get clusterversion
 echo
@@ -21,11 +31,11 @@ echo
 #day2: performance profile and tuned
 echo
 echo "Applying day2 operations...."
-envsubst < $TEMPLATES/openshift/day2/performance-profile.yaml.tmpl | oc apply -f -
-oc apply -f $TEMPLATES/openshift/day2/performance-patch-tuned.yaml
+jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+oc apply -f $templates/openshift/day2/performance-patch-tuned.yaml
 
-oc apply -f $TEMPLATES/openshift/day2/cluster-monitoring-cm.yaml
-oc patch operatorhub cluster --type json -p "$(cat $TEMPLATES/openshift/day2/patchoperatorhub.yaml)"
+oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
+oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
 oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
 oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
 echo

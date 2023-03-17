@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
+  echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+fi
+
+if [ ! -f "/usr/local/bin/jinja2" ]; then
+  pip install jinja2-cli
+  pip install jinja2-cli[yaml]
+  echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip install jinja2-cli[yaml]"
+fi
+
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
 

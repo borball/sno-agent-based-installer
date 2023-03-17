@@ -7,8 +7,8 @@ spec:
  realTimeKernel:
    enabled: true
  cpu:
-   isolated: "$ISOLATEDCPU"
-   reserved: "$CPUSET"
+   isolated: "{{ cpu.isolated }}"
+   reserved: "{{ cpu.reserved }}"
  hugepages:
    defaultHugepagesSize: 1G
    pages:
@@ -16,7 +16,7 @@ spec:
        size: 1G
  additionalKernelArgs:
    - rcupdate.rcu_normal_after_boot=0
-   - nohz_full=$CPUSET
+   - nohz_full={{ cpu.reserved }}
  machineConfigPoolSelector:
    pools.operator.machineconfiguration.openshift.io/master: ""
  nodeSelector:
