@@ -126,6 +126,153 @@ Specify the config file only:
 
 Boot the node from the generated ISO, OCP will be installed automatically.
 
+We also have a helper script to boot the node from ISO and trigger the installation automatically, assume you have an HTTP server to host the ISO image.
+
+
+```shell
+# ./sno-install.sh 
+Usage : ./sno-install.sh bmc_address username_password iso_image
+Example : ./sno-install.sh 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso
+
+```
+
+Following is an example:
+- BMC: 192.168.13.147
+- Username and password to access BMC: Administrator:dummy
+- ISO image location: http://192.168.58.15/iso/agent-412.iso
+
+```shell
+# ./sno-install.sh 192.168.13.148 Administrator:dummy http://192.168.58.15/iso/agent.x86_64.iso
+Insert Virtual Media: http://192.168.58.15/iso/agent.x86_64.iso
+204 https://192.168.13.148/redfish/v1/Managers/Self/VirtualMedia/1/Actions/VirtualMedia.InsertMedia
+Virtual Media Status: 
+{
+  "@odata.context": "/redfish/v1/$metadata#VirtualMedia.VirtualMedia",
+  "@odata.etag": "\"1679502491\"",
+  "@odata.id": "/redfish/v1/Managers/Self/VirtualMedia/1",
+  "@odata.type": "#VirtualMedia.v1_3_2.VirtualMedia",
+  "Actions": {
+    "#VirtualMedia.EjectMedia": {
+      "target": "/redfish/v1/Managers/Self/VirtualMedia/1/Actions/VirtualMedia.EjectMedia"
+    },
+    "#VirtualMedia.InsertMedia": {
+      "target": "/redfish/v1/Managers/Self/VirtualMedia/1/Actions/VirtualMedia.InsertMedia"
+    }
+  },
+  "ConnectedVia": "URL",
+  "Description": "Virtual Removable Media",
+  "Id": "1",
+  "Image": "http://192.168.58.15/iso/agent.x86_64.iso",
+  "ImageName": "agent.x86_64.iso",
+  "Inserted": true,
+  "MediaStatus": "Mounted",
+  "MediaTypes": [
+    "CD"
+  ],
+  "Name": "VirtualMedia",
+  "WriteProtected": true
+}
+Boot node from Virtual Media Once
+204 https://192.168.13.148/redfish/v1/Systems/Self
+Restart server.
+{"@odata.context":"/redfish/v1/$metadata#Task.Task","@odata.id":"/redfish/v1/TaskService/Tasks/72","@odata.type":"#Task.v1_4_2.Task","Description":"Task for Computer Reset","Id":"72","Name":"Computer Reset","TaskState":"New"}202 https://192.168.13.148/redfish/v1/Systems/Self/Actions/ComputerSystem.Reset
+
+------------
+Node will be booting from virtual media mounted with http://192.168.58.15/iso/agent.x86_64.iso, check your BMC console to monitor the installation progress.
+
+Once node booted from the ISO image, you can also monitoring the installation progress with command:
+  curl --silent http://<sno-node-ip>:8090/api/assisted-install/v2/clusters |jq 
+
+Enjoy!
+
+```
+
+To check installation progress:
+
+```shell
+# curl --silent http://192.168.58.48:8090/api/assisted-install/v2/clusters |jq .
+[
+  {
+    "base_dns_domain": "outbound.vz.bos2.lab",
+    "cluster_networks": [
+      {
+        "cidr": "10.128.0.0/14",
+        "cluster_id": "3eae9ace-ff25-4d0e-bfd5-8e607d15e834",
+        "host_prefix": 23
+      }
+    ],
+    "connectivity_majority_groups": "{\"IPv4\":[],\"IPv6\":[]}",
+    "controller_logs_collected_at": "0001-01-01T00:00:00.000Z",
+    "controller_logs_started_at": "0001-01-01T00:00:00.000Z",
+    "cpu_architecture": "x86_64",
+    "created_at": "2023-03-22T16:35:07.710166Z",
+    "deleted_at": null,
+    "disk_encryption": {
+      "enable_on": "none",
+      "mode": "tpmv2"
+    },
+    "email_domain": "Unknown",
+    "feature_usage": "{\"OVN network type\":{\"id\":\"OVN_NETWORK_TYPE\",\"name\":\"OVN network type\"},\"SNO\":{\"id\":\"SNO\",\"name\":\"SNO\"},\"Static Network Config\":{\"id\":\"STATIC_NETWORK_CONFIG\",\"name\":\"Static Network Config\"}}",
+    "high_availability_mode": "None",
+    "host_networks": null,
+    "hosts": [],
+    "href": "/api/assisted-install/v2/clusters/3eae9ace-ff25-4d0e-bfd5-8e607d15e834",
+    "hyperthreading": "all",
+    "id": "3eae9ace-ff25-4d0e-bfd5-8e607d15e834",
+    "ignition_endpoint": {},
+    "image_info": {
+      "created_at": "2023-03-22T16:35:07.710166Z",
+      "expires_at": "0001-01-01T00:00:00.000Z"
+    },
+    "install_completed_at": "0001-01-01T00:00:00.000Z",
+    "install_started_at": "0001-01-01T00:00:00.000Z",
+    "kind": "Cluster",
+    "machine_networks": [
+      {
+        "cidr": "192.168.58.0/25",
+        "cluster_id": "3eae9ace-ff25-4d0e-bfd5-8e607d15e834"
+      }
+    ],
+    "monitored_operators": [
+      {
+        "cluster_id": "3eae9ace-ff25-4d0e-bfd5-8e607d15e834",
+        "name": "console",
+        "operator_type": "builtin",
+        "status_updated_at": "0001-01-01T00:00:00.000Z",
+        "timeout_seconds": 3600
+      }
+    ],
+    "name": "sno148",
+    "network_type": "OVNKubernetes",
+    "ocp_release_image": "quay.io/openshift-release-dev/ocp-release@sha256:bd712a7aa5c1763870e721f92e19104c3c1b930d1a7d550a122c0ebbe2513aee",
+    "openshift_version": "4.12.7",
+    "platform": {
+      "type": "none"
+    },
+    "progress": {},
+    "pull_secret_set": true,
+    "schedulable_masters": false,
+    "schedulable_masters_forced_true": true,
+    "service_networks": [
+      {
+        "cidr": "172.30.0.0/16",
+        "cluster_id": "3eae9ace-ff25-4d0e-bfd5-8e607d15e834"
+      }
+    ],
+    "ssh_public_key": "",
+    "status": "insufficient",
+    "status_info": "Cluster is not ready for install",
+    "status_updated_at": "2023-03-22T16:35:07.709Z",
+    "updated_at": "2023-03-22T16:35:12.046841Z",
+    "user_managed_networking": true,
+    "user_name": "admin",
+    "validations_info": "{\"configuration\":[{\"id\":\"pull-secret-set\",\"status\":\"success\",\"message\":\"The pull secret is set.\"}],\"hosts-data\":[{\"id\":\"all-hosts-are-ready-to-install\",\"status\":\"success\",\"message\":\"All hosts in the cluster are ready to install.\"},{\"id\":\"sufficient-masters-count\",\"status\":\"failure\",\"message\":\"Single-node clusters must have a single control plane node and no workers.\"}],\"network\":[{\"id\":\"api-vip-defined\",\"status\":\"success\",\"message\":\"The API virtual IP is not required: User Managed Networking\"},{\"id\":\"api-vip-valid\",\"status\":\"success\",\"message\":\"The API virtual IP is not required: User Managed Networking\"},{\"id\":\"cluster-cidr-defined\",\"status\":\"success\",\"message\":\"The Cluster Network CIDR is defined.\"},{\"id\":\"dns-domain-defined\",\"status\":\"success\",\"message\":\"The base domain is defined.\"},{\"id\":\"ingress-vip-defined\",\"status\":\"success\",\"message\":\"The Ingress virtual IP is not required: User Managed Networking\"},{\"id\":\"ingress-vip-valid\",\"status\":\"success\",\"message\":\"The Ingress virtual IP is not required: User Managed Networking\"},{\"id\":\"machine-cidr-defined\",\"status\":\"success\",\"message\":\"The Machine Network CIDR is defined.\"},{\"id\":\"machine-cidr-equals-to-calculated-cidr\",\"status\":\"success\",\"message\":\"The Cluster Machine CIDR is not required: User Managed Networking\"},{\"id\":\"network-prefix-valid\",\"status\":\"success\",\"message\":\"The Cluster Network prefix is valid.\"},{\"id\":\"network-type-valid\",\"status\":\"success\",\"message\":\"The cluster has a valid network type\"},{\"id\":\"networks-same-address-families\",\"status\":\"success\",\"message\":\"Same address families for all networks.\"},{\"id\":\"no-cidrs-overlapping\",\"status\":\"success\",\"message\":\"No CIDRS are overlapping.\"},{\"id\":\"ntp-server-configured\",\"status\":\"success\",\"message\":\"No ntp problems found\"},{\"id\":\"service-cidr-defined\",\"status\":\"success\",\"message\":\"The Service Network CIDR is defined.\"}],\"operators\":[{\"id\":\"cnv-requirements-satisfied\",\"status\":\"success\",\"message\":\"cnv is disabled\"},{\"id\":\"lso-requirements-satisfied\",\"status\":\"success\",\"message\":\"lso is disabled\"},{\"id\":\"lvm-requirements-satisfied\",\"status\":\"success\",\"message\":\"lvm is disabled\"},{\"id\":\"odf-requirements-satisfied\",\"status\":\"success\",\"message\":\"odf is disabled\"}]}",
+    "vip_dhcp_allocation": false
+  }
+]
+
+```
+
 ## Day2 operations
 
 Some CRs are not supported in installation phase including PerformanceProfile, those can/shall be done as day 2 operations once SNO is deployed.

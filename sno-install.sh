@@ -2,7 +2,6 @@
 
 set -euoE pipefail
 
-# Redfish commands related to Virtual Media.
 if [ $# -lt 3 ]
 then
   echo "Usage : $0 bmc_address username_password iso_image"
@@ -107,3 +106,12 @@ virtual_media_insert
 virtual_media_status
 server_set_boot_once_from_cd
 server_restart
+
+echo "------------"
+echo "Node will be booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
+echo
+echo "Once node booted from the ISO image, you can also monitoring the installation progress with command:"
+
+echo "  curl --silent http://<sno-node-ip>:8090/api/assisted-install/v2/clusters |jq "
+echo
+echo "Enjoy!"
