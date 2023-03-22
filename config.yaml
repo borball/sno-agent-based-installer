@@ -13,7 +13,7 @@ host:
   prefix: 25
   machine_network_cidr: 192.168.58.0/25
   vlan:
-    enabled: true
+    enabled: false
     name: ens1f0.58
     id: 58
   disk: /dev/nvme0n1
@@ -29,4 +29,4 @@ proxy:
   noproxy:
 
 pull_secret: ./pull-secret.json
-ssh_key: /home/bzhai/.ssh/id_rsa.pub
+ssh_key: /root/.ssh/id_rsa.pub
