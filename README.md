@@ -152,13 +152,14 @@ Following is an example:
 - ISO image location: http://192.168.58.15/iso/agent-412.iso
 
 ```shell
-# ./sno-install.sh 192.168.13.148 Administrator:dummy http://192.168.58.15/iso/agent.x86_64.iso
-Insert Virtual Media: http://192.168.58.15/iso/agent.x86_64.iso
+# Power off server.
+{"@odata.context":"/redfish/v1/$metadata#Task.Task","@odata.id":"/redfish/v1/TaskService/Tasks/75","@odata.type":"#Task.v1_4_2.Task","Description":"Task for Computer Reset","Id":"75","Name":"Computer Reset","TaskState":"New"}202 https://192.168.13.148/redfish/v1/Systems/Self/Actions/ComputerSystem.Reset
+Insert Virtual Media: http://192.168.58.15/iso/agent-148.iso
 204 https://192.168.13.148/redfish/v1/Managers/Self/VirtualMedia/1/Actions/VirtualMedia.InsertMedia
 Virtual Media Status: 
 {
   "@odata.context": "/redfish/v1/$metadata#VirtualMedia.VirtualMedia",
-  "@odata.etag": "\"1679502491\"",
+  "@odata.etag": "\"1679670277\"",
   "@odata.id": "/redfish/v1/Managers/Self/VirtualMedia/1",
   "@odata.type": "#VirtualMedia.v1_3_2.VirtualMedia",
   "Actions": {
@@ -172,8 +173,8 @@ Virtual Media Status:
   "ConnectedVia": "URL",
   "Description": "Virtual Removable Media",
   "Id": "1",
-  "Image": "http://192.168.58.15/iso/agent.x86_64.iso",
-  "ImageName": "agent.x86_64.iso",
+  "Image": "http://192.168.58.15/iso/agent-148.iso",
+  "ImageName": "agent-148.iso",
   "Inserted": true,
   "MediaStatus": "Mounted",
   "MediaTypes": [
@@ -184,11 +185,10 @@ Virtual Media Status:
 }
 Boot node from Virtual Media Once
 204 https://192.168.13.148/redfish/v1/Systems/Self
-Restart server.
-{"@odata.context":"/redfish/v1/$metadata#Task.Task","@odata.id":"/redfish/v1/TaskService/Tasks/72","@odata.type":"#Task.v1_4_2.Task","Description":"Task for Computer Reset","Id":"72","Name":"Computer Reset","TaskState":"New"}202 https://192.168.13.148/redfish/v1/Systems/Self/Actions/ComputerSystem.Reset
-
+Power on server.
+{"@odata.context":"/redfish/v1/$metadata#Task.Task","@odata.id":"/redfish/v1/TaskService/Tasks/76","@odata.type":"#Task.v1_4_2.Task","Description":"Task for Computer Reset","Id":"76","Name":"Computer Reset","TaskState":"New"}202 https://192.168.13.148/redfish/v1/Systems/Self/Actions/ComputerSystem.Reset
 ------------
-Node will be booting from virtual media mounted with http://192.168.58.15/iso/agent.x86_64.iso, check your BMC console to monitor the installation progress.
+Node will be booting from virtual media mounted with http://192.168.58.15/iso/agent-148.iso, check your BMC console to monitor the installation progress.
 
 Once node booted from the ISO image, you can also monitoring the installation progress with command:
   curl --silent http://<sno-node-ip>:8090/api/assisted-install/v2/clusters |jq 
