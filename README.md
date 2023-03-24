@@ -153,7 +153,7 @@ Following is an example:
 
 ```shell
 
-# ./sno-install.sh 192.168.13.148 Administrator:superuser http://192.168.58.15/iso/agent-148.iso
+# ./sno-install.sh 192.168.13.148 Administrator:test http://192.168.58.15/iso/agent-148.iso
 Power off server.
 {"@odata.context":"/redfish/v1/$metadata#Task.Task","@odata.id":"/redfish/v1/TaskService/Tasks/75","@odata.type":"#Task.v1_4_2.Task","Description":"Task for Computer Reset","Id":"75","Name":"Computer Reset","TaskState":"New"}202 https://192.168.13.148/redfish/v1/Systems/Self/Actions/ComputerSystem.Reset
 Insert Virtual Media: http://192.168.58.15/iso/agent-148.iso
