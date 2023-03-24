@@ -98,14 +98,18 @@ server_set_boot_once_from_cd() {
     echo "Boot node from Virtual Media Once"
     curl --globoff  -L -w "%{http_code} %{url_effective}\\n"  -ku ${username_password}  \
     -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd", "BootSourceOverrideMode": "UEFI"}}' \
+    -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
     -X PATCH $system_path
 }
 
+server_power_off
 virtual_media_insert
 virtual_media_status
 server_set_boot_once_from_cd
-server_restart
+sleep 60
+#sleep 60s or check if server has been powered off
+server_power_on
+#server_restart
 
 echo "------------"
 echo "Node will be booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
