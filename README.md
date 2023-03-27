@@ -20,83 +20,11 @@ Some software and tools are required to be installed before running the scripts:
  
 ## Configuration
 
-Prepare config.yaml to fit your lab situation, example:
+Prepare config.yaml to fit your lab situation, examples:
 
-IPv4 with vlan:
+- [IPv4](config.yaml)
+- [IPv6 with proxy](config-ipv6.yaml)
 
-```yaml
-cluster:
-  domain: outbound.vz.bos2.lab
-  name: sno148
-
-host:
-  interface: ens1f0
-  stack: ipv4
-  hostname: sno148.outbound.vz.bos2.lab
-  ip: 192.168.58.48
-  dns: 192.168.58.15
-  gateway: 192.168.58.1
-  mac: b4:96:91:b4:9d:f0
-  prefix: 25
-  machine_network_cidr: 192.168.58.0/25
-  vlan:
-    enabled: true
-    name: ens1f0.58
-    id: 58
-  disk: /dev/nvme0n1
-
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
-proxy:
-  enabled: false
-  http:
-  https:
-  noproxy:
-
-pull_secret: ./pull-secret.json
-ssh_key: /home/bzhai/.ssh/id_rsa.pub
-
-```
-
-IPv6 without vlan:
-
-```yaml
-cluster:
-  domain: outbound.vz.bos2.lab
-  name: sno148
-
-host:
-  interface: ens1f0
-  stack: ipv6
-  hostname: sno148.outbound.vz.bos2.lab
-  ip: 2600:52:7:58::58
-  dns: 2600:52:7:58::15
-  gateway: 2600:52:7:58::1
-  mac: b4:96:91:b4:9d:f0
-  prefix: 64
-  machine_network_cidr: 2600:52:7:58::/64
-  vlan:
-    enabled: false
-    name: ens1f0.58
-    id: 58
-  disk: /dev/nvme0n1
-
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
-proxy:
-  enabled: false
-  http:
-  https:
-  noproxy:
-
-pull_secret: ./pull-secret.json
-ssh_key: /home/bzhai/.ssh/id_rsa.pub
-
-```
 ## Generate ISO
 
 ```shell
