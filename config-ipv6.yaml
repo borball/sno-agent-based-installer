@@ -6,14 +6,14 @@ host:
   interface: ens1f0
   stack: ipv6
   hostname: sno148.outbound.vz.bos2.lab
-  ip: 2600:52:7:58::58
+  ip: 2600:52:7:58::48
   dns: 2600:52:7:58::15
   gateway: 2600:52:7:58::1
   mac: b4:96:91:b4:9d:f0
   prefix: 64
   machine_network_cidr: 2600:52:7:58::/64
   vlan:
-    enabled: true
+    enabled: false
     name: ens1f0.58
     id: 58
   disk: /dev/nvme0n1
@@ -23,10 +23,10 @@ cpu:
   reserved: 0-1,32-33
 
 proxy:
-  enabled: false
-  http:
-  https:
-  noproxy:
+  enabled: true
+  http: http://[2600:52:7:58::15]:3128
+  https: http://[2600:52:7:58::15]:3128
+  noproxy: 2600:52:7:58::/64,localhost,127.0.0.1
 
 pull_secret: ./pull-secret.json
-ssh_key: /home/bzhai/.ssh/id_rsa.pub
+ssh_key: /root/.ssh/id_rsa.pub
