@@ -4,17 +4,25 @@ set -euoE pipefail
 
 if [ $# -lt 3 ]
 then
-  echo "Usage : $0 bmc_address username_password iso_image"
-  echo "Example : $0 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso"
+  echo "Usage : $0 bmc_address username_password iso_image [kvm_uuid]"
+  echo "kvm_uuid is optional, required when deploying SNO on KVM"
+  echo "Example : $0 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso [11111111-1111-1111-1111-111111111100]"
   exit
 fi
 
 bmc_address=$1; shift
 username_password=$1; shift
 iso_image=$1; shift
+kvm_uuid=$1; shift
 
-system=$(curl -sku ${username_password}  https://$bmc_address/redfish/v1/Systems | jq '.Members[0]."@odata.id"' )
-manager=$(curl -sku ${username_password}  https://$bmc_address/redfish/v1/Managers | jq '.Members[0]."@odata.id"' )
+if [ ! -z $kvm_uuid ]; then
+  system=/redfish/v1/Systems/$kvm_uuid
+  manager=/redfish/v1/Managers/$kvm_uuid
+else
+  system=$(curl -sku ${username_password}  https://$bmc_address/redfish/v1/Systems | jq '.Members[0]."@odata.id"' )
+  manager=$(curl -sku ${username_password}  https://$bmc_address/redfish/v1/Managers | jq '.Members[0]."@odata.id"' )
+fi
+
 system=$(sed -e 's/^"//' -e 's/"$//' <<<$system)
 manager=$(sed -e 's/^"//' -e 's/"$//' <<<$manager)
 

@@ -1,1 +1,0 @@
-Some CRs are not supported during installation, those can/shall be done in day 2 operations.

@@ -42,7 +42,76 @@ cluster_workspace=$cluster_name
 
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
-cp $templates/openshift/*.yaml $cluster_workspace/openshift/
+
+echo
+echo "Enabling day0 configuration..."
+if [ 'false' == $(yq '.day0.workload_partition' $config_file) ]; then
+  echo "Workload partitioning not enabled"
+else
+  echo "Workload partitioning enabled"
+  export crio_wp=$(jinja2 $templates/openshift/day0/workload-partition/crio.conf $config_file |base64 -w0)
+  export k8s_wp=$(jinja2 $templates/openshift/day0/workload-partition/kubelet.conf $config_file |base64 -w0)
+  jinja2 $templates/openshift/day0/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+fi
+
+if [ 'false' == $(yq '.day0.accelerate' $config_file) ]; then
+  echo "SNO accelerate not enabled"
+else
+  echo "SNO accelerate enabled"
+  cp $templates/openshift/day0/accelerate/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.kdump' $config_file) ]; then
+  echo "kdump service/config not enabled"
+else
+  echo "kdump service/config enabled"
+  cp $templates/openshift/day0/kdump/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.storage' $config_file) ]; then
+  echo "Local Storage Operator not enabled"
+else
+  echo "Local Storage Operator enabled"
+  cp $templates/openshift/day0/storage/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.ptp' $config_file) ]; then
+  echo "PTP Operator not enabled"
+else
+  echo "PTP Operator enabled"
+  cp $templates/openshift/day0/ptp/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.sriov' $config_file) ]; then
+  echo "SR-IOV Network Operator not enabled"
+else
+  echo "SR-IOV Network Operator enabled"
+  cp $templates/openshift/day0/sriov/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.rhacm' $config_file) ]; then
+  echo
+  #echo "Red Hat Advanced Cluster Management not enabled"
+else
+  echo "Red Hat Advanced Cluster Management enabled"
+  cp $templates/openshift/day0/rhacm/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.gitops' $config_file) ]; then
+  echo
+  #echo "Gitops Operator not enabled"
+else
+  echo "Gitops Operator enabled"
+  cp $templates/openshift/day0/gitops/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ 'false' == $(yq '.day0.talm' $config_file) ]; then
+  echo
+  #echo "Topology Aware Lifecycle Manager (TALM) Operator not enabled"
+else
+  echo "Topology Aware Lifecycle Manager (TALM) Operator enabled"
+  cp $templates/openshift/day0/talm/*.yaml $cluster_workspace/openshift/
+fi
 
 pull_secret=$(yq '.pull_secret' $config_file)
 export pull_secret=$(cat $pull_secret)
@@ -58,10 +127,9 @@ else
   jinja2 $templates/install-config-ipv6.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
 fi
 
-export crio_wp=$(jinja2 $templates/openshift/crio.conf $config_file |base64 -w0)
-export k8s_wp=$(jinja2 $templates/openshift/kubelet.conf $config_file |base64 -w0)
-jinja2 $templates/openshift/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
-
+echo
+echo "Generating boot image..."
+echo
 $basedir/openshift-install --dir $cluster_workspace agent create image --log-level=debug
 
 echo ""
