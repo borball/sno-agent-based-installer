@@ -13,3 +13,6 @@ cp hub/agent.x86_64.iso /var/www/html/iso/agent-hub.iso
 ./sno-install.sh 192.168.58.15:8080 dummy:dummy http://192.168.58.15/iso/agent-hub.iso 11111111-1111-1111-1111-000000000000
 
 watch 'curl --silent http://192.168.58.80:8090/api/assisted-install/v2/clusters |jq '
+
+oc get node --kubeconfig hub/auth/kubeconfig
+

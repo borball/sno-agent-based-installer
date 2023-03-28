@@ -73,7 +73,6 @@ pull_secret: ./pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
 ```
 
-
 ## IPv4, with certain operators as ZTP hub
 
 ```
@@ -98,16 +97,17 @@ host:
   disk: /dev/vda
 
 day0:
-  workload_partition: false
-  kdump: false
-  ptp: false
-  sriov: false
-  storage: true
-  accelerate: true
-  gitops: true
-  rhacm: true
-  talm: true
-
+  workload_partition: false  #default true
+  kdump: false  #default true
+  ptp: false  #default true
+  sriov: false #default true
+  storage: true #default true
+  accelerate: true #default true
+  gitops: true #default false
+  rhacm: true #default false
+  talm: true #default false
+  ztp_hub: true #default false
+  
 proxy:
   enabled: false
   http:
