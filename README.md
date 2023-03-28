@@ -62,36 +62,7 @@ Some samples:
 - [IPv4](config.yaml)
 - [IPv6 with proxy](config-ipv6.yaml)
 
-You can also select which operators or tunings shall be enabled in day0, example:
-
-```yaml
-day0:
-  workload_partition: true #whether enable workload partitioning
-  kdump: true #wheher enable kdump
-  ptp: false #whether install ptp operator
-  sriov: false #whether install sriov operator
-  storage: true  #whether install local storage operator
-  accelerate: true  #whether create container namespace mount for kubelet and crio
-  gitops: true #whether instsll gitops operator
-  rhacm: true #whether install rhacm operator
-  talm: true #whether install topology aware lifecycle manager operator
-```
-
-By default following features required by DU applications will be enabled if not specified as 'false':
-
-```yaml
-day0:
-  workload_partition: true
-  kdump: true
-  ptp: true
-  sriov: true
-  storage: true
-  accelerate: true
-```
-
-A sample config to install ZTP hub on SNO running on KVM: [config-hub.yaml](config-hub.yaml).
-
-Get more info from [here](templates/openshift/day0).
+You can also select which operators or tunings shall be enabled in day0, get more [usages](samples/usage.md).
 
 ## Generate ISO
 
