@@ -29,15 +29,15 @@ You can select which operators or tunings shall be enabled in day0, example [ZTP
 
 ```yaml
 day0:
-  workload_partition: true
-  kdump: true
-  ptp: false
-  sriov: false
-  storage: true
-  accelerate: true
-  gitops: true
-  rhacm: true
-  talm: true
+  workload_partition: true #whether enable workload partitioning
+  kdump: true #wheher enable kdump
+  ptp: false #whether install ptp operator
+  sriov: false #whether install sriov operator
+  storage: true  #whether install local storage operator
+  accelerate: true  #whether create container namespace mount for kubelet and crio
+  gitops: true #whether instsll gitops operator
+  rhacm: true #whether install rhacm operator
+  talm: true #whether install topology aware lifecycle manager operator
 ```
 
 By default following features required by DU applications will be enabled if not specified as 'false':
