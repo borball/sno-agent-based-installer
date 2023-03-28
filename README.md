@@ -20,12 +20,49 @@ Some software and tools are required to be installed before running the scripts:
  
 ## Configuration
 
-Prepare config.yaml to fit your lab situation, examples:
+Prepare config.yaml to fit your lab situation, example:
+
+```yaml
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: sno148
+
+host:
+  interface: ens1f0
+  stack: ipv4
+  hostname: sno148.outbound.vz.bos2.lab
+  ip: 192.168.58.48
+  dns: 192.168.58.15
+  gateway: 192.168.58.1
+  mac: b4:96:91:b4:9d:f0
+  prefix: 25
+  machine_network_cidr: 192.168.58.0/25
+  vlan:
+    enabled: false
+    name: ens1f0.58
+    id: 58
+  disk: /dev/nvme0n1
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+  http:
+  https:
+  noproxy:
+
+pull_secret: ./pull-secret.json
+ssh_key: /root/.ssh/id_rsa.pub
+
+```
+Some samples:
 
 - [IPv4](config.yaml)
 - [IPv6 with proxy](config-ipv6.yaml)
 
-You can select which operators or tunings shall be enabled in day0, example [ZTP hub](config-hub.yaml):
+You can also select which operators or tunings shall be enabled in day0, example:
 
 ```yaml
 day0:
@@ -51,6 +88,8 @@ day0:
   storage: true
   accelerate: true
 ```
+
+A sample config to install ZTP hub on SNO running on KVM: [config-hub.yaml](config-hub.yaml).
 
 Get more info from [here](templates/openshift/day0).
 

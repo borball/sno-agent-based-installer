@@ -1,0 +1,45 @@
+---
+apiVersion: agent-install.openshift.io/v1beta1
+kind: AgentServiceConfig
+metadata:
+  name: agent
+  namespace: open-cluster-management
+spec:
+  databaseStorage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
+  filesystemStorage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 200Gi
+  osImages:
+    - openshiftVersion: "4.8"
+      version: "49.84.202110081407-0"
+      url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.8/4.8.14/rhcos-4.8.14-x86_64-live.x86_64.iso"
+      rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.8/4.8.14/rhcos-4.8.14-x86_64-live-rootfs.x86_64.img"
+      cpuArchitecture: "x86_64"
+  - openshiftVersion: "4.9"
+    version: "49.84.202110081407-0"
+    url: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.9/4.9.0/rhcos-4.9.0-x86_64-live.x86_64.iso"
+    rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.9/4.9.0/rhcos-4.9.0-x86_64-live-rootfs.x86_64.img"
+    cpuArchitecture: "x86_64"
+  - openshiftVersion: "4.10"
+    version: "410.84.202202251620-0"
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.10/4.10.3/rhcos-4.10.3-x86_64-live.x86_64.iso"
+    rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.10/4.10.3/rhcos-4.10.3-x86_64-live-rootfs.x86_64.img"
+    cpuArchitecture: "x86_64"
+  - openshiftVersion: "4.11"
+    version: "411.86.202210072320-0"
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.11/4.11.9/rhcos-4.11.9-x86_64-live.x86_64.iso"
+    rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.11/4.11.9/rhcos-4.11.9-x86_64-live-rootfs.x86_64.img"
+    cpuArchitecture: "x86_64"
+  - openshiftVersion: "4.12"
+    version: "412.86.202301061548-0"
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.12/4.12.0/rhcos-4.12.0-x86_64-live.x86_64.iso"
+    rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.12/4.12.0/rhcos-4.12.0-x86_64-live-rootfs.x86_64.img"
+    cpuArchitecture: "x86_64"
