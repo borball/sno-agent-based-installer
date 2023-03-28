@@ -5,7 +5,7 @@ set -euoE pipefail
 if [ $# -lt 3 ]
 then
   echo "Usage : $0 bmc_address username_password iso_image [kvm_uuid]"
-  echo "kvm_uuid is optional, required when deploying SNO on KVM"
+  echo "kvm_uuid is optional, required when deploying SNO on KVM with sushy-tool simulator."
   echo "Example : $0 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso [11111111-1111-1111-1111-111111111100]"
   exit
 fi
