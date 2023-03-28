@@ -395,11 +395,3 @@ Checking crop-wipe.service:
 Completed the checking.
 
 ```
-
-## TODO
-
-- Use redfish API to mount the ISO on BMC and boot the node (done)
-- Monitor installation progress (done)
-
-## Why not Ansible?
-Not every user has ansible environment just in order to deploy a SNO.
