@@ -113,14 +113,6 @@ else
   cp $templates/openshift/day0/talm/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ 'false' == $(yq '.day0.ztp_hub' $config_file) ]; then
-  echo
-  #echo "ZTP hub not enabled"
-else
-  echo "ZTP hub enabled"
-  cp $templates/openshift/day0/ztp-hub/*.yaml $cluster_workspace/openshift/
-fi
-
 if [ -d $basedir/extra-manifests ]; then
   echo "copy customized CRs from extra-manifests folder if have"
   echo "$(ls -l $basedir/extra-manifests/)"

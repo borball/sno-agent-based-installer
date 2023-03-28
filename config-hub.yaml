@@ -28,7 +28,6 @@ day0:
   gitops: true
   rhacm: true
   talm: true
-  ztp_hub: true
 
 cpu:
   isolated: 16-47

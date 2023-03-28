@@ -4,4 +4,4 @@ openshift-install
 openshift-install-linux.tar.gz
 sno148
 *.iml
-extra-manifests/LocalVolume.yaml
+extra-manifests

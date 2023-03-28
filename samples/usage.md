@@ -106,7 +106,6 @@ day0:
   gitops: true #default false
   rhacm: true #default false
   talm: true #default false
-  ztp_hub: true #default false
   
 proxy:
   enabled: false
