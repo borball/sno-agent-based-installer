@@ -16,6 +16,8 @@ cp hub/agent.x86_64.iso /var/www/html/iso/agent-hub.iso
 
 echo
 echo "Node booting..."
+echo
+echo "Installing..."
 until curl --silent http://192.168.58.80:8090/api/assisted-install/v2/clusters |jq '.[].status' |grep -m 1 "installing"; do
   curl --silent http://192.168.58.80:8090/api/assisted-install/v2/clusters |jq
   sleep 5
