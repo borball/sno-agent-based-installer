@@ -14,5 +14,11 @@ cp hub/agent.x86_64.iso /var/www/html/iso/agent-hub.iso
 
 timeout 150 watch 'curl --silent http://192.168.58.80:8090/api/assisted-install/v2/clusters |jq '
 
-until oc get node --kubeconfig hub/auth/kubeconfig | grep -m 1 "Ready"; do echo "Installation in progress $(curl --silent http://192.168.58.80:8090/api/assisted-install/v2/clusters |jq '.[].progress.total_percentage' )/100 ..." && sleep 10; done
+until oc get node --kubeconfig hub/auth/kubeconfig 2>/dev/null | grep -m 1 "Ready"; do
+  total_percentage=$(curl --silent http://192.168.58.80:8090/api/assisted-install/v2/clusters |jq '.[].progress.total_percentage')
+  echo "Installation in progress $total_percentage/100"
+  sleep 5;
+done
 
+oc get node --kubeconfig hub/auth/kubeconfig
+oc get clusterversion --kubeconfig hub/auth/kubeconfig
