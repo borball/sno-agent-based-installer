@@ -7,6 +7,8 @@ ssh 192.168.58.14 kcli list vm
 
 systemctl restart sushy-tools.service
 
+rm -f ~/.cache/agent/image_cache/coreos-x86_64.iso
+rm -rf hub
 ./sno-iso.sh ./config-hub.yaml
 cp hub/agent.x86_64.iso /var/www/html/iso/agent-hub.iso
 
