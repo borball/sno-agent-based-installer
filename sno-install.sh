@@ -2,19 +2,20 @@
 
 set -euoE pipefail
 
-if [ $# -lt 3 ]
+if [ $# -lt 4 ]
 then
-  echo "Usage : $0 bmc_address username_password iso_image [kvm_uuid]"
+  echo "Usage : $0 bmc_address username_password iso_image node_ip [kvm_uuid]"
   echo "kvm_uuid is optional, required when deploying SNO on KVM with sushy-tool simulator."
-  echo "Example : $0 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso [11111111-1111-1111-1111-111111111100]"
+  echo "Example : $0 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso 192.168.58.47 [11111111-1111-1111-1111-111111111100]"
   exit
 fi
 
 bmc_address=$1; shift
 username_password=$1; shift
 iso_image=$1; shift
+node_ip=$1; shift
 kvm_uuid=
-if [ $# -eq 4 ]; then
+if [ $# -eq 5 ]; then
   kvm_uuid=$1; shift
 fi
 
@@ -125,8 +126,21 @@ server_power_on
 echo "------------"
 echo "Node will be booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
 echo
-echo "Once node booted from the ISO image, you can also monitoring the installation progress with command:"
-
-echo "  curl --silent http://<sno-node-ip>:8090/api/assisted-install/v2/clusters |jq "
+echo "Node booting..."
 echo
-echo "Enjoy!"
+echo "Installing in progress..."
+
+until curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].status' |grep -m 1 "installing"; do
+  curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
+  sleep 5
+done
+
+until (oc get node --kubeconfig sno148/auth/kubeconfig 2>/dev/null | grep -m 1 "Ready" ); do
+  total_percentage=$(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].progress.total_percentage')
+  if [ ! -z $total_percentage ]; then
+    echo "Installation in progress $total_percentage/100"
+  fi
+  sleep 5
+done
+
+echo "Installation in progress, please check it in 30m."

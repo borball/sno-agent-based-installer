@@ -135,14 +135,20 @@ fi
 echo
 echo "Generating boot image..."
 echo
-$basedir/openshift-install --dir $cluster_workspace agent create image --log-level=debug
+$basedir/openshift-install --dir $cluster_workspace agent create image
 
 echo ""
 echo "------------------------------------------------"
-echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.x86_64.iso."
-echo ""
 echo "kubeconfig: $cluster_workspace/auth/kubeconfig."
 echo "kubeadmin password: $cluster_workspace/auth/kubeadmin-password."
-echo ""
 echo "------------------------------------------------"
+
+echo
+echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.x86_64.iso."
+echo "You can also run ./sno-install.sh to boot the node from the image automatically if you have a HTTP server serves the image."
+echo "Enjoy!"
+
+
+
+
 
