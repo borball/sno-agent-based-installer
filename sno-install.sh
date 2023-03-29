@@ -130,17 +130,25 @@ echo "Node booting..."
 echo
 echo "Installing in progress..."
 
-until curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].status' |grep -m 1 "installing"; do
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/assisted-install/v2/clusters)" != "200" ]]; do
+  sleep 5;
+done
+
+curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
+
+while [[ "\"installing\"" != $(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].status') ]]; do
   curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
   sleep 5
 done
+
+curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
 
 until (oc get node --kubeconfig sno148/auth/kubeconfig 2>/dev/null | grep -m 1 "Ready" ); do
   total_percentage=$(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].progress.total_percentage')
   if [ ! -z $total_percentage ]; then
     echo "Installation in progress $total_percentage/100"
   fi
-  sleep 5
+  sleep 15
 done
 
 echo "Installation in progress, please check it in 30m."
