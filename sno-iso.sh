@@ -45,78 +45,77 @@ mkdir -p $cluster_workspace/openshift
 
 echo
 echo "Enabling day0 configuration..."
-if [ 'false' == $(yq '.day0.workload_partition' $config_file) ]; then
-  echo "Workload partitioning not enabled"
+if [ "false" = "$(yq '.day0.workload_partition' $config_file)" ]; then
+  echo "Workload partitioning:          disabled"
 else
-  echo "Workload partitioning enabled"
+  echo "Workload partitioning:          enabled"
   export crio_wp=$(jinja2 $templates/openshift/day0/workload-partition/crio.conf $config_file |base64 -w0)
   export k8s_wp=$(jinja2 $templates/openshift/day0/workload-partition/kubelet.conf $config_file |base64 -w0)
   jinja2 $templates/openshift/day0/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
 fi
 
-if [ 'false' == $(yq '.day0.accelerate' $config_file) ]; then
-  echo "SNO accelerate not enabled"
+if [ "false" = "$(yq '.day0.accelerate' $config_file)" ]; then
+  echo "SNO boot accelerate:            disabled"
 else
-  echo "SNO accelerate enabled"
+  echo "SNO boot accelerate:            enabled"
   cp $templates/openshift/day0/accelerate/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ 'false' == $(yq '.day0.kdump' $config_file) ]; then
-  echo "kdump service/config not enabled"
+if [ "false" = "$(yq '.day0.kdump' $config_file)" ]; then
+  echo "kdump service/config:           disabled"
 else
-  echo "kdump service/config enabled"
+  echo "kdump service/config:           enabled"
   cp $templates/openshift/day0/kdump/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ 'false' == $(yq '.day0.storage' $config_file) ]; then
-  echo "Local Storage Operator not enabled"
+if [ "false" = "$(yq '.day0.storage' $config_file)" ]; then
+  echo "Local Storage Operator:         disabled"
 else
-  echo "Local Storage Operator enabled"
+  echo "Local Storage Operator:         enabled"
   cp $templates/openshift/day0/storage/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ 'false' == $(yq '.day0.ptp' $config_file) ]; then
-  echo "PTP Operator not enabled"
+if [ "false" = "$(yq '.day0.ptp' $config_file)" ]; then
+  echo "PTP Operator:                   disabled"
 else
-  echo "PTP Operator enabled"
+  echo "PTP Operator:                   enabled"
   cp $templates/openshift/day0/ptp/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ 'false' == $(yq '.day0.sriov' $config_file) ]; then
-  echo "SR-IOV Network Operator not enabled"
+if [ "false" = "$(yq '.day0.sriov' $config_file)" ]; then
+  echo "SR-IOV Network Operator:        disabled"
 else
-  echo "SR-IOV Network Operator enabled"
+  echo "SR-IOV Network Operator:        enabled"
   cp $templates/openshift/day0/sriov/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ 'false' == $(yq '.day0.rhacm' $config_file) ]; then
-  echo
-  #echo "Red Hat Advanced Cluster Management not enabled"
-else
-  echo "Red Hat Advanced Cluster Management enabled"
+if [ "true" = "$(yq '.day0.rhacm' $config_file)" ]; then
+  echo "Red Hat ACM:                    enabled"
   cp $templates/openshift/day0/rhacm/*.yaml $cluster_workspace/openshift/
+else
+  echo "Red Hat ACM:                    disabled"
 fi
 
-if [ 'false' == $(yq '.day0.gitops' $config_file) ]; then
-  echo
-  #echo "Gitops Operator not enabled"
-else
-  echo "Gitops Operator enabled"
+if [ "true" = "$(yq '.day0.gitops' $config_file)" ]; then
+  echo "GitOps Operator:                enabled"
   cp $templates/openshift/day0/gitops/*.yaml $cluster_workspace/openshift/
+else
+  echo "GitOps Operator:                disabled"
 fi
 
-if [ 'false' == $(yq '.day0.talm' $config_file) ]; then
-  echo
-  #echo "Topology Aware Lifecycle Manager (TALM) Operator not enabled"
-else
-  echo "Topology Aware Lifecycle Manager (TALM) Operator enabled"
+if [ "true" = "$(yq '.day0.talm' $config_file)" ]; then
+  echo "TALM Operator:                  enabled"
   cp $templates/openshift/day0/talm/*.yaml $cluster_workspace/openshift/
+else
+  echo "TALM Operator:                  disabled"
 fi
+
+echo
 
 if [ -d $basedir/extra-manifests ]; then
-  echo "copy customized CRs from extra-manifests folder if have"
+  echo "Copy customized CRs from extra-manifests folder if present"
   echo "$(ls -l $basedir/extra-manifests/)"
-  cp $basedir/extra-manifests/*.yaml $cluster_workspace/openshift/
+  cp $basedir/extra-manifests/*.yaml $cluster_workspace/openshift/ 2>/dev/null
 fi
 
 pull_secret=$(yq '.pull_secret' $config_file)
@@ -125,7 +124,7 @@ ssh_key=$(yq '.ssh_key' $config_file)
 export ssh_key=$(cat $ssh_key)
 
 stack=$(yq '.host.stack' $config_file)
-if [ ${stack} == "ipv4" ]; then
+if [ ${stack} = "ipv4" ]; then
   jinja2 $templates/agent-config-ipv4.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
   jinja2 $templates/install-config-ipv4.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
 else

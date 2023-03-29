@@ -13,7 +13,10 @@ fi
 bmc_address=$1; shift
 username_password=$1; shift
 iso_image=$1; shift
-kvm_uuid=$1; shift
+kvm_uuid=
+if [ $# -eq 4 ]; then
+  kvm_uuid=$1; shift
+fi
 
 if [ ! -z $kvm_uuid ]; then
   system=/redfish/v1/Systems/$kvm_uuid
