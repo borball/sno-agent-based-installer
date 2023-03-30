@@ -114,41 +114,54 @@ server_set_boot_once_from_cd() {
     -X PATCH $system_path
 }
 
+echo "-------------------------------"
+
+echo "Starting SNO deployment..."
 server_power_off
+echo "-------------------------------"
+
 virtual_media_insert
+echo "-------------------------------"
+
 virtual_media_status
+echo "-------------------------------"
+
 server_set_boot_once_from_cd
+echo "-------------------------------"
+
 sleep 60
 #sleep 60s or check if server has been powered off
 server_power_on
 #server_restart
 
-echo "------------"
-echo "Node will be booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
-echo
-echo "Node booting..."
-echo
-echo "Installing in progress..."
+echo "-------------------------------"
+echo "Node is booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
 
+echo
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/assisted-install/v2/clusters)" != "200" ]]; do
   sleep 5;
 done
 
+echo
+echo "Installing in progress..."
+
 curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
 
 while [[ "\"installing\"" != $(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].status') ]]; do
+  echo "-------------------------------"
   curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
   sleep 5
 done
 
-curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
-
-until (oc get node --kubeconfig sno148/auth/kubeconfig 2>/dev/null | grep -m 1 "Ready" ); do
+echo
+echo "-------------------------------"
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/assisted-install/v2/clusters)" == "200" ]]; do
   total_percentage=$(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].progress.total_percentage')
   if [ ! -z $total_percentage ]; then
-    echo "Installation in progress $total_percentage/100"
+    echo "Installation in progress: completed $total_percentage/100"
   fi
-  sleep 15
+  sleep 15;
 done
 
-echo "Installation in progress, please check it in 30m."
+echo "Installation in progress, oc command will be available soon, please check the installation progress with oc commands."
+
