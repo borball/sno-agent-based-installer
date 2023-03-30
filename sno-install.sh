@@ -163,5 +163,7 @@ while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/as
   sleep 15;
 done
 
-echo "Installation in progress, oc command will be available soon, please check the installation progress with oc commands."
+echo "-------------------------------"
+echo "Node Rebooted..."
+echo "Installation still in progress, oc command will be available soon, please check the installation progress with oc commands."
 
