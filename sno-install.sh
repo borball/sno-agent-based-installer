@@ -117,29 +117,38 @@ server_set_boot_once_from_cd() {
 echo "-------------------------------"
 
 echo "Starting SNO deployment..."
+echo
 server_power_off
+
+sleep 15
+
 echo "-------------------------------"
 
+echo
 virtual_media_insert
 echo "-------------------------------"
 
+echo
 virtual_media_status
 echo "-------------------------------"
 
+echo
 server_set_boot_once_from_cd
 echo "-------------------------------"
 
-sleep 60
-#sleep 60s or check if server has been powered off
+sleep 10
+echo
 server_power_on
 #server_restart
-
+echo
 echo "-------------------------------"
 echo "Node is booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
-
+echo 
 echo
+echo -n "Node booting."
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/assisted-install/v2/clusters)" != "200" ]]; do
-  sleep 5;
+  echo -n "."
+  sleep 2;
 done
 
 echo
