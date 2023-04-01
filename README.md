@@ -112,7 +112,7 @@ You can also specify which OCP version you want to install:
 ./sno-iso.sh config-ipv6.yaml 4.12.8
 ```
 
-Version can be: stable-4.12, latest-4.12, fast-4.12, 4.12.5, etc. [All versions](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/).
+Version can be: stable-4.12, latest-4.12, fast-4.12, 4.12.5, etc. Check [here](https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/) to get all version(4.12+) supported.
 
 An example:
 
