@@ -73,7 +73,7 @@ By default following will be enabled during day0(installation phase):
 
 You can turn on or turn off the day0 operations in the config file under section day0:
 
-```
+```yaml
 day0:
   workload_partition: false  #default true
   kdump: false  #default true
