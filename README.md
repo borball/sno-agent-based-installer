@@ -279,61 +279,63 @@ version             False       True          24m     Working towards 4.12.8: 53
 Some CRs are not supported in installation phase as day0 operations including PerformanceProfile(4.13+ will support), those can/shall be done as day 1 operations once SNO is deployed.
 
 ```shell
-#./sno-day1.sh
+# ./sno-day1.sh 
 NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
-version   4.12.8    True        False         17m     Cluster version is 4.12.8
+version   4.12.8    True        False         167m    Cluster version is 4.12.8
 
-NAME                          STATUS   ROLES                         AGE   VERSION
-sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   40m   v1.25.4+a34b9e9
+NAME                          STATUS   ROLES                         AGE     VERSION
+sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   3h14m   v1.25.7+eab9cc9
 
 NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
-authentication                             4.12.8    True        False         False      22m     
-baremetal                                  4.12.8    True        False         False      28m     
-cloud-controller-manager                   4.12.8    True        False         False      28m     
-cloud-credential                           4.12.8    True        False         False      35m     
-cluster-autoscaler                         4.12.8    True        False         False      28m     
-config-operator                            4.12.8    True        False         False      36m     
-console                                    4.12.8    True        False         False      24m     
-control-plane-machine-set                  4.12.8    True        False         False      28m     
-csi-snapshot-controller                    4.12.8    True        False         False      36m     
-dns                                        4.12.8    True        False         False      6m29s   
-etcd                                       4.12.8    True        False         False      32m     
-image-registry                             4.12.8    True        False         False      27m     
-ingress                                    4.12.8    True        False         False      35m     
-insights                                   4.12.8    True        False         False      29m     
-kube-apiserver                             4.12.8    True        False         False      27m     
-kube-controller-manager                    4.12.8    True        False         False      29m     
-kube-scheduler                             4.12.8    True        False         False      30m     
-kube-storage-version-migrator              4.12.8    True        False         False      36m     
-machine-api                                4.12.8    True        False         False      28m     
-machine-approver                           4.12.8    True        False         False      28m     
-machine-config                             4.12.8    True        False         False      35m     
-marketplace                                4.12.8    True        False         False      35m     
-monitoring                                 4.12.8    True        False         False      23m     
-network                                    4.12.8    True        False         False      37m     
-node-tuning                                4.12.8    True        False         False      49s     
-openshift-apiserver                        4.12.8    True        False         False      6m23s   
-openshift-controller-manager               4.12.8    True        False         False      27m     
-openshift-samples                          4.12.8    True        False         False      28m     
-operator-lifecycle-manager                 4.12.8    True        False         False      36m     
-operator-lifecycle-manager-catalog         4.12.8    True        False         False      36m     
-operator-lifecycle-manager-packageserver   4.12.8    True        False         False      30m     
-service-ca                                 4.12.8    True        False         False      36m     
-storage                                    4.12.8    True        False         False      36m     
+authentication                             4.12.8    True        False         False      171m    
+baremetal                                  4.12.8    True        False         False      3h3m    
+cloud-controller-manager                   4.12.8    True        False         False      3h3m    
+cloud-credential                           4.12.8    True        False         False      3h10m   
+cluster-autoscaler                         4.12.8    True        False         False      3h3m    
+config-operator                            4.12.8    True        False         False      3h11m   
+console                                    4.12.8    True        False         False      171m    
+control-plane-machine-set                  4.12.8    True        False         False      3h4m    
+csi-snapshot-controller                    4.12.8    True        False         False      179m    
+dns                                        4.12.8    True        False         False      3h3m    
+etcd                                       4.12.8    True        False         False      3h8m    
+image-registry                             4.12.8    True        False         False      171m    
+ingress                                    4.12.8    True        False         False      3h10m   
+insights                                   4.12.8    True        False         False      3h4m    
+kube-apiserver                             4.12.8    True        False         False      179m    
+kube-controller-manager                    4.12.8    True        False         False      3h2m    
+kube-scheduler                             4.12.8    True        False         False      179m    
+kube-storage-version-migrator              4.12.8    True        False         False      179m    
+machine-api                                4.12.8    True        False         False      3h3m    
+machine-approver                           4.12.8    True        False         False      3h4m    
+machine-config                             4.12.8    True        False         False      3h10m   
+marketplace                                4.12.8    True        False         False      3h10m   
+monitoring                                 4.12.8    True        False         False      177m    
+network                                    4.12.8    True        False         False      3h12m   
+node-tuning                                4.12.8    True        False         False      179m    
+openshift-apiserver                        4.12.8    True        False         False      171m    
+openshift-controller-manager               4.12.8    True        False         False      179m    
+openshift-samples                          4.12.8    True        False         False      179m    
+operator-lifecycle-manager                 4.12.8    True        False         False      3h3m    
+operator-lifecycle-manager-catalog         4.12.8    True        False         False      3h3m    
+operator-lifecycle-manager-packageserver   4.12.8    True        False         False      179m    
+service-ca                                 4.12.8    True        False         False      3h11m   
+storage                                    4.12.8    True        False         False      3h3m    
 
 NAME                                                      AGE
-local-storage-operator.openshift-local-storage            36m
-ptp-operator.openshift-ptp                                36m
-sriov-network-operator.openshift-sriov-network-operator   36m
+local-storage-operator.openshift-local-storage            3h3m
+ptp-operator.openshift-ptp                                3h3m
+sriov-network-operator.openshift-sriov-network-operator   3h3m
 
 NAMESPACE                              NAME                                          DISPLAY                   VERSION               REPLACES   PHASE
-openshift-local-storage                local-storage-operator.v4.12.0-202302280915   Local Storage             4.12.0-202302280915              Succeeded
+openshift-local-storage                local-storage-operator.v4.12.0-202303081116   Local Storage             4.12.0-202303081116              Succeeded
 openshift-operator-lifecycle-manager   packageserver                                 Package Server            0.19.0                           Succeeded
-openshift-ptp                          ptp-operator.4.12.0-202302280915              PTP Operator              4.12.0-202302280915              Succeeded
-openshift-sriov-network-operator       sriov-network-operator.v4.12.0-202302280915   SR-IOV Network Operator   4.12.0-202302280915              Succeeded
+openshift-ptp                          ptp-operator.4.12.0-202303151915              PTP Operator              4.12.0-202303151915              Succeeded
+openshift-sriov-network-operator       sriov-network-operator.v4.12.0-202303210718   SR-IOV Network Operator   4.12.0-202303210718              Succeeded
 
 
+------------------------------------------------
 Applying day1 operations....
+
 performanceprofile.performance.openshift.io/sno-performance-profile created
 tuned.tuned.openshift.io/performance-patch created
 configmap/cluster-monitoring-config created
@@ -346,12 +348,12 @@ Done.
 
 ## Validation
 
-Check if all DU required tunings and operators are in placed:
+After applying all day1 operarions, node may be rebooted once, check if all DU required tunings and operators are in placed:
 
 ```shell
-#./sno-ready.sh
-NAME                          STATUS   ROLES                         AGE   VERSION
-sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   51m   v1.25.4+a34b9e9
+# ./sno-ready.sh 
+NAME                          STATUS   ROLES                         AGE     VERSION
+sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   3h34m   v1.25.7+eab9cc9
 
 Checking node:
  [+]Node is ready.

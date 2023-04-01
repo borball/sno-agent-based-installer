@@ -36,6 +36,7 @@ echo
 
 #day1: performance profile and tuned
 echo
+echo "------------------------------------------------"
 echo "Applying day1 operations...."
 echo
 jinja2 $templates/openshift/day1/performance-profile.yaml.j2 $config_file | oc apply -f -
