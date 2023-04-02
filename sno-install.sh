@@ -123,15 +123,15 @@ server_power_off
 sleep 15
 
 echo "-------------------------------"
-
+echo
+virtual_media_eject
+echo "-------------------------------"
 echo
 virtual_media_insert
 echo "-------------------------------"
-
 echo
 virtual_media_status
 echo "-------------------------------"
-
 echo
 server_set_boot_once_from_cd
 echo "-------------------------------"
