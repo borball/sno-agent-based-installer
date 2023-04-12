@@ -18,7 +18,7 @@ host:
     id: 58
   disk: /dev/vda
 
-day0:
+day1:
   workload_partition: true
   kdump: true
   ptp: false

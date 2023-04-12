@@ -34,16 +34,16 @@ echo
 oc get csv -A
 echo
 
-#day1: performance profile and tuned
+#day2: performance profile and tuned
 echo
 echo "------------------------------------------------"
-echo "Applying day1 operations...."
+echo "Applying day2 operations...."
 echo
-jinja2 $templates/openshift/day1/performance-profile.yaml.j2 $config_file | oc apply -f -
-oc apply -f $templates/openshift/day1/performance-patch-tuned.yaml
+jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+oc apply -f $templates/openshift/day2/performance-patch-tuned.yaml
 
-oc apply -f $templates/openshift/day1/cluster-monitoring-cm.yaml
-oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day1/patchoperatorhub.yaml)"
+oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
+oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
 oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
 oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
 echo

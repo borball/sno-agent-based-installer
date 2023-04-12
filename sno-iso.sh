@@ -44,68 +44,68 @@ mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
 
 echo
-echo "Enabling day0 configuration..."
-if [ "false" = "$(yq '.day0.workload_partition' $config_file)" ]; then
+echo "Enabling day1 configuration..."
+if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
   echo "Workload partitioning:          disabled"
 else
   echo "Workload partitioning:          enabled"
-  export crio_wp=$(jinja2 $templates/openshift/day0/workload-partition/crio.conf $config_file |base64 -w0)
-  export k8s_wp=$(jinja2 $templates/openshift/day0/workload-partition/kubelet.conf $config_file |base64 -w0)
-  jinja2 $templates/openshift/day0/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+  export crio_wp=$(jinja2 $templates/openshift/day1/workload-partition/crio.conf $config_file |base64 -w0)
+  export k8s_wp=$(jinja2 $templates/openshift/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
+  jinja2 $templates/openshift/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
 fi
 
-if [ "false" = "$(yq '.day0.accelerate' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.accelerate' $config_file)" ]; then
   echo "SNO boot accelerate:            disabled"
 else
   echo "SNO boot accelerate:            enabled"
-  cp $templates/openshift/day0/accelerate/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/accelerate/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day0.kdump' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.kdump' $config_file)" ]; then
   echo "kdump service/config:           disabled"
 else
   echo "kdump service/config:           enabled"
-  cp $templates/openshift/day0/kdump/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/kdump/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day0.storage' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.storage' $config_file)" ]; then
   echo "Local Storage Operator:         disabled"
 else
   echo "Local Storage Operator:         enabled"
-  cp $templates/openshift/day0/storage/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/storage/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day0.ptp' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.ptp' $config_file)" ]; then
   echo "PTP Operator:                   disabled"
 else
   echo "PTP Operator:                   enabled"
-  cp $templates/openshift/day0/ptp/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/ptp/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day0.sriov' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.sriov' $config_file)" ]; then
   echo "SR-IOV Network Operator:        disabled"
 else
   echo "SR-IOV Network Operator:        enabled"
-  cp $templates/openshift/day0/sriov/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/sriov/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "true" = "$(yq '.day0.rhacm' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.rhacm' $config_file)" ]; then
   echo "Red Hat ACM:                    enabled"
-  cp $templates/openshift/day0/rhacm/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/rhacm/*.yaml $cluster_workspace/openshift/
 else
   echo "Red Hat ACM:                    disabled"
 fi
 
-if [ "true" = "$(yq '.day0.gitops' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.gitops' $config_file)" ]; then
   echo "GitOps Operator:                enabled"
-  cp $templates/openshift/day0/gitops/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/gitops/*.yaml $cluster_workspace/openshift/
 else
   echo "GitOps Operator:                disabled"
 fi
 
-if [ "true" = "$(yq '.day0.talm' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.talm' $config_file)" ]; then
   echo "TALM Operator:                  enabled"
-  cp $templates/openshift/day0/talm/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/talm/*.yaml $cluster_workspace/openshift/
 else
   echo "TALM Operator:                  disabled"
 fi
