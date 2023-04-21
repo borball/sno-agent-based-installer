@@ -274,9 +274,9 @@ NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
 version             False       True          24m     Working towards 4.12.8: 535 of 830 done (64% complete)
 ```
 
-## Day1 operations
+## Day2 operations
 
-Some CRs are not supported in installation phase as day1 operations including PerformanceProfile(4.13+ will support), those can/shall be done as day 1 operations once SNO is deployed.
+Some CRs are not supported in installation phase as day1 operations including PerformanceProfile(4.13+ will support), those can/shall be done as day 2 operations once SNO is deployed.
 
 ```shell
 # ./sno-day2.sh 
