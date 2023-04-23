@@ -83,6 +83,7 @@ server_power_on() {
 
 virtual_media_eject() {
     # Eject Media
+    echo "Eject Virtual Media."
     curl --globoff -L -w "%{http_code} %{url_effective}\\n"  -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
     -d '{}'  -X POST $virtual_media_path/Actions/VirtualMedia.EjectMedia
@@ -175,4 +176,4 @@ done
 echo "-------------------------------"
 echo "Node Rebooted..."
 echo "Installation still in progress, oc command will be available soon, please check the installation progress with oc commands."
-
+echo "Enjoy!"
