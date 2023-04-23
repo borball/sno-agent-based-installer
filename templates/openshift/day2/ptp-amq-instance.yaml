@@ -1,0 +1,16 @@
+---
+apiVersion: interconnectedcloud.github.io/v1alpha1
+kind: Interconnect
+metadata:
+  name: amq-router
+  namespace: amq-router
+spec:
+  deploymentPlan:
+    role: interior
+    placement: Every
+  listeners:
+    - port: 5672
+    - authenticatePeer: true
+      expose: false
+      http: true
+      port: 8080

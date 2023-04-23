@@ -5,5 +5,7 @@ openshift-install-linux.tar.gz
 sno148
 hub
 sno162
+sno130
+sno132
 *.iml
 extra-manifests

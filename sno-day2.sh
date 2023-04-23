@@ -27,24 +27,46 @@ oc get clusterversion
 echo
 oc get nodes
 echo
-oc get co
-echo
-oc get operator
-echo
-oc get csv -A
-echo
 
-#day2: performance profile and tuned
 echo
 echo "------------------------------------------------"
 echo "Applying day2 operations...."
 echo
-jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
-oc apply -f $templates/openshift/day2/performance-patch-tuned.yaml
 
-oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
-oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
-oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
-oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
+if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
+  echo "performance profile:            disabled"
+else
+  echo "performance profile:            enabled"
+  jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+fi
+
+if [ "false" = "$(yq '.day2.tuned' $config_file)" ]; then
+  echo "tune performance patch:         disabled"
+else
+  echo "tune performance patch:         enabled"
+  jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+fi
+
+if [ "false" = "$(yq '.day2.cluster_monitor' $config_file)" ]; then
+  echo "cluster monitor:                disabled"
+else
+  echo "cluster monitor:                enabled"
+  oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
+fi
+
+if [ "false" = "$(yq '.day2.console' $config_file)" ]; then
+  echo "openshift console:              disabled"
+else
+  echo "openshift console:              enabled"
+  oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
+fi
+
+if [ "false" = "$(yq '.day2.network_diagnostics' $config_file)" ]; then
+  echo "network diagnostics:            disabled"
+else
+  echo "network diagnostics:            enabled"
+  oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
+fi
+
 echo
 echo "Done."

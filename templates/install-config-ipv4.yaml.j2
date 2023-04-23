@@ -11,10 +11,10 @@ metadata:
 networking:
   networkType: OVNKubernetes
   clusterNetwork:
-  - cidr: 10.128.0.0/14
-    hostPrefix: 23
+  - cidr: {{ host.cluster_network_cidr | default('10.128.0.0/14') }}
+    hostPrefix: {{ host.cluster_network_host_prefix | default('23') }}
   serviceNetwork:
-    - 172.30.0.0/16
+    - {{ host.service_network | default('172.30.0.0/16') }}
   machineNetwork:
   - cidr: {{ host.machine_network_cidr }}
 {% if proxy.enabled -%}

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
+if ! type "jq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
 
-if [ ! -f "/usr/local/bin/jinja2" ]; then
+if ! type "jinja2" > /dev/null; then
   echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
-  pip3 install jinja2-cli
-  pip3 install jinja2-cli[yaml]
+  pip3 install --user jinja2-cli
+  pip3 install --user jinja2-cli[yaml]
 fi
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -87,6 +87,13 @@ if [ "false" = "$(yq '.day1.sriov' $config_file)" ]; then
 else
   echo "SR-IOV Network Operator:        enabled"
   cp $templates/openshift/day1/sriov/*.yaml $cluster_workspace/openshift/
+fi
+
+if [ "false" = "$(yq '.day1.amq' $config_file)" ]; then
+  echo "AMQ Interconnect Operator:      enabled"
+else
+  echo "AMQ Interconnect Operator:      disabled"
+  cp $templates/openshift/day1/amq/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "true" = "$(yq '.day1.rhacm' $config_file)" ]; then

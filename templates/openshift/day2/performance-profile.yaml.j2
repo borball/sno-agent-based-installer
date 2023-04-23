@@ -2,7 +2,7 @@
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
- name: sno-performance-profile
+ name: {{ day2.performance_profile | default('openshift-node-performance-profile') }}
 spec:
  realTimeKernel:
    enabled: true
