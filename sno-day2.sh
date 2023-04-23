@@ -54,6 +54,13 @@ else
   oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
 fi
 
+if [ "false" = "$(yq '.day2.operator_hub' $config_file)" ]; then
+  echo "operator hub:                   disabled"
+else
+  echo "operator hub:                   enabled"
+  oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
+fi
+
 if [ "false" = "$(yq '.day2.console' $config_file)" ]; then
   echo "openshift console:              disabled"
 else
@@ -66,6 +73,13 @@ if [ "false" = "$(yq '.day2.network_diagnostics' $config_file)" ]; then
 else
   echo "network diagnostics:            enabled"
   oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
+fi
+
+if [ "true" = "$(yq '.day2.ptp_amq' $config_file)" ]; then
+  echo "ptp amq router:                 enabled"
+  oc apply -f -f $templates/openshift/day2/ptp-amq-instance.yaml
+else
+  echo "ptp amq router:                 enabled"
 fi
 
 echo
