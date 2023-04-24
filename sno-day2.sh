@@ -10,6 +10,18 @@ if [ ! -f "/usr/local/bin/jinja2" ]; then
   pip3 install jinja2-cli[yaml]
 fi
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+info(){
+  echo -e "${GREEN} [+]"$@""
+}
+
+warn(){
+  echo -e "${RED} [-]"$@""
+}
+
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
 
@@ -34,59 +46,59 @@ echo "Applying day2 operations...."
 echo
 
 if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
-  echo "performance profile:            disabled"
+  warn "performance profile:            disabled"
 else
-  echo "performance profile:            enabled"
+  info "performance profile:            enabled"
   jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
 fi
 
 if [ "false" = "$(yq '.day2.tuned' $config_file)" ]; then
-  echo "tuned performance patch:        disabled"
+  warn "tuned performance patch:        disabled"
 else
-  echo "tuned performance patch:        enabled"
+  info "tuned performance patch:        enabled"
   jinja2 $templates/openshift/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
 fi
 
 if [ "true" = "$(yq '.day2.kdump_tuned' $config_file)" ]; then
-  echo "tuned kdump settings:           enabled"
+  info "tuned kdump settings:           enabled"
   oc apply -f $templates/openshift/day2/performance-patch-kdump-setting.yaml
 else
-  echo "tuned kdump settings:           disabled"
+  warn "tuned kdump settings:           disabled"
 fi
 
 if [ "false" = "$(yq '.day2.cluster_monitor' $config_file)" ]; then
   echo "cluster monitor:                disabled"
 else
-  echo "cluster monitor:                enabled"
+  info "cluster monitor:                enabled"
   oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
 fi
 
 if [ "false" = "$(yq '.day2.operator_hub' $config_file)" ]; then
   echo "operator hub:                   disabled"
 else
-  echo "operator hub:                   enabled"
+  info "operator hub:                   enabled"
   oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
 fi
 
 if [ "false" = "$(yq '.day2.console' $config_file)" ]; then
-  echo "openshift console:              disabled"
+  warn "openshift console:              disabled"
 else
-  echo "openshift console:              enabled"
+  info "openshift console:              enabled"
   oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
 fi
 
 if [ "false" = "$(yq '.day2.network_diagnostics' $config_file)" ]; then
-  echo "network diagnostics:            disabled"
+  warn "network diagnostics:            disabled"
 else
-  echo "network diagnostics:            enabled"
+  info "network diagnostics:            enabled"
   oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
 fi
 
 if [ "true" = "$(yq '.day2.ptp_amq' $config_file)" ]; then
-  echo "ptp amq router:                 enabled"
+  info "ptp amq router:                 enabled"
   oc apply -f -f $templates/openshift/day2/ptp-amq-instance.yaml
 else
-  echo "ptp amq router:                 disabled"
+  warn "ptp amq router:                 disabled"
 fi
 
 echo
