@@ -10,17 +10,12 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
-
 info(){
-  echo -e "${GREEN} [+]"$@"" + "${NC}"
+  printf  $(tput setaf 2)"%-28s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 warn(){
-  echo -e "${YELLOW} [-]"$@"" + "${NC}"
+  printf  $(tput setaf 3)"%-28s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -59,75 +54,75 @@ mkdir -p $cluster_workspace/openshift
 echo
 echo "Enabling day1 configuration..."
 if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
-  echo "Workload partitioning:          disabled"
+  warn "Workload partitioning:" "disabled"
 else
-  echo "Workload partitioning:          enabled"
+  info "Workload partitioning:" "enabled"
   export crio_wp=$(jinja2 $templates/openshift/day1/workload-partition/crio.conf $config_file |base64 -w0)
   export k8s_wp=$(jinja2 $templates/openshift/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
   jinja2 $templates/openshift/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
 fi
 
 if [ "false" = "$(yq '.day1.accelerate' $config_file)" ]; then
-  echo "SNO boot accelerate:            disabled"
+  warn "SNO boot accelerate:" "disabled"
 else
-  echo "SNO boot accelerate:            enabled"
+  info "SNO boot accelerate:" "enabled"
   cp $templates/openshift/day1/accelerate/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.kdump' $config_file)" ]; then
-  echo "kdump service/config:           disabled"
+  warn "kdump service/config:" "disabled"
 else
-  echo "kdump service/config:           enabled"
+  info "kdump service/config:" "enabled"
   cp $templates/openshift/day1/kdump/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.storage' $config_file)" ]; then
-  echo "Local Storage Operator:         disabled"
+  warn "Local Storage Operator:" "disabled"
 else
-  echo "Local Storage Operator:         enabled"
+  info "Local Storage Operator:" "enabled"
   cp $templates/openshift/day1/storage/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.ptp' $config_file)" ]; then
-  echo "PTP Operator:                   disabled"
+  warn "PTP Operator:" "disabled"
 else
-  echo "PTP Operator:                   enabled"
+  info "PTP Operator:" "enabled"
   cp $templates/openshift/day1/ptp/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.sriov' $config_file)" ]; then
-  echo "SR-IOV Network Operator:        disabled"
+  warn "SR-IOV Network Operator:" "disabled"
 else
-  echo "SR-IOV Network Operator:        enabled"
+  info "SR-IOV Network Operator:" "enabled"
   cp $templates/openshift/day1/sriov/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.amq' $config_file)" ]; then
-  echo "AMQ Interconnect Operator:      enabled"
+  info "AMQ Interconnect Operator:" "enabled"
 else
-  echo "AMQ Interconnect Operator:      disabled"
+  warn "AMQ Interconnect Operator:" "disabled"
   cp $templates/openshift/day1/amq/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "true" = "$(yq '.day1.rhacm' $config_file)" ]; then
-  echo "Red Hat ACM:                    enabled"
+  info "Red Hat ACM:" "enabled"
   cp $templates/openshift/day1/rhacm/*.yaml $cluster_workspace/openshift/
 else
-  echo "Red Hat ACM:                    disabled"
+  warn "Red Hat ACM:" "disabled"
 fi
 
 if [ "true" = "$(yq '.day1.gitops' $config_file)" ]; then
-  echo "GitOps Operator:                enabled"
+  info "GitOps Operator:" "enabled"
   cp $templates/openshift/day1/gitops/*.yaml $cluster_workspace/openshift/
 else
-  echo "GitOps Operator:                disabled"
+  warn "GitOps Operator:" "disabled"
 fi
 
 if [ "true" = "$(yq '.day1.talm' $config_file)" ]; then
-  echo "TALM Operator:                  enabled"
+  info "TALM Operator:" "enabled"
   cp $templates/openshift/day1/talm/*.yaml $cluster_workspace/openshift/
 else
-  echo "TALM Operator:                  disabled"
+  warn "TALM Operator:" "disabled"
 fi
 
 echo
