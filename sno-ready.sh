@@ -13,11 +13,11 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 info(){
-  echo -e "${GREEN} [+]"$@""
+  echo -e "${GREEN} [+]"$@"" + "${NC}"
 }
 
 warn(){
-  echo -e "${RED} [-]"$@""
+  echo -e "${RED} [-]"$@"" + "${NC}"
 }
 
 check_node(){
