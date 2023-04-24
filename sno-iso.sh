@@ -10,6 +10,19 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+info(){
+  echo -e "${GREEN} [+]"$@"" + "${NC}"
+}
+
+warn(){
+  echo -e "${YELLOW} [-]"$@"" + "${NC}"
+}
+
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
 
