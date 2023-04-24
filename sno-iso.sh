@@ -34,7 +34,7 @@ then
   info "Prepare a configuration file by following the example in config.yaml.sample"
   echo "-----------------------------------"
   echo "# content of config.yaml.sample"
-  cat config.yaml
+  cat config.yaml.sample
   echo "-----------------------------------"
   info "Example to run it: $0 config-sno130.yaml"
 	exit 0
