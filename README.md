@@ -428,3 +428,11 @@ Checking crop-wipe.service:
 Completed the checking.
 
 ```
+
+
+## Demos
+
+- [![sno-iso](https://asciinema.org/a/580242.svg)](https://asciinema.org/a/580242?autoplay=1)
+- [![sno-install](https://asciinema.org/a/580243.svg)](https://asciinema.org/a/580243?autoplay=1)
+- [![sno-day2](https://asciinema.org/a/580241.svg)](https://asciinema.org/a/580241?autoplay=1)
+- [![sno-ready](https://asciinema.org/a/580250.svg)](https://asciinema.org/a/580250?autoplay=1)
