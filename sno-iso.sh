@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # Helper script to generate bootable ISO with OpenShift agent based installer
-# usage: ./sno-iso.sh config.yaml
+# usage: ./sno-iso.sh -h
 # 
 
 
@@ -16,24 +16,24 @@ if ! type "jinja2" > /dev/null; then
 fi
 
 info(){
-  printf  $(tput setaf 2)"%-28s %-10s"$(tput sgr0)"\n" "$@"
+  printf  $(tput setaf 2)"%-38s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 warn(){
-  printf  $(tput setaf 3)"%-28s %-10s"$(tput sgr0)"\n" "$@"
+  printf  $(tput setaf 3)"%-38s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
 then 
 	info "Usage: $0 [config file] [ocp version]"
   info "config file and ocp version are optional, examples:"
-  info "$0" " equals: $0 config.yaml stable-4.12"
-  info "$0 sno130.yaml" " equals: $0 sno130.yaml stable-4.12"
-  info "$0 sno130.yaml 4.12.10"
+  info "- $0" " equals: $0 config.yaml stable-4.12"
+  info "- $0 sno130.yaml" " equals: $0 sno130.yaml stable-4.12"
+  info "- $0 sno130.yaml 4.12.10"
   echo 
-  info "Prepare a configuration file by following the example in config.yaml"
+  info "Prepare a configuration file by following the example in config.yaml.sample"
   echo "-----------------------------------"
-  echo "# content of config.yaml"
+  echo "# content of config.yaml.sample"
   cat config.yaml
   echo "-----------------------------------"
   info "Example to run it: $0 config-sno130.yaml"
