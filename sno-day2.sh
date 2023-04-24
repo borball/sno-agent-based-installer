@@ -44,7 +44,7 @@ if [ "false" = "$(yq '.day2.tuned' $config_file)" ]; then
   echo "tuned performance patch:        disabled"
 else
   echo "tuned performance patch:        enabled"
-  jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+  jinja2 $templates/openshift/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
 fi
 
 if [ "true" = "$(yq '.day2.kdump_tuned' $config_file)" ]; then
