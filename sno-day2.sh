@@ -41,10 +41,17 @@ else
 fi
 
 if [ "false" = "$(yq '.day2.tuned' $config_file)" ]; then
-  echo "tune performance patch:         disabled"
+  echo "tuned performance patch:        disabled"
 else
-  echo "tune performance patch:         enabled"
+  echo "tuned performance patch:        enabled"
   jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+fi
+
+if [ "true" = "$(yq '.day2.kdump_tuned' $config_file)" ]; then
+  echo "tuned kdump settings:           enabled"
+  oc apply -f $templates/openshift/day2/performance-patch-kdump-setting.yaml
+else
+  echo "tuned kdump settings:           disabled"
 fi
 
 if [ "false" = "$(yq '.day2.cluster_monitor' $config_file)" ]; then
