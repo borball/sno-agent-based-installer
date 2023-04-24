@@ -1,4 +1,9 @@
 #!/bin/bash
+# 
+# Helper script to generate bootable ISO with OpenShift agent based installer
+# usage: ./sno-iso.sh config.yaml
+# 
+
 
 if ! type "yq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
@@ -17,6 +22,23 @@ info(){
 warn(){
   printf  $(tput setaf 3)"%-28s %-10s"$(tput sgr0)"\n" "$@"
 }
+
+if [[ ( $@ == "--help") ||  $@ == "-h" ]]
+then 
+	info "Usage: $0 [config file] [ocp version]"
+  info "config file and ocp version are optional, examples:"
+  info "$0" " equals: $0 config.yaml stable-4.12"
+  info "$0 sno130.yaml" " equals: $0 sno130.yaml stable-4.12"
+  info "$0 sno130.yaml 4.12.10"
+  echo 
+  info "Prepare a configuration file by following the example in config.yaml"
+  echo "-----------------------------------"
+  echo "# content of config.yaml"
+  cat config.yaml
+  echo "-----------------------------------"
+  info "Example to run it: $0 config-sno130.yaml"
+	exit 0
+fi 
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
@@ -162,8 +184,3 @@ echo
 echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.x86_64.iso."
 echo "You can also run ./sno-install.sh to boot the node from the image automatically if you have a HTTP server serves the image."
 echo "Enjoy!"
-
-
-
-
-

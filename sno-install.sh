@@ -1,4 +1,7 @@
 #!/bin/bash
+# Helper script to boot the node via redfish API from the ISO image
+# usage: ./sno-install.sh bmc_address username_password iso_image node_ip [kvm_uuid]
+#
 
 set -euoE pipefail
 

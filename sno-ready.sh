@@ -1,4 +1,8 @@
 #!/bin/bash
+# 
+# Helper script to validate if the SNO node contains all the necessary tunings
+# usage: ./sno-ready.sh
+#
 
 if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
   echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"

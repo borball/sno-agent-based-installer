@@ -1,4 +1,8 @@
 #!/bin/bash
+# 
+# Helper script to apply the day2 operations on SNO node
+# Usage: ./sno-day2.sh config.yaml
+#
 
 if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
   echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
@@ -9,6 +13,14 @@ if [ ! -f "/usr/local/bin/jinja2" ]; then
   pip3 install jinja2-cli
   pip3 install jinja2-cli[yaml]
 fi
+
+if [[ ( $@ == "--help") ||  $@ == "-h" ]]
+then 
+	echo "Usage: $0 [config.yaml]"
+  echo "config.yaml is optional, will use config.yaml in the current folder if not being specified."
+  exit 0
+fi 
+
 
 info(){
   printf  $(tput setaf 2)"%-28s %-10s"$(tput sgr0)"\n" "$@"
