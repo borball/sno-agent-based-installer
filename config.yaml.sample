@@ -32,10 +32,9 @@ pull_secret: ./pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
 
 bmc:
-  address: 192.168.14.148
+  address: 192.168.13.148
   username: Administrator
   password: dummy
-  node_uuid:
 
 iso:
   address: http://192.168.58.15/iso/agent-148.iso

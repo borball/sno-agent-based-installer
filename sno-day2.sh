@@ -14,12 +14,22 @@ if [ ! -f "/usr/local/bin/jinja2" ]; then
   pip3 install jinja2-cli[yaml]
 fi
 
+usage(){
+	echo "Usage: $0 [config.yaml]"
+  echo "Example: $0 config-sno130.yaml"
+}
+
+if [ $# -lt 1 ]
+then
+  usage
+  exit
+fi
+
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
 then 
-	echo "Usage: $0 [config.yaml]"
-  echo "config.yaml is optional, will use config.yaml in the current folder if not being specified."
-  exit 0
-fi 
+  usage
+  exit
+fi
 
 
 info(){
@@ -33,11 +43,7 @@ warn(){
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
 
-config_file=$1; shift
-if [ -z "$config_file" ]
-then
-  config_file=config.yaml
-fi
+config_file=$1;
 
 cluster_name=$(yq '.cluster.name' $config_file)
 cluster_workspace=$cluster_name

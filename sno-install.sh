@@ -15,10 +15,20 @@ fi
 
 set -euoE pipefail
 
-if [ $# -lt 1 ]
-then
+usage(){
   echo "Usage : $0 config-file"
   echo "Example : $0 config-sno130.yaml"
+}
+
+if [ $# -lt 1 ]
+then
+  usage
+  exit
+fi
+
+if [[ ( $@ == "--help") ||  $@ == "-h" ]]
+then 
+  usage
   exit
 fi
 

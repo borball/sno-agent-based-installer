@@ -56,3 +56,11 @@ proxy:
 
 pull_secret: ./pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
+
+bmc:
+  address: 192.168.13.148
+  username: Administrator
+  password: dummy
+
+iso:
+  address: http://192.168.58.15/iso/sno148.iso

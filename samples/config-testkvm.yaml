@@ -1,15 +1,15 @@
 cluster:
   domain: outbound.vz.bos2.lab
-  name: hub
+  name: testkvm
 
 host:
   interface: ens1f0
   stack: ipv4
   hostname: hub.outbound.vz.bos2.lab
-  ip: 192.168.58.80
+  ip: 192.168.58.85
   dns: 192.168.58.15
   gateway: 192.168.58.1
-  mac: de:ad:be:ff:10:01
+  mac: de:ad:be:ff:10:85
   prefix: 25
   machine_network_cidr: 192.168.58.0/25
   vlan:
@@ -48,4 +48,4 @@ bmc:
   password: dummy
 
 iso:
-  address: http://192.168.58.15/iso/hub.iso
+  address: http://192.168.58.15/iso/testkvm.iso

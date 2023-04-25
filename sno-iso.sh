@@ -23,8 +23,8 @@ warn(){
   printf  $(tput setaf 3)"%-38s %-10s"$(tput sgr0)"\n" "$@"
 }
 
-if [[ ( $@ == "--help") ||  $@ == "-h" ]]
-then 
+
+usage(){
 	info "Usage: $0 [config file] [ocp version]"
   info "config file and ocp version are optional, examples:"
   info "- $0" " equals: $0 config.yaml stable-4.12"
@@ -37,8 +37,19 @@ then
   cat config.yaml.sample
   echo "-----------------------------------"
   info "Example to run it: $0 config-sno130.yaml"
-	exit 0
-fi 
+}
+
+if [ $# -lt 1 ]
+then
+  usage
+  exit
+fi
+
+if [[ ( $@ == "--help") ||  $@ == "-h" ]]
+then 
+  usage
+  exit
+fi
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
