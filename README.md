@@ -79,7 +79,7 @@ You can turn on/off the day1 operations in the config file under section [day1](
 
 In some case you may want to include more customizations for the cluster during day1, you can create folder extra-manifests and put those CRs(Custom Resources) inside before you run sno-iso.sh, the script will copy and include those inside the ISO image. see [advanced usage](samples/usage.md#advanced) of the configurations.
 
-Get other sample configurations(samples/usage.md#usages).
+Get other sample [configurations](samples/usage.md#usages).
 
 ## Generate ISO image
 
