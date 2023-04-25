@@ -1,26 +1,34 @@
 #!/bin/bash
 # Helper script to boot the node via redfish API from the ISO image
-# usage: ./sno-install.sh bmc_address username_password iso_image node_ip [kvm_uuid]
+# usage: ./sno-install.sh config.yaml
 #
+
+if ! type "yq" > /dev/null; then
+  echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+fi
+
+if ! type "jinja2" > /dev/null; then
+  echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
+  pip3 install --user jinja2-cli
+  pip3 install --user jinja2-cli[yaml]
+fi
 
 set -euoE pipefail
 
-if [ $# -lt 4 ]
+if [ $# -lt 1 ]
 then
-  echo "Usage : $0 bmc_address username_password iso_image node_ip [kvm_uuid]"
-  echo "kvm_uuid is optional, required when deploying SNO on KVM with sushy-tool simulator."
-  echo "Example : $0 192.168.13.147 Administrator:dummy http://192.168.58.15/iso/agent-412.iso 192.168.58.47 [11111111-1111-1111-1111-111111111100]"
+  echo "Usage : $0 config-file"
+  echo "Example : $0 config-sno130.yaml"
   exit
 fi
 
-bmc_address=$1; shift
-username_password=$1; shift
-iso_image=$1; shift
-node_ip=$1; shift
-kvm_uuid=
-if [ $# -eq 5 ]; then
-  kvm_uuid=$1; shift
-fi
+config_file=$1; shift
+cluster_name=$(yq '.cluster.name' $config_file)
+node_ip=$(yq '.host.ip' $config_file)
+bmc_address=$(yq '.bmc.address' $config_file)
+username_password="$(yq '.bmc.username' $config_file):$(yq '.bmc.password' $config_file)"
+iso_image=$(yq '.iso.address' $config_file)
+kvm_uuid=$(yq '.bmc.node_uuid' $config_file)
 
 if [ ! -z $kvm_uuid ]; then
   system=/redfish/v1/Systems/$kvm_uuid
