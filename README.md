@@ -241,7 +241,7 @@ Completed the checking.
 
 ### sno-install
 
-  [![sno-install](https://asciinema.org/a/580243.svg)](https://asciinema.org/a/580243?autoplay=1)
+  [![sno-install](https://asciinema.org/a/580837.svg)](https://asciinema.org/a/580837?autoplay=1)
 
 ### sno-day2
 
