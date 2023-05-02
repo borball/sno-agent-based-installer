@@ -126,7 +126,7 @@ iso:
 
 Then run it:
 
-```shell
+```
 # ./sno-install.sh 
 Usage : ./sno-install.sh config-file
 Example : ./sno-install.sh config-sno130.yaml
@@ -138,7 +138,7 @@ Example : ./sno-install.sh config-sno130.yaml
 
 Some CRs are not supported in installation phase as day1 operations including PerformanceProfile(4.13+ will support), those can/shall be done as day 2 operations once SNO is deployed.
 
-```shell
+```
 # ./sno-day2.sh -h
 Usage: ./sno-day2.sh [config.yaml]
 config.yaml is optional, will use config.yaml in the current folder if not being specified.
@@ -152,7 +152,7 @@ You can turn on/off day2 operation with configuration in section [day2](samples/
 
 After applying all day2 operarions, node may be rebooted once, check if all vDU required tunings and operators are in placed:
 
-```shell
+```
 # ./sno-ready.sh 
 NAME                          STATUS   ROLES                         AGE     VERSION
 sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   3h34m   v1.25.7+eab9cc9
