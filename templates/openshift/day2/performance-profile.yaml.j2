@@ -16,7 +16,7 @@ spec:
        size: 1G
  additionalKernelArgs:
    - rcupdate.rcu_normal_after_boot=0
-   - nohz_full={{ cpu.reserved }}
+   - module_blacklist=irdma
  machineConfigPoolSelector:
    pools.operator.machineconfiguration.openshift.io/master: ""
  nodeSelector:
