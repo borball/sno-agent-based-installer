@@ -35,6 +35,7 @@ day2:
     name: sno-perfprofile
     enabled: true
   tuned: true
+  cmdline_pstate: intel_pstate=active
   kdump_tuned: false
   ptp_amq: true
   cluster_monitor: true
