@@ -44,5 +44,40 @@ day2:
   network_diagnostics: true
 ```
 
-## Advanced
+## Other usages
 
+An example to use this repo to create a SNO running on KVM, and install the ZTP required opertators so to act as a ZTP hub. 
+
+```shell
+
+## Create VM
+ssh 192.168.58.14 kcli stop vm hub
+ssh 192.168.58.14 kcli delete vm hub -y
+ssh 192.168.58.14 'kcli create vm -P uuid=11111111-1111-1111-1234-000000000000 -P start=False -P memory=20480 -P numcpus=16 -P disks=[150] -P nets=["{\"name\":\"br-vlan58\",\"nic\":\"eth0\",\"mac\":\"de:ad:be:ff:10:85\"}"] hub'
+ssh 192.168.58.14 kcli list vm
+
+systemctl restart sushy-tools.service
+
+## Generate ISO, config-hub.yaml turn on all ZTP required operators but turn off others
+
+rm -f ~/.cache/agent/image_cache/coreos-x86_64.iso
+rm -rf hub
+./sno-iso.sh samples/ztp-hub-on-sno/config-hub.yaml
+cp hub/agent.x86_64.iso /var/www/html/iso/hub.iso
+
+
+## Install OCP
+./sno-install.sh samples/ztp-hub-on-sno/config-hub.yaml
+
+
+oc get node --kubeconfig hub/auth/kubeconfig
+oc get clusterversion --kubeconfig hub/auth/kubeconfig
+
+echo "Installation in progress, please check it in 30m."
+
+
+## Run extra manifests
+
+oc --kubeconfig hub/auth/kubeconfig apply -k ./extra-manifests
+
+```
