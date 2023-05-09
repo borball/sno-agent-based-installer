@@ -8,4 +8,4 @@ sno162
 sno130
 sno132
 *.iml
-extra-manifests
+./extra-manifests
