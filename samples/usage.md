@@ -13,35 +13,48 @@ You can turn on/off day1 configurtation in day1 section, following are the fallb
 ```yaml
 day1:
   workload_partition: true
-  kdump: true
-  ptp: true
-  sriov: true
-  storage: true
-  accelerate: true
-  gitops: true
-  rhacm: false
-  talm: false
-  amq: false
+  kdump: 
+    enabled: true
+    #set blacklist_ice as true on HPE servers
+    blacklist_ice: false
+  boot_accelerate: true
+  operators:
+    ptp: true
+    sriov: true
+    storage: true
+    gitops: true
+    rhacm: false
+    talm: false
+    amq: false
 
 ```
 
 ## Day2
 
-You can turn on/off day2 configurtation in day2 section, following are the fallback values if not poresented.
+You can turn on/off day2 configurtation in day2 section.
 
 ```yaml
 day2:
   performance_profile:
-    name: sno-perfprofile
     enabled: true
-  tuned: true
-  cmdline_pstate: intel_pstate=active
-  kdump_tuned: false
-  ptp_amq: true
-  cluster_monitor: true
-  operator_hub: true
-  console: true
-  network_diagnostics: true
+    #in case you want to specify the performance profile name
+    name: sno-perfprofile
+  tuned_profile: 
+    enabled: true
+    #for wrong bios settings, if passive mode is used, set intel_pstate=active
+    cmdline_pstate: intel_pstate=active
+    #in case you want to generate kdump for some special scenarios (used in lab)
+    kdump: true
+  #enable the amq interconnector for ptp  
+  ptp_amq_router: true
+  #enable the cluster monitoring tuning
+  cluster_monitor_tuning: true
+  #enable the opertor hub tuning: disable unused catalogsources
+  operator_hub_tuning: true
+  #disable the ocp console operator
+  disable_ocp_console: true
+  #disable the network diagnostics
+  disable_network_diagnostics: true
 ```
 
 ## Other usages

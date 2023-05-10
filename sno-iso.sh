@@ -95,63 +95,70 @@ else
   jinja2 $templates/openshift/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
 fi
 
-if [ "false" = "$(yq '.day1.accelerate' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
   warn "SNO boot accelerate:" "disabled"
 else
   info "SNO boot accelerate:" "enabled"
   cp $templates/openshift/day1/accelerate/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day1.kdump' $config_file)" ]; then
-  warn "kdump service/config:" "disabled"
+if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
+  warn "kdump service:" "disabled"
 else
-  info "kdump service/config:" "enabled"
-  cp $templates/openshift/day1/kdump/*.yaml $cluster_workspace/openshift/
+  info "kdump service:" "enabled"
+  cp $templates/openshift/day1/kdump/06-kdump-master.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day1.storage' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
+  warn "kdump, blacklist_ice:" "enabled"
+  cp $templates/openshift/day1/kdump/05-kdump-config-master.yaml $cluster_workspace/openshift/
+else
+  info "kdump, blacklist_ice:" "disabled"
+fi
+
+if [ "false" = "$(yq '.day1.operators.storage' $config_file)" ]; then
   warn "Local Storage Operator:" "disabled"
 else
   info "Local Storage Operator:" "enabled"
   cp $templates/openshift/day1/storage/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day1.ptp' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.operators.ptp' $config_file)" ]; then
   warn "PTP Operator:" "disabled"
 else
   info "PTP Operator:" "enabled"
   cp $templates/openshift/day1/ptp/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day1.sriov' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.operators.sriov' $config_file)" ]; then
   warn "SR-IOV Network Operator:" "disabled"
 else
   info "SR-IOV Network Operator:" "enabled"
   cp $templates/openshift/day1/sriov/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day1.amq' $config_file)" ]; then
+if [ "false" = "$(yq '.day1.operators.amq' $config_file)" ]; then
   info "AMQ Interconnect Operator:" "enabled"
 else
   warn "AMQ Interconnect Operator:" "disabled"
   cp $templates/openshift/day1/amq/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "true" = "$(yq '.day1.rhacm' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.operators.rhacm' $config_file)" ]; then
   info "Red Hat ACM:" "enabled"
   cp $templates/openshift/day1/rhacm/*.yaml $cluster_workspace/openshift/
 else
   warn "Red Hat ACM:" "disabled"
 fi
 
-if [ "true" = "$(yq '.day1.gitops' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.operators.gitops' $config_file)" ]; then
   info "GitOps Operator:" "enabled"
   cp $templates/openshift/day1/gitops/*.yaml $cluster_workspace/openshift/
 else
   warn "GitOps Operator:" "disabled"
 fi
 
-if [ "true" = "$(yq '.day1.talm' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.operators.talm' $config_file)" ]; then
   info "TALM Operator:" "enabled"
   cp $templates/openshift/day1/talm/*.yaml $cluster_workspace/openshift/
 else
