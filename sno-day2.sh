@@ -33,11 +33,11 @@ fi
 
 
 info(){
-  printf  $(tput setaf 2)"%-28s %-10s"$(tput sgr0)"\n" "$@"
+  printf  $(tput setaf 2)"%-60s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 warn(){
-  printf  $(tput setaf 3)"%-28s %-10s"$(tput sgr0)"\n" "$@"
+  printf  $(tput setaf 3)"%-60s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -66,12 +66,16 @@ else
   jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
 fi
 
+echo 
+
 if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
   warn "tuned performance patch:" "disabled"
 else
   info "tuned performance patch:" "enabled"
   jinja2 $templates/openshift/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
 fi
+
+echo 
 
 if [ "true" = "$(yq '.day2.tuned_profile.kdump' $config_file)" ]; then
   info "tuned kdump settings:" "enabled"
@@ -80,12 +84,16 @@ else
   warn "tuned kdump settings:" "disabled"
 fi
 
+echo 
+
 if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
   warn "cluster monitor tuning:" "disabled"
 else
   info "cluster monitor tuning:" "enabled"
   oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
 fi
+
+echo 
 
 if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
   warn "operator hub tuning:" "disabled"
@@ -94,12 +102,16 @@ else
   oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
 fi
 
+echo 
+
 if [ "false" = "$(yq '.day2.disable_ocp_console' $config_file)" ]; then
   warn "openshift console:" "enable"
 else
   info "openshift console:" "disabled"
   oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
 fi
+
+echo 
 
 if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
   warn "network diagnostics:" "enabled"
@@ -108,12 +120,31 @@ else
   oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
 fi
 
+echo 
+
 if [ "true" = "$(yq '.day2.enable_ptp_amq_router' $config_file)" ]; then
   info "ptp amq router:" "enabled"
   oc apply -f -f $templates/openshift/day2/ptp-amq-instance.yaml
 else
   warn "ptp amq router:" "disabled"
 fi
+
+echo 
+
+if [ "false" = "$(yq '.day2.disable_operator_auto_upgrade' $config_file)" ]; then
+  warn "operator auto upgrade:" "enable"
+else
+  subs=$(oc get subs -A -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}')
+  subs=($subs)
+  length=${#subs[@]}
+  for i in $( seq 0 2 $((length-2)) ); do
+    ns=${subs[$i]}
+    name=${subs[$i+1]}
+    info "operator $name auto upgrade:" "disabled"
+    oc patch subscription -n $ns $name --type='json' -p=['{"op": "replace", "path": "/spec/installPlanApproval", "value":"Manual"}']
+  done
+fi
+
 
 echo
 echo "Done."
