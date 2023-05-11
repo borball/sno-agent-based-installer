@@ -110,10 +110,10 @@ else
 fi
 
 if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
-  warn "kdump, blacklist_ice:" "enabled"
+  warn "kdump, blacklist_ice(for HPE):" "enabled"
   cp $templates/openshift/day1/kdump/05-kdump-config-master.yaml $cluster_workspace/openshift/
 else
-  info "kdump, blacklist_ice:" "disabled"
+  info "kdump, blacklist_ice(for HPE):" "disabled"
 fi
 
 if [ "false" = "$(yq '.day1.operators.storage' $config_file)" ]; then
