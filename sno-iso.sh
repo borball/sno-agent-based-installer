@@ -27,7 +27,6 @@ warn(){
 usage(){
 	info "Usage: $0 [config file] [ocp version]"
   info "config file and ocp version are optional, examples:"
-  info "- $0" " equals: $0 config.yaml stable-4.12"
   info "- $0 sno130.yaml" " equals: $0 sno130.yaml stable-4.12"
   info "- $0 sno130.yaml 4.12.10"
   echo 
