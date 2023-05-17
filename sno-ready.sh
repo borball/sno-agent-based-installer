@@ -345,7 +345,7 @@ check_chronyd(){
 }
 
 check_crio_wipe(){
-  echo -e "\n${NC}Checking crop-wipe.service:"
+  echo -e "\n${NC}Checking crio-wipe.service:"
   if [[ $(ssh core@$address systemctl is-active crio-wipe) = 'inactive' ]]; then
     info "crio-wipe is inactive."
   else
