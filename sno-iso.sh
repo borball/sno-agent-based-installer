@@ -34,8 +34,11 @@ usage(){
   echo "-----------------------------------"
   echo "# content of config.yaml.sample"
   cat config.yaml.sample
+  echo
   echo "-----------------------------------"
+  echo
   info "Example to run it: $0 config-sno130.yaml"
+  echo
 }
 
 if [ $# -lt 1 ]
