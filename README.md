@@ -222,7 +222,7 @@ Checking chronyd.service:
  [-]chronyd is active.
  [-]chronyd is enabled.
 
-Checking crop-wipe.service:
+Checking crio-wipe.service:
  [+]crio-wipe is inactive.
  [+]crio-wipe is not enabled.
 
