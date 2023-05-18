@@ -124,7 +124,7 @@ echo
 
 if [ "true" = "$(yq '.day2.enable_ptp_amq_router' $config_file)" ]; then
   info "ptp amq router:" "enabled"
-  oc apply -f -f $templates/openshift/day2/ptp-amq-instance.yaml
+  oc apply -f $templates/openshift/day2/ptp-amq-instance.yaml
 else
   warn "ptp amq router:" "disabled"
 fi
