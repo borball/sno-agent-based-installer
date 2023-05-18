@@ -8,7 +8,7 @@ spec:
   - data: |
       [main]
       summary=Configuration changes profile inherited from performance created tuned
-      include=openshift-node-performance-performance-patch
+      include=performance-patch
       [sysctl]
       kernel.sysrq=1
       kernel.panic_on_oops=1
