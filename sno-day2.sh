@@ -140,6 +140,7 @@ else
   else
     info "ptpconfig boundary clock:" "enabled"
     jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+  fi  
 fi
 
 echo 
