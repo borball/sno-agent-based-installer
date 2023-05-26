@@ -122,11 +122,24 @@ fi
 
 echo 
 
-if [ "true" = "$(yq '.day2.enable_ptp_amq_router' $config_file)" ]; then
+if [ "true" = "$(yq '.day2.ptp.enable_ptp_amq_router' $config_file)" ]; then
   info "ptp amq router:" "enabled"
   oc apply -f $templates/openshift/day2/ptp-amq-instance.yaml
 else
   warn "ptp amq router:" "disabled"
+fi
+
+echo 
+
+if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+  warn "ptpconfig:" "disabled"
+else
+  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+    info "ptpconfig ordinary clock:" "enabled"
+    jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+  else
+    info "ptpconfig boundary clock:" "enabled"
+    jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
 fi
 
 echo 
