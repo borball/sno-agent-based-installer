@@ -6,7 +6,7 @@ metadata:
 spec:
  profile:
  - interface: ""
-   name: BC-profile
+   name: bc-profile
    phc2sysOpts: -a -r -n 24
    ptp4lConf: |
      [{{ day2.ptp.boundary_clock.slave }}]
@@ -127,4 +127,4 @@ spec:
    - nodeLabel: node-role.kubernetes.io/master
      nodeName: {{ host.hostname }}
    priority: 4
-   profile: BC-profile
+   profile: bc-profile

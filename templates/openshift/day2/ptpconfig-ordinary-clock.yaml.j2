@@ -6,7 +6,7 @@ metadata:
 spec:
  profile:
  - interface: {{ day2.ptp.ordinary_clock.interface }}
-   name: slave-if
+   name: oc-profile
    phc2sysOpts: -a -r -n 24 -u 2
    ptp4lConf: |
      [{{ day2.ptp.ordinary_clock.interface }}]
@@ -119,4 +119,4 @@ spec:
    - nodeLabel: node-role.kubernetes.io/master
      nodeName: {{ host.hostname }}
    priority: 4
-   profile: slave-if
+   profile: oc-profile
