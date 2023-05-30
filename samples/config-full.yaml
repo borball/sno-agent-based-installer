@@ -46,7 +46,7 @@ day2:
     #for wrong bios settings, if passive mode is used, set intel_pstate=active
     cmdline_pstate: intel_pstate=active
     #in case you want to generate kdump for some special scenarios (used in lab)
-    kdump: true
+    kdump: false
 
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
