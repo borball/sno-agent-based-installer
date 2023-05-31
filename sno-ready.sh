@@ -9,8 +9,8 @@ if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" 
 fi
 
 machine_configs=("container-mount-namespace-and-kubelet-conf-master" "02-master-workload-partitioning" "04-accelerated-container-startup-master" "05-kdump-config-master" "06-kdump-enable-master" "99-crio-disable-wipe-master" "disable-chronyd")
-pps=("openshift-node-performance-profile")
-tuneds=("openshift-node-performance-openshift-node-performance-profile")
+pps=("sno-perfprofile")
+tuneds=("performance-patch")
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
