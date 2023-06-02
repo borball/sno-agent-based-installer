@@ -455,9 +455,7 @@ check_kdump(){
 
 check_chronyd(){
   echo -e "\n${NC}Checking chronyd.service:"
-  if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-    warn "ptpconfig is not enabled in $config_file"
-  else
+  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
     if [[ $(ssh core@$address systemctl is-active chronyd) = 'inactive' ]]; then
       info "chronyd is inactive."
     else
@@ -469,7 +467,20 @@ check_chronyd(){
     else
       info "chronyd is not enabled."
     fi
-  fi  
+  else
+    warn "ptpconfig is not enabled in $config_file."
+    if [[ $(ssh core@$address systemctl is-active chronyd) = 'inactive' ]]; then
+      warn "chronyd is inactive."
+    else
+      info "chronyd is active."
+    fi
+
+    if [[ $(ssh core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
+      info "chronyd is enabled."
+    else
+      warn "chronyd is not enabled."
+    fi
+  fi
 }
 
 check_crio_wipe(){
