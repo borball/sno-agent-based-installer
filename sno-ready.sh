@@ -8,9 +8,37 @@ if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" 
   echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
 
-machine_configs=("container-mount-namespace-and-kubelet-conf-master" "02-master-workload-partitioning" "04-accelerated-container-startup-master" "05-kdump-config-master" "06-kdump-enable-master" "99-crio-disable-wipe-master" "disable-chronyd")
-pps=("sno-perfprofile")
-tuneds=("performance-patch")
+if [ ! -f "/usr/local/bin/jinja2" ]; then
+  echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
+  pip3 install jinja2-cli
+  pip3 install jinja2-cli[yaml]
+fi
+
+usage(){
+	echo "Usage: $0 [config.yaml]"
+  echo "Example: $0 config-sno130.yaml"
+}
+
+if [ $# -lt 1 ]
+then
+  usage
+  exit
+fi
+
+if [[ ( $@ == "--help") ||  $@ == "-h" ]]
+then 
+  usage
+  exit
+fi
+
+basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+templates=$basedir/templates
+
+config_file=$1;
+
+cluster_name=$(yq '.cluster.name' $config_file)
+cluster_workspace=$cluster_name
+export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -44,14 +72,60 @@ check_pods(){
 }
 
 check_mc(){
-  echo -e "\n${NC}Checking required machine config:"
-  for mc in ${machine_configs[@]}; do
-    if [ $(oc get mc |grep $mc | wc -l) -eq 1 ]; then
-      info "MachineConfig $mc exits."
+  echo -e "\n${NC}Checking required machine configs:"
+  
+  if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
+    warn "workload_partition is not enabled in $config_file"
+  else
+    if [ $(oc get mc |grep 02-master-workload-partitioning | wc -l) -eq 1 ]; then
+      info "MachineConfig 02-master-workload-partitioning exits."
     else
-      warn "MachineConfig $mc is not existing."
+      warn "MachineConfig 02-master-workload-partitioning is not existing."
     fi
-  done
+  fi
+
+  if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
+    warn "kdump service is not enabled in $config_file"
+  else
+    if [ $(oc get mc |grep 06-kdump-enable-master | wc -l) -eq 1 ]; then
+      info "MachineConfig 06-kdump-enable-master exits."
+    else
+      warn "MachineConfig 06-kdump-enable-master is not existing."
+    fi
+  fi
+
+  if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
+    if [ $(oc get mc |grep 05-kdump-config-master | wc -l) -eq 1 ]; then
+      info "MachineConfig 05-kdump-config-master exits."
+    else
+      warn "MachineConfig 05-kdump-config-master is not existing."
+    fi
+  else
+    warn "kdump blacklist_ice is not enabled in $config_file"
+  fi
+
+  if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
+    warn "boot_accelerate is not enabled in $config_file"
+  else
+    if [ $(oc get mc |grep container-mount-namespace-and-kubelet-conf-master | wc -l) -eq 1 ]; then
+      info "MachineConfig container-mount-namespace-and-kubelet-conf-master exits."
+    else
+      warn "MachineConfig container-mount-namespace-and-kubelet-conf-master is not existing."
+    fi
+
+    if [ $(oc get mc |grep 04-accelerated-container-startup-master | wc -l) -eq 1 ]; then
+      info "MachineConfig 04-accelerated-container-startup-master exits."
+    else
+      warn "MachineConfig 04-accelerated-container-startup-master is not existing."
+    fi
+
+    if [ $(oc get mc |grep 99-crio-disable-wipe-master | wc -l) -eq 1 ]; then
+      info "MachineConfig 99-crio-disable-wipe-master exits."
+    else
+      warn "MachineConfig 99-crio-disable-wipe-master is not existing."
+    fi
+  fi
+
 }
 
 check_mcp(){
@@ -68,14 +142,19 @@ check_mcp(){
 
 check_pp(){
   echo -e "\n${NC}Checking required performance profile:"
-  for pp in ${pps[@]}; do
+
+  if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
+    warn "performance profile:" "disabled"
+  else
+    pp=$(yq '.day2.performance_profile.name //"openshift-node-performance-profile"' $config_file)
+    
     if [ $(oc get performanceprofiles |grep $pp | wc -l) -eq 1 ]; then
       info "PerformanceProfile $pp exits."
       check_pp_detail
     else
       warn "PerformanceProfile $pp is not existing."
     fi
-  done
+  fi
 }
 
 check_pp_detail(){
@@ -94,101 +173,142 @@ check_pp_detail(){
 
 check_tuned(){
   echo -e "\n${NC}Checking required tuned:"
-  for tuned in ${tuneds[@]}; do
-    if [ $(oc get tuned -n  openshift-cluster-node-tuning-operator |grep $tuned | wc -l) -eq 1 ]; then
-      info "Tuned $tuned exits."
+
+  if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
+    warn "Tuned performance patch:" "disabled"
+  else   
+    if [ $(oc get tuned -n  openshift-cluster-node-tuning-operator performance-patch|grep performance-patch | wc -l) -eq 1 ]; then
+      info "Tuned performance-patch exits."
     else
-      warn "Tuned $tuned is not existing."
+      warn "Tuned performance-patch is not existing."
     fi
-  done
+  fi
+
+  if [ "true" = "$(yq '.day2.tuned_profile.kdump' $config_file)" ]; then
+    if [ $(oc get tuned -n  openshift-cluster-node-tuning-operator performance-patch-kdump-setting|grep performance-patch-kdump-setting | wc -l) -eq 1 ]; then
+      info "Tuned performance-patch-kdump-setting exits."
+    else
+      warn "Tuned performance-patch-kdump-setting is not existing."
+    fi
+  fi
+
 }
 
 check_sriov(){
   echo -e "\n${NC}Checking SRIOV operator status:"
-  if [ $(oc get sriovnetworknodestate -n openshift-sriov-network-operator -o jsonpath={..syncStatus}) = "Succeeded" ]; then
-    info "sriovnetworknodestate sync status is 'Succeeded'."
-  else
-    warn "sriovnetworknodestate sync status is not 'Succeeded'."
+
+  if [ "false" = "$(yq '.day1.operators.sriov' $config_file)" ]; then
+    warn "SR-IOV operator:" "disabled"
+  else   
+    if [ $(oc get sriovnetworknodestate -n openshift-sriov-network-operator -o jsonpath={..syncStatus}) = "Succeeded" ]; then
+      info "sriovnetworknodestate sync status is 'Succeeded'."
+    else
+      warn "sriovnetworknodestate sync status is not 'Succeeded'."
+    fi
   fi
 }
 
 check_ptp(){
   echo -e "\n${NC}Checking PTP operator status:"
-  if [ $(oc get daemonset -n openshift-ptp linuxptp-daemon -o jsonpath={.status.numberReady}) -eq 1 ]; then
-    info "Ptp linuxptp-daemon is ready."
-    check_ptpconfig
-  else
-    warn "Ptp linuxptp-daemon is not ready."
+  if [ "false" = "$(yq '.day1.operators.ptp' $config_file)" ]; then
+    warn "PTP operator:" "disabled"
+  else   
+    if [ $(oc get daemonset -n openshift-ptp linuxptp-daemon -o jsonpath={.status.numberReady}) -eq 1 ]; then
+      info "Ptp linuxptp-daemon is ready."
+      check_ptpconfig
+    else
+      warn "Ptp linuxptp-daemon is not ready."
+    fi
   fi
 }
 
 check_ptpconfig(){
-  if [ $(oc get ptpconfig -n openshift-ptp |grep -v NAME |wc -l) -eq 1 ]; then
-    info "PtpConfig exists."
-    if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPolicy}) = "SCHED_FIFO" ]; then
-      info "Ptp SchedulingPolicy is SCHED_FIFO."
+  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
+    if [ $(oc get ptpconfig -n openshift-ptp |grep -v NAME |wc -l) -eq 1 ]; then
+      info "PtpConfig exists."
+      if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPolicy}) = "SCHED_FIFO" ]; then
+        info "Ptp SchedulingPolicy is SCHED_FIFO."
+      else
+        warn "Ptp SchedulingPolicy is not SCHED_FIFO."
+      fi
+      if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPriority}) = "10" ]; then
+        info "Ptp ptpSchedulingPriority is 10."
+      else
+        warn "Ptp SchedulingPolicy is not 10."
+      fi
     else
-      warn "Ptp SchedulingPolicy is not SCHED_FIFO."
+      warn "PtpConfig not exist."
     fi
-    if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPriority}) = "10" ]; then
-      info "Ptp ptpSchedulingPriority is 10."
-    else
-      warn "Ptp SchedulingPolicy is not 10."
-    fi
-  else
-    warn "PtpConfig not exist."
   fi
+
 }
 
 check_monitoring(){
   echo -e "\n${NC}Checking openshift monitoring."
-  if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
-    info "Grafana is not enabled."
+  if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
+    warn "cluster_monitor_tuning is not enabled in $config_file"
   else
-    warn "Grafana is enabled."
-  fi
-  if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
-    info "AlertManager is not enabled."
-  else
-    warn "AlertManager is enabled."
-  fi
-  if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.prometheusK8s.retention' -) = "24h" ]; then
-    info "PrometheusK8s retention is not 24h."
-  else
-    warn "PrometheusK8s retention is 24h."
+    if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
+      info "Grafana is not enabled."
+    else
+      warn "Grafana is enabled."
+    fi
+    if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
+      info "AlertManager is not enabled."
+    else
+      warn "AlertManager is enabled."
+    fi
+    if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.prometheusK8s.retention' -) = "24h" ]; then
+      info "PrometheusK8s retention is not 24h."
+    else
+      warn "PrometheusK8s retention is 24h."
+    fi
   fi
 }
 
 check_console(){
   echo -e "\n${NC}Checking openshift console."
-  if [ $(oc get consoles.operator.openshift.io cluster  -o jsonpath={..managementState}) = "Removed" ]; then
-    info "Openshift console is disabled."
+
+  if [ "false" = "$(yq '.day2.disable_ocp_console' $config_file)" ]; then
+    warn "disable_ocp_console is not enabled in $config_file"
   else
-    warn "Openshift console is not disabled."
-  fi
+    if [ $(oc get consoles.operator.openshift.io cluster  -o jsonpath={..managementState}) = "Removed" ]; then
+      info "Openshift console is disabled."
+    else
+      warn "Openshift console is not disabled."
+    fi
+  fi  
 }
 
 check_network_diagnostics(){
   echo -e "\n${NC}Checking network diagnostics."
-  if [ $(oc get network.operator.openshift.io cluster -o jsonpath={..disableNetworkDiagnostics}) = "true" ]; then
-    info "Network diagnostics is disabled."
-  else
-    warn "Network diagnostics is not disabled."
+  if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
+    warn "disable_network_diagnostics is not enabled in $config_file"
+  else  
+    if [ $(oc get network.operator.openshift.io cluster -o jsonpath={..disableNetworkDiagnostics}) = "true" ]; then
+      info "Network diagnostics is disabled."
+    else
+      warn "Network diagnostics is not disabled."
+    fi
   fi
 }
 
 check_operator_hub(){
   echo -e "\n${NC}Checking Operator hub."
-  if [ $(oc get catalogsource -n openshift-marketplace |grep community-operators|wc -l) -eq "0" ]; then
-    info "Catalog community-operators is disabled."
-  else
-    warn "Catalog community-operators is not disabled"
-  fi
-  if [ $(oc get catalogsource -n openshift-marketplace |grep redhat-marketplace|wc -l) -eq "0" ]; then
-    info "Catalog redhat-marketplace is disabled."
-  else
-    warn "Catalog redhat-marketplace is not disabled"
-  fi
+  if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
+    warn "operator_hub_tuning is not enabled in $config_file"
+  else  
+    if [ $(oc get catalogsource -n openshift-marketplace |grep community-operators|wc -l) -eq "0" ]; then
+      info "Catalog community-operators is disabled."
+    else
+      warn "Catalog community-operators is not disabled"
+    fi
+    if [ $(oc get catalogsource -n openshift-marketplace |grep redhat-marketplace|wc -l) -eq "0" ]; then
+      info "Catalog redhat-marketplace is disabled."
+    else
+      warn "Catalog redhat-marketplace is not disabled"
+    fi
+  fi  
 }
 
 check_cmdline(){
@@ -316,32 +436,40 @@ check_cpuset(){
 
 check_kdump(){
   echo -e "\n${NC}Checking kdump.service:"
-  if [[ $(ssh core@$address systemctl is-active kdump) = 'active' ]]; then
-    info "kdump is active."
+  if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
+    warn "kdump is not enabled in $config_file"
   else
-    warn "kdump is not active."
-  fi
+    if [[ $(ssh core@$address systemctl is-active kdump) = 'active' ]]; then
+      info "kdump is active."
+    else
+      warn "kdump is not active."
+    fi
 
-  if [[ $(ssh core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
-    info "kdump is enabled."
-  else
-    warn "kdump is not enabled."
-  fi
+    if [[ $(ssh core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
+      info "kdump is enabled."
+    else
+      warn "kdump is not enabled."
+    fi
+  fi  
 }
 
 check_chronyd(){
   echo -e "\n${NC}Checking chronyd.service:"
-  if [[ $(ssh core@$address systemctl is-active chronyd) = 'inactive' ]]; then
-    info "chronyd is inactive."
+  if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+    warn "ptpconfig is not enabled in $config_file"
   else
-    warn "chronyd is active."
-  fi
+    if [[ $(ssh core@$address systemctl is-active chronyd) = 'inactive' ]]; then
+      info "chronyd is inactive."
+    else
+      warn "chronyd is active."
+    fi
 
-  if [[ $(ssh core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
-    warn "chronyd is enabled."
-  else
-    info "chronyd is not enabled."
-  fi
+    if [[ $(ssh core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
+      warn "chronyd is enabled."
+    else
+      info "chronyd is not enabled."
+    fi
+  fi  
 }
 
 check_crio_wipe(){
