@@ -121,12 +121,18 @@ else
   warn "kdump, blacklist_ice(for HPE):" "disabled"
 fi
 
-if [ "false" = "$(yq '.day1.crun' $config_file)" ]; then
+if [ "4.12" = "$(yq '.day1.crun' $config_file)" ]; then
   warn "Container runtime crun(4.13+):" "disabled"
 else
-  info "Container runtime crun(4.13+):" "enabled"
-  cp $templates/openshift/day1/crun/*.yaml $cluster_workspace/openshift/
+  #4.13+ by default enabled.
+  if [ "false" = "$(yq '.day1.crun' $config_file)" ]; then
+    warn "Container runtime crun(4.13+):" "disabled"
+  else
+    info "Container runtime crun(4.13+):" "enabled"
+    cp $templates/openshift/day1/crun/*.yaml $cluster_workspace/openshift/
+  fi
 fi
+
 
 if [ "false" = "$(yq '.day1.operators.storage' $config_file)" ]; then
   warn "Local Storage Operator:" "disabled"
