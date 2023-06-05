@@ -104,7 +104,7 @@ if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
 else
   info "SNO boot accelerate:" "enabled"
   cp $templates/openshift/day1/accelerate/*.yaml $cluster_workspace/openshift/
-  cp $templates/openshift/day1/accelerate/$ocp_y_release/$*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/accelerate/$ocp_y_release/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
