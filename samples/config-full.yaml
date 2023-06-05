@@ -27,6 +27,7 @@ day1:
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
   boot_accelerate: true
+  crun: true
   operators:
     ptp: true
     sriov: true
