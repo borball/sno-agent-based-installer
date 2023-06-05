@@ -70,6 +70,7 @@ then
 fi
 
 ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
+ocp_y_release=$(echo $ocp_release_version |cut -d. -f1-2)
 
 echo "You are going to download OpenShift installer ${ocp_release_version}"
 
@@ -85,6 +86,7 @@ cluster_workspace=$cluster_name
 
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
+
 
 echo
 echo "Enabling day1 configuration..."
@@ -102,6 +104,7 @@ if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
 else
   info "SNO boot accelerate:" "enabled"
   cp $templates/openshift/day1/accelerate/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/accelerate/ocp_y_release/$*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
