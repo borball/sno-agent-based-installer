@@ -122,9 +122,9 @@ else
 fi
 
 if [ "false" = "$(yq '.day1.crun' $config_file)" ]; then
-  warn "Container runtime crun:" "disabled"
+  warn "Container runtime crun(4.13+):" "disabled"
 else
-  info "Container runtime crun:" "enabled"
+  info "Container runtime crun(4.13+):" "enabled"
   cp $templates/openshift/day1/crun/*.yaml $cluster_workspace/openshift/
 fi
 
