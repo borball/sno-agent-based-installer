@@ -54,6 +54,10 @@ echo
 oc get nodes
 echo
 
+ocp_release=$(oc version -o json|jq '.openshiftVersion')
+ocp_release=$(sed -e 's/^"//' -e 's/"$//' <<<$ocp_release)
+ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
+
 echo
 echo "------------------------------------------------"
 echo "Applying day2 operations...."
@@ -63,7 +67,7 @@ if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
   warn "performance profile:" "disabled"
 else
   info "performance profile:" "enabled"
-  jinja2 $templates/openshift/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+  jinja2 $templates/openshift/day2/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
 fi
 
 echo 
