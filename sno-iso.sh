@@ -121,7 +121,7 @@ else
   warn "kdump, blacklist_ice(for HPE):" "disabled"
 fi
 
-if [ "4.12" = "$(yq '.day1.crun' $config_file)" ]; then
+if [ "4.12" = $ocp_y_release ]; then
   warn "Container runtime crun(4.13+):" "disabled"
 else
   #4.13+ by default enabled.
