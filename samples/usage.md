@@ -8,7 +8,7 @@
 
 ## Day1
 
-You can turn on/off day1 configurtation in day1 section, following are the fallback values if not poresented.
+You can turn on/off day1 configurtation in day1 section, following are the fallback values if not presented.
 
 ```yaml
 day1:
@@ -18,6 +18,8 @@ day1:
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
   boot_accelerate: true
+  #enable crun as default 
+  crun: true
   operators:
     ptp: true
     sriov: true
@@ -31,7 +33,7 @@ day1:
 
 ## Day2
 
-You can turn on/off day2 configurtation in day2 section.
+You can turn on/off day2 configuration in day2 section.
 
 ```yaml
 day2:
@@ -44,17 +46,35 @@ day2:
     #for wrong bios settings, if passive mode is used, set intel_pstate=active
     cmdline_pstate: intel_pstate=active
     #in case you want to generate kdump for some special scenarios (used in lab)
-    kdump: true
-  #enable the amq interconnector for ptp  
-  ptp_amq_router: true
+    kdump: false
+
+  ptp:
+    #ptpconfig type: choose any of them: disabled|ordinary|boundary
+    #chronyd service will be disable if ordinary or boundary being selected
+    ptpconfig: disabled
+    ordinary_clock:
+      #name: crdu-ptp-ordinary-clock
+      interface: ens1f0
+    boundary_clock:
+      #name: crdu-boundary-clock-ptp-config
+      slave: ens1f0
+      masters:
+        - ens1f1
+        - ens1f2
+        - ens1f3
+    #enable the amq inter-connector
+    enable_ptp_amq_router: false
+    
   #enable the cluster monitoring tuning
   cluster_monitor_tuning: true
-  #enable the opertor hub tuning: disable unused catalogsources
+  #enable the operator hub tuning: disable unused catalog sources
   operator_hub_tuning: true
   #disable the ocp console operator
   disable_ocp_console: true
   #disable the network diagnostics
   disable_network_diagnostics: true
+  #disable the operator auto-upgrade
+  disable_operator_auto_upgrade: true
 ```
 
 ## Other usages
