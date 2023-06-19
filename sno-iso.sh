@@ -155,11 +155,11 @@ else
   cp $templates/openshift/day1/sriov/*.yaml $cluster_workspace/openshift/
 fi
 
-if [ "false" = "$(yq '.day1.operators.amq' $config_file)" ]; then
+if [ "true" = "$(yq '.day1.operators.amq' $config_file)" ]; then
   info "AMQ Interconnect Operator:" "enabled"
+  cp $templates/openshift/day1/amq/*.yaml $cluster_workspace/openshift/
 else
   warn "AMQ Interconnect Operator:" "disabled"
-  cp $templates/openshift/day1/amq/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "true" = "$(yq '.day1.operators.rhacm' $config_file)" ]; then

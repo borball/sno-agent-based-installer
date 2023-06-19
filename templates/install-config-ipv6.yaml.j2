@@ -11,7 +11,7 @@ metadata:
 networking:
   networkType: OVNKubernetes
   clusterNetwork:
-  - cidr: {{ host.cluster_network_cidr | default('cidr: fd01::/48') }}
+  - cidr: {{ host.cluster_network_cidr | default('fd01::/48') }}
     hostPrefix: {{ host.cluster_network_host_prefix | default('64') }}
   serviceNetwork:
     - {{ host.service_network | default('fd02::/112') }}
