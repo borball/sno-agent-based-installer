@@ -168,7 +168,13 @@ echo "Node is booting from virtual media mounted with $iso_image, check your BMC
 echo 
 echo
 echo -n "Node booting."
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/assisted-install/v2/clusters)" != "200" ]]; do
+
+assisted_rest=http://$node_ip:8090/api/assisted-install/v2/clusters
+if [ "ipv6" = "$(yq '.host.stack' $config_file)" ]; then
+  assisted_rest=http://[$node_ip]:8090/api/assisted-install/v2/clusters
+fi
+
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
   echo -n "."
   sleep 2;
 done
@@ -176,18 +182,18 @@ done
 echo
 echo "Installing in progress..."
 
-curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
+curl --silent $assisted_rest |jq
 
-while [[ "\"installing\"" != $(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].status') ]]; do
+while [[ "\"installing\"" != $(curl --silent $assisted_rest |jq '.[].status') ]]; do
   echo "-------------------------------"
-  curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq
+  curl --silent $assisted_rest |jq
   sleep 5
 done
 
 echo
 echo "-------------------------------"
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' http://$node_ip:8090/api/assisted-install/v2/clusters)" == "200" ]]; do
-  total_percentage=$(curl --silent http://$node_ip:8090/api/assisted-install/v2/clusters |jq '.[].progress.total_percentage')
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" == "200" ]]; do
+  total_percentage=$(curl --silent $assisted_rest |jq '.[].progress.total_percentage')
   if [ ! -z $total_percentage ]; then
     echo "Installation in progress: completed $total_percentage/100"
   fi
