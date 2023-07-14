@@ -183,6 +183,13 @@ else
   warn "TALM Operator:" "disabled"
 fi
 
+if [ "true" = "$(yq '.day1.operators.mce' $config_file)" ]; then
+  info "MCE Operator:" "enabled"
+  cp $templates/openshift/day1/mce/*.yaml $cluster_workspace/openshift/
+else
+  warn "MCE Operator:" "disabled"
+fi
+
 echo
 
 if [ -d $basedir/extra-manifests ]; then

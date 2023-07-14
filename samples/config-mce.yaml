@@ -35,6 +35,7 @@ day1:
     rhacm: false
     talm: false
     amq: false
+    mce: true
 
 cpu:
   isolated: 16-47
