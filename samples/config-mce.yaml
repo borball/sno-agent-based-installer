@@ -1,0 +1,52 @@
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: mce
+
+host:
+  interface: ens1f0
+  stack: ipv4
+  hostname: hub.outbound.vz.bos2.lab
+  ip: 192.168.58.86
+  dns: 192.168.58.15
+  gateway: 192.168.58.1
+  mac: de:ad:be:ff:10:86
+  prefix: 25
+  machine_network_cidr: 192.168.58.0/25
+  vlan:
+    enabled: false
+    name: ens1f0.58
+    id: 58
+  disk: /dev/vda
+
+day1:
+  workload_partition: false
+  kdump: false
+  ptp: false
+  sriov: false
+  storage: true
+  accelerate: false
+  gitops: false
+  rhacm: false
+  talm: false
+
+cpu:
+  isolated: 16-47
+  reserved: 0-15
+
+proxy:
+  enabled: false
+  http:
+  https:
+  noproxy:
+
+pull_secret: ./pull-secret.json
+ssh_key: /root/.ssh/id_rsa.pub
+
+bmc:
+  address: 192.168.58.15:8080
+  username: Administrator
+  password: dummy
+  node_uuid: 11111111-1111-1111-1234-000000000001
+
+iso:
+  address: http://192.168.58.15/iso/mce.iso
