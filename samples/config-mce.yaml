@@ -20,14 +20,21 @@ host:
 
 day1:
   workload_partition: false
-  kdump: false
-  ptp: false
-  sriov: false
-  storage: true
-  accelerate: false
-  gitops: false
-  rhacm: false
-  talm: false
+  kdump: 
+    enabled: false
+    #set blacklist_ice as true on HPE servers
+    blacklist_ice: false
+  boot_accelerate: false
+  #4.13+ only, whether enable crun as default container runtime
+  crun: false
+  operators:
+    ptp: false
+    sriov: false
+    storage: true
+    gitops: false
+    rhacm: false
+    talm: false
+    amq: false
 
 cpu:
   isolated: 16-47
