@@ -37,6 +37,8 @@ day1:
     rhacm: false
     talm: false
     amq: false
+    mce: false
+    lvm: false
 
 day2:
   performance_profile:

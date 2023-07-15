@@ -30,11 +30,12 @@ day1:
   operators:
     ptp: false
     sriov: false
-    storage: true
+    storage: false
     gitops: false
     rhacm: false
     talm: false
     amq: false
+    lvm: true
     mce: true
 
 cpu:

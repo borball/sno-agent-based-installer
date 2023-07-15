@@ -190,6 +190,13 @@ else
   warn "MCE Operator:" "disabled"
 fi
 
+if [ "true" = "$(yq '.day1.operators.lvm' $config_file)" ]; then
+  info "LVM Storage Operator:" "enabled"
+  cp $templates/openshift/day1/lvm/*.yaml $cluster_workspace/openshift/
+else
+  warn "LVM Storage Operator:" "disabled"
+fi
+
 echo
 
 if [ -d $basedir/extra-manifests ]; then

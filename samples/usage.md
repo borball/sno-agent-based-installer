@@ -28,6 +28,8 @@ day1:
     rhacm: false
     talm: false
     amq: false
+    lvm: false
+    mce: false
 
 ```
 
