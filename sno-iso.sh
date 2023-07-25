@@ -138,7 +138,7 @@ if [ "false" = "$(yq '.day1.operators.storage' $config_file)" ]; then
   warn "Local Storage Operator:" "disabled"
 else
   info "Local Storage Operator:" "enabled"
-  cp $templates/openshift/day1/storage/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/local-storage/*.yaml $cluster_workspace/openshift/
 fi
 
 if [ "false" = "$(yq '.day1.operators.ptp' $config_file)" ]; then
