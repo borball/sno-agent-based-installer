@@ -91,7 +91,6 @@ if [ $status_code = "200" ]; then
 else
   #fetch from image
   oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file)
-  tar xfz openshift-install-linux-$ocp_release_version.tar.gz openshift-install
 fi
 
 cluster_name=$(yq '.cluster.name' $config_file)
