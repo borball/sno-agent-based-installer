@@ -4,6 +4,12 @@ kind: AgentConfig
 metadata:
   name: {{ cluster.name }}
 rendezvousIP: {{ host.ip }}
+{% if cluster.ntps is defined -%}
+additionalNTPSources:
+{% for ntp in cluster.ntps -%}
+- {{ ntp }}
+{% endfor -%}
+{% endif -%}
 hosts:
   - hostname: {{ host.hostname }}
     interfaces:

@@ -8,7 +8,7 @@
 
 ## Day1
 
-You can turn on/off day1 configurtation in day1 section, following are the fallback values if not presented.
+You can turn on/off day1 configuration in day1 section, following are the fallback values if not presented.
 
 ```yaml
 day1:

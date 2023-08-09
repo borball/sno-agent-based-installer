@@ -26,7 +26,10 @@ Prepare config.yaml to fit your lab situation, here is an example:
 cluster:
   domain: outbound.vz.bos2.lab
   name: sno148
-
+  #optional: set ntps servers 
+  #ntps:
+    #- 0.rhel.pool.ntp.org
+    #- 1.rhel.pool.ntp.org
 host:
   interface: ens1f0
   stack: ipv4

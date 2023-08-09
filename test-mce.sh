@@ -19,3 +19,15 @@ oc get node --kubeconfig mce/auth/kubeconfig
 oc get clusterversion --kubeconfig mce/auth/kubeconfig
 
 echo "Installation in progress, please check it in 30m."
+
+echo "Installation in progress, take a coffee and come back in 30m."
+
+until oc --kubeconfig mce/auth/kubeconfig get clusterversionn | grep -m 1 "Cluster version is"; do sleep 1; done
+
+echo
+oc get nodes -kubeconfig mce/auth/kubeconfig
+echo
+oc get clusterversion -kubeconfig mce/auth/kubeconfig
+echo
+oc get co -kubeconfig mce/auth/kubeconfig
+echo
