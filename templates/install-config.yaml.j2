@@ -38,7 +38,7 @@ proxy:
   httpProxy: {{ proxy.http }}
   httpsProxy: {{ proxy.https }}
   noProxy: {{  proxy.noproxy }}
-{% endif -%}
+{% endif %}
 platform:
   none: {}
 pullSecret: '{{ environ('pull_secret') }}'
