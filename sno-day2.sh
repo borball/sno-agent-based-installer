@@ -4,14 +4,14 @@
 # Usage: ./sno-day2.sh config.yaml
 #
 
-if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
-  echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+if ! type "yq" > /dev/null; then
+  echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
 
-if [ ! -f "/usr/local/bin/jinja2" ]; then
+if ! type "jinja2" > /dev/null; then
   echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
-  pip3 install jinja2-cli
-  pip3 install jinja2-cli[yaml]
+  pip3 install --user jinja2-cli
+  pip3 install --user jinja2-cli[yaml]
 fi
 
 usage(){
