@@ -1,0 +1,45 @@
+apiVersion: v1
+baseDomain: {{ cluster.domain }}
+compute:
+- name: worker
+  replicas: 0
+controlPlane:
+  name: master
+  replicas: 1
+metadata:
+  name: {{ cluster.name }}
+networking:
+  networkType: OVNKubernetes
+  clusterNetwork:
+  {% if host.ipv4 is defined and host.ipv4.enabled -%}
+  - cidr: {{ host.ipv4.cluster_network_cidr | default('10.128.0.0/14') }}
+    hostPrefix: {{ host.ipv4.cluster_network_host_prefix | default('23') }}
+  {% endif -%}
+  {% if host.ipv6 is defined and host.ipv6.enabled -%}
+  - cidr: {{ host.ipv6.cluster_network_cidr | default('fd01::/48') }}
+    hostPrefix: {{ host.ipv6.cluster_network_host_prefix | default('64') }}
+  {% endif -%}
+  serviceNetwork:
+  {% if host.ipv4 is defined and host.ipv4.enabled -%}
+    - {{ host.ipv4.service_network | default('172.30.0.0/16') }}
+  {% endif -%}
+  {% if host.ipv6 is defined and host.ipv6.enabled -%}
+    - {{ host.ipv6.service_network | default('fd02::/112') }}
+  {% endif -%}
+  machineNetwork:
+  {% if host.ipv4 is defined and host.ipv4.enabled -%}
+  - cidr: {{ host.ipv4.machine_network_cidr }}
+  {% endif -%}
+  {% if host.ipv6 is defined and host.ipv6.enabled -%}
+  - cidr: {{ host.ipv6.machine_network_cidr }}
+  {% endif %}
+{% if proxy is defined and proxy.enabled -%}
+proxy:
+  httpProxy: {{ proxy.http }}
+  httpsProxy: {{ proxy.https }}
+  noProxy: {{  proxy.noproxy }}
+{% endif %}
+platform:
+  none: {}
+pullSecret: '{{ environ('pull_secret') }}'
+sshKey: '{{ environ('ssh_key') }}'

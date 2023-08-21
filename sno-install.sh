@@ -34,7 +34,7 @@ fi
 
 config_file=$1; shift
 cluster_name=$(yq '.cluster.name' $config_file)
-node_ip=$(yq '.host.ip' $config_file)
+
 bmc_address=$(yq '.bmc.address' $config_file)
 username_password="$(yq '.bmc.username' $config_file):$(yq '.bmc.password' $config_file)"
 iso_image=$(yq '.iso.address' $config_file)
@@ -169,8 +169,12 @@ echo
 echo
 echo -n "Node booting."
 
-assisted_rest=http://$node_ip:8090/api/assisted-install/v2/clusters
-if [ "ipv6" = "$(yq '.host.stack' $config_file)" ]; then
+ipv4_enabled=$(yq '.host.ipv4.enabled // "" ' $config_file)
+if [ "true" = "$ipv4_enabled" ]; then
+  node_ip=$(yq '.host.ipv4.ip' $config_file)
+  assisted_rest=http://$node_ip:8090/api/assisted-install/v2/clusters
+else
+  node_ip=$(yq '.host.ipv6.ip' $config_file)
   assisted_rest=http://[$node_ip]:8090/api/assisted-install/v2/clusters
 fi
 
