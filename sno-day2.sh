@@ -137,14 +137,14 @@ echo
 
 if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   warn "ptpconfig:" "disabled"
-else
-  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-    info "ptpconfig ordinary clock:" "enabled"
-    jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
-  else
-    info "ptpconfig boundary clock:" "enabled"
-    jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
-  fi  
+fi
+if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+  info "ptpconfig ordinary clock:" "enabled"
+  jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+fi
+if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+  info "ptpconfig boundary clock:" "enabled"
+  jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
 fi
 
 echo 
