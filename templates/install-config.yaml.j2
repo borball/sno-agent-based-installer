@@ -32,7 +32,7 @@ networking:
   {% endif -%}
   {% if host.ipv6 is defined and host.ipv6.enabled -%}
   - cidr: {{ host.ipv6.machine_network_cidr }}
-  {% endif -%}
+  {% endif %}
 {% if proxy is defined and proxy.enabled -%}
 proxy:
   httpProxy: {{ proxy.http }}
