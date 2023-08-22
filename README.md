@@ -2,6 +2,8 @@
 
 ## Overview
 
+Sister repo for [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi): 
+
 Note: This repo only works for OpenShift 4.12+. For 4.9/4.10 please use this [helper script](https://github.com/borball/sno-manual-helper)
 
 This repo provides set of helper scripts to install SNO(Single Node OpenShift) with [OpenShift Agent Based Installer](https://docs.openshift.com/container-platform/4.12/installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.html) and install operators and apply tunings which are recommended and required by vDU applications.
