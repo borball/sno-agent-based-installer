@@ -23,14 +23,7 @@ day1:
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
   boot_accelerate: true
-  operators:
-    ptp: false
-    sriov: false
-    storage: true
-    gitops: true
-    rhacm: true
-    talm: true
-    amq: false
+  ztp: true
 
 cpu:
   isolated: 16-47

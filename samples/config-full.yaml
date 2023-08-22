@@ -47,6 +47,8 @@ day1:
   boot_accelerate: true
   #4.13+ only, whether enable crun as default container runtime
   crun: true
+  #ztp=true will enable rhacm/lvm/gitops/talm
+  ztp: false
   operators:
     ptp: true
     sriov: true

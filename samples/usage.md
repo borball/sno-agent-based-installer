@@ -20,6 +20,7 @@ day1:
   boot_accelerate: true
   #enable crun as default 
   crun: true
+  ztp: false
   operators:
     ptp: true
     sriov: true
