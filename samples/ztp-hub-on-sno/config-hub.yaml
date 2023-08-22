@@ -23,7 +23,7 @@ day1:
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
   boot_accelerate: true
-  ztp: true
+  ztp_hub: true
 
 cpu:
   isolated: 16-47

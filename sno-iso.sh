@@ -208,8 +208,8 @@ else
 fi
 
 #will be ztp hub
-if [ "true" = "$(yq '.day1.ztp' $config_file)" ]; then
-  info "ZTP(LVM, RHACM, GitOps, TALM):" "enabled"
+if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
+  info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
   cp $templates/openshift/day1/lvm/*.yaml $cluster_workspace/openshift/
   cp $templates/openshift/day1/gitops/*.yaml $cluster_workspace/openshift/
   cp $templates/openshift/day1/rhacm/*.yaml $cluster_workspace/openshift/
