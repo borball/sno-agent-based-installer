@@ -19,7 +19,7 @@ spec:
        group.ice-ptp=0:f:10:*:ice-ptp.*
        [service]
        service.stalld=start,enable
-       {% if day2.ptp.ptpconfig != 'disabled' -%}
+       {% if day2 and day2.ptp and day2.ptp.ptpconfig != 'disabled' -%}
        service.chronyd=stop,disable
  recommend:
    - machineConfigLabels:

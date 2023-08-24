@@ -17,10 +17,6 @@ spec:
  additionalKernelArgs:
    - rcupdate.rcu_normal_after_boot=0
    - module_blacklist=irdma
- workloadHints:
-   realTime: true
-   highPowerConsumption: false
-   perPodPowerManagement: false   
  machineConfigPoolSelector:
    pools.operator.machineconfiguration.openshift.io/master: ""
  nodeSelector:
