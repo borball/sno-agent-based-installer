@@ -2,7 +2,10 @@
 
 ## Overview
 
+
 Note: This repo only works for OpenShift 4.12+. For 4.9/4.10 please use this [helper script](https://github.com/borball/sno-manual-helper)
+
+Sister repo for [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi): 
 
 This repo provides set of helper scripts to install SNO(Single Node OpenShift) with [OpenShift Agent Based Installer](https://docs.openshift.com/container-platform/4.12/installing/installing_with_agent_based_installer/preparing-to-install-with-agent-based-installer.html) and install operators and apply tunings which are recommended and required by vDU applications.
 
@@ -31,15 +34,33 @@ cluster:
     #- 0.rhel.pool.ntp.org
     #- 1.rhel.pool.ntp.org
 host:
-  interface: ens1f0
-  stack: ipv4
   hostname: sno148.outbound.vz.bos2.lab
-  ip: 192.168.58.48
-  dns: 192.168.58.15
-  gateway: 192.168.58.1
+  interface: ens1f0
   mac: b4:96:91:b4:9d:f0
-  prefix: 25
-  machine_network_cidr: 192.168.58.0/25
+  ipv4:
+    enabled: true
+    dhcp: false
+    ip: 192.168.58.48
+    dns: 192.168.58.15
+    gateway: 192.168.58.1
+    prefix: 25
+    machine_network_cidr: 192.168.58.0/25
+    #optional, default 10.128.0.0/14
+    #cluster_network_cidr: 10.128.0.0/14
+    #optional, default 23
+    #cluster_network_host_prefix: 23
+  ipv6:
+    enabled: false
+    dhcp: false
+    ip: 2600:52:7:58::48
+    dns: 2600:52:7:58::15
+    gateway: 2600:52:7:58::1
+    prefix: 64
+    machine_network_cidr: 2600:52:7:58::/64
+    #optional, default fd01::/48
+    #cluster_network_cidr: fd01::/48
+    #optional, default 64
+    #cluster_network_host_prefix: 64
   vlan:
     enabled: false
     name: ens1f0.58

@@ -2,7 +2,7 @@
 
 - [full configuration](config-full.yaml)
 - [ipv4](config-sno130.yaml)
-- [ipv6 with proxy](config-sno148.yaml)
+- [ipv6 with proxy](config-ipv6-proxy.yaml)
 - [kvm](config-testkvm.yaml)
 - [hub cluster on SNO](config-hub.yaml)
 
@@ -20,6 +20,7 @@ day1:
   boot_accelerate: true
   #enable crun as default 
   crun: true
+  ztp: false
   operators:
     ptp: true
     sriov: true

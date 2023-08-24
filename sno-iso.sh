@@ -99,7 +99,6 @@ cluster_workspace=$cluster_name
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
 
-
 echo
 echo "Enabling day1 configuration..."
 if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
@@ -144,7 +143,6 @@ else
     cp $templates/openshift/day1/crun/*.yaml $cluster_workspace/openshift/
   fi
 fi
-
 
 if [ "false" = "$(yq '.day1.operators.storage' $config_file)" ]; then
   warn "Local Storage Operator:" "disabled"
@@ -209,6 +207,15 @@ else
   warn "LVM Storage Operator:" "disabled"
 fi
 
+#will be ztp hub
+if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
+  info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
+  cp $templates/openshift/day1/lvm/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/gitops/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/rhacm/*.yaml $cluster_workspace/openshift/
+  cp $templates/openshift/day1/talm/*.yaml $cluster_workspace/openshift/
+fi
+
 echo
 
 if [ -d $basedir/extra-manifests ]; then
@@ -222,14 +229,8 @@ export pull_secret=$(cat $pull_secret)
 ssh_key=$(yq '.ssh_key' $config_file)
 export ssh_key=$(cat $ssh_key)
 
-stack=$(yq '.host.stack' $config_file)
-if [ ${stack} = "ipv4" ]; then
-  jinja2 $templates/agent-config-ipv4.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
-  jinja2 $templates/install-config-ipv4.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
-else
-  jinja2 $templates/agent-config-ipv6.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
-  jinja2 $templates/install-config-ipv6.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
-fi
+jinja2 $templates/agent-config.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
+jinja2 $templates/install-config.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
 
 echo
 echo "Generating boot image..."

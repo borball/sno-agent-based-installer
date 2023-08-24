@@ -4,14 +4,14 @@
 # Usage: ./sno-day2.sh config.yaml
 #
 
-if [ ! -f "/usr/bin/yq" ] && [ ! -f "/app/vbuild/RHEL7-x86_64/yq/4.25.1/bin/yq" ]; then
-  echo "cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+if ! type "yq" > /dev/null; then
+  echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
 
-if [ ! -f "/usr/local/bin/jinja2" ]; then
+if ! type "jinja2" > /dev/null; then
   echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
-  pip3 install jinja2-cli
-  pip3 install jinja2-cli[yaml]
+  pip3 install --user jinja2-cli
+  pip3 install --user jinja2-cli[yaml]
 fi
 
 usage(){
@@ -137,14 +137,14 @@ echo
 
 if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   warn "ptpconfig:" "disabled"
-else
-  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-    info "ptpconfig ordinary clock:" "enabled"
-    jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
-  else
-    info "ptpconfig boundary clock:" "enabled"
-    jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
-  fi  
+fi
+if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+  info "ptpconfig ordinary clock:" "enabled"
+  jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+fi
+if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+  info "ptpconfig boundary clock:" "enabled"
+  jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
 fi
 
 echo 
