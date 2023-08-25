@@ -8,7 +8,7 @@
 
 ## Day1
 
-You can turn on/off day1 configuration in day1 section, following are the fallback values if not presented.
+You can turn on/off day1 configuration in day1 section, following are the fallback values if day1 is not present.
 
 ```yaml
 day1:
@@ -18,14 +18,14 @@ day1:
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
   boot_accelerate: true
-  #enable crun as default 
-  crun: true
   ztp: false
+  #4.12 will ignore this setting, 4.13+ will enable crun by default
+  crun: true
   operators:
     ptp: true
     sriov: true
     storage: true
-    gitops: true
+    gitops: false
     rhacm: false
     talm: false
     amq: false
