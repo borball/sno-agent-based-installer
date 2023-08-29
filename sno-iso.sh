@@ -207,6 +207,13 @@ else
   warn "LVM Storage Operator:" "disabled"
 fi
 
+if [ "true" = "$(yq '.day1.operators.fec' $config_file)" ]; then
+  info "Intel SRIOV-FEC Operator:" "enabled"
+  cp $templates/openshift/day1/fec/*.yaml $cluster_workspace/openshift/
+else
+  warn "Intel SRIOV-FEC Operator:" "disabled"
+fi
+
 #will be ztp hub
 if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
   info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"

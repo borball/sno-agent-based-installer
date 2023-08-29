@@ -31,7 +31,7 @@ day1:
     amq: false
     lvm: false
     mce: false
-
+    fec: false
 ```
 
 ## Day2

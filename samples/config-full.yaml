@@ -53,12 +53,13 @@ day1:
     ptp: true
     sriov: true
     storage: true
-    gitops: true
+    gitops: false
     rhacm: false
     talm: false
     amq: false
     mce: false
     lvm: false
+    fec: false
 
 day2:
   performance_profile:
