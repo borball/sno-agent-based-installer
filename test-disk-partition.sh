@@ -4,7 +4,7 @@ node="testkvm"
 
 ssh 192.168.58.14 kcli stop vm "$node"
 ssh 192.168.58.14 kcli delete vm "$node" -y
-ssh 192.168.58.14 'kcli create vm -P uuid=11111111-1111-1111-1234-000000000001 -P start=False -P memory=40960 -P numcpus=24 -P disks=[150] -P nets=["{\"name\":\"br-vlan58\",\"nic\":\"eth0\",\"mac\":\"de:ad:be:ff:10:86\"}"] "$node"'
+ssh 192.168.58.14 'kcli create vm -P uuid=11111111-1111-1111-1234-000000000000 -P start=False -P memory=20480 -P numcpus=16 -P disks=[150,100,100] -P nets=["{\"name\":\"br-vlan58\",\"nic\":\"eth0\",\"mac\":\"de:ad:be:ff:10:85\"}"] "$node"'
 ssh 192.168.58.14 kcli list vm
 
 systemctl restart sushy-tools.service
