@@ -17,7 +17,7 @@ host:
   disk: /dev/vda
 
 day1:
-  workload_partition: true
+  workload_partition: false
   kdump: 
     enabled: false
     #set blacklist_ice as true on HPE servers
@@ -28,11 +28,12 @@ day1:
   operators:
     ptp: false
     sriov: false
-    storage: true
+    storage: false
     gitops: false
     rhacm: true
     talm: false
     amq: false
+    lvm: true
 
 day2:
   performance_profile:
