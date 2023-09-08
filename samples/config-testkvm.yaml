@@ -9,7 +9,7 @@ host:
   ipv4:
     enabled: true
     dhcp: false
-    ip: 192.168.58.85
+    ip: 192.168.58.70
     dns: 192.168.58.15
     gateway: 192.168.58.1
     prefix: 25
@@ -17,7 +17,7 @@ host:
   disk: /dev/vda
 
 day1:
-  workload_partition: false
+  workload_partition: true
   kdump: 
     enabled: false
     #set blacklist_ice as true on HPE servers
