@@ -13,7 +13,7 @@ spec:
       disks:
         - device: /dev/sda
           partitions:
-            - label: lstorage
+            - label: lvmstorage
               sizeMiB: 40000
               startMiB: 102000
               wipePartitionEntry: true
