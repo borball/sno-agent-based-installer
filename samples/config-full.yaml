@@ -44,6 +44,8 @@ day1:
     enabled: true
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
+    #secure boot, will have additional kernel argument efi=runtime
+    secure_boot: false
   boot_accelerate: true
   #4.13+ only, whether enable crun as default container runtime
   crun: true
@@ -75,7 +77,7 @@ day2:
 
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
-    #chronyd service will be disable if ordinary or boundary being selected
+    #chronyd service will be disabled if ordinary or boundary being selected
     ptpconfig: disabled
     ordinary_clock:
       #name: crdu-ptp-ordinary-clock

@@ -121,8 +121,13 @@ fi
 if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
   warn "kdump service:" "disabled"
 else
-  info "kdump service:" "enabled"
-  cp $templates/openshift/day1/kdump/06-kdump-master.yaml $cluster_workspace/openshift/
+  if [ "true" = "$(yq '.day1.kdump.secure_boot' $config_file)" ]; then
+    info "kdump service(secure boot):" "enabled"
+    cp $templates/openshift/day1/kdump/06-kdump-master-secureboot.yaml $cluster_workspace/openshift/
+  else
+    info "kdump service:" "enabled"
+    cp $templates/openshift/day1/kdump/06-kdump-master.yaml $cluster_workspace/openshift/
+  fi
 fi
 
 if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then

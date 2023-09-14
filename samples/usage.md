@@ -17,8 +17,11 @@ day1:
     enabled: true
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
+    #secure boot, will have additional kernel argument efi=runtime
+    secure_boot: false
   boot_accelerate: true
-  ztp: false
+  #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
+  ztp_hub: false
   #4.12 will ignore this setting, 4.13+ will enable crun by default
   crun: true
   operators:
@@ -53,7 +56,7 @@ day2:
 
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
-    #chronyd service will be disable if ordinary or boundary being selected
+    #chronyd service will be disabled if ordinary or boundary being selected
     ptpconfig: disabled
     ordinary_clock:
       #name: crdu-ptp-ordinary-clock
