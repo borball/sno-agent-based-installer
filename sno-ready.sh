@@ -31,9 +31,6 @@ then
   exit
 fi
 
-basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-templates=$basedir/templates
-
 config_file=$1;
 
 cluster_name=$(yq '.cluster.name' $config_file)
@@ -483,21 +480,6 @@ check_chronyd(){
   fi
 }
 
-check_crio_wipe(){
-  echo -e "\n${NC}Checking crio-wipe.service:"
-  if [[ $(ssh core@$address systemctl is-active crio-wipe) = 'inactive' ]]; then
-    info "crio-wipe is inactive."
-  else
-    warn "crio-wipe is active."
-  fi
-
-  if [[ $(ssh core@$address systemctl is-enabled crio-wipe) = 'enabled' ]]; then
-    warn "crio-wipe is enabled."
-  else
-    info "crio-wipe is not enabled."
-  fi
-}
-
 oc get node
 
 if [ $? -eq 0 ]; then
@@ -517,7 +499,6 @@ if [ $? -eq 0 ]; then
   check_kernel
   check_kdump
   check_chronyd
-  check_crio_wipe
 
   echo -e "\n${NC}Completed the checking."
 else
