@@ -4,7 +4,7 @@ metadata:
   name: lvms-operator
   namespace: openshift-storage
 spec:
-  channel: "stable-4.12"
+  channel: "stable-{{ environ('ocp_y_release') }}"
   name: lvms-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
