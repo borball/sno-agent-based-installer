@@ -18,7 +18,7 @@ confirm(){
 }
 
 disable_default_catalog_sources(){
-  echo "disable default catalogsources:"
+  echo "Disable default catalogsources:"
   cat << EOF > patchoperatorhub.yaml
 - op: add
   path: /spec/sources
@@ -38,7 +38,7 @@ EOF
 }
 
 enable_prega_catalog_source(){
-  echo "enable prega catalogsource:"
+  echo "Enable prega catalogsource:"
   oc apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
@@ -77,10 +77,12 @@ echo
 how_to_install_operators(){
   echo
   echo "Next you can install the operators with command 'oc apply -f templates/openshift/day1/<operator>', for example: "
+  echo
   echo "    oc apply -f templates/openshift/day1/ptp"
   echo
   echo "Monitor the operator installation progress:"
-  echo "    oc get subs,csv,ip -A "
+  echo
+  echo "    oc get subs,csv,ip -n openshift-ptp "
   echo
 }
 
