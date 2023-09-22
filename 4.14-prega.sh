@@ -52,8 +52,6 @@ spec:
  sourceType: grpc
 EOF
 
-echo
-
 oc apply -f - <<EOF
 ---
 apiVersion: operator.openshift.io/v1alpha1
@@ -75,7 +73,6 @@ echo
 }
 
 how_to_install_operators(){
-  echo
   echo "Next you can install the operators with command 'oc apply -f templates/openshift/day1/<operator>', for example: "
   echo
   echo "    oc apply -f templates/openshift/day1/ptp"
@@ -89,6 +86,7 @@ how_to_install_operators(){
 usage
 
 if [ "yes" = $(confirm) ]; then
+  echo
   disable_default_catalog_sources
   enable_prega_catalog_source
   how_to_install_operators
