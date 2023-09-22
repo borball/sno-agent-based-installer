@@ -2,14 +2,14 @@
 
 
 usage(){
-  echo "This script is to enable OCP 4.14 preGA operators located in quay.io/prega"
-  echo "Reach to Red Hat team if you don't have a pull secret yet to pull images from quay.io/prega".
-  echo "Then update the pull-secret with command 'oc edit secret -n openshift-config pull-secret'.".
+  echo "This script will enable OCP 4.14 preGA operators located in quay.io/prega."
+  echo "Reach to Red Hat team if you don't have a pull secret yet to pull operators/images from quay.io/prega."
+  echo "Then update the pull-secret with command 'oc edit secret -n openshift-config pull-secret'."
   echo
 }
 
 confirm(){
-  read -r -p "You have updated the pull-secret on the cluster? Y|N?" choice
+  read -r -p "Have you updated the pull-secret on the cluster? Y|N?" choice
   case "$choice" in
     y|Y ) echo "yes";;
     n|N ) echo "no";;
@@ -18,7 +18,7 @@ confirm(){
 }
 
 disable_default_catalog_sources(){
-  echo "disable default catalogsources"
+  echo "disable default catalogsources:"
   cat << EOF > patchoperatorhub.yaml
 - op: add
   path: /spec/sources
@@ -38,7 +38,7 @@ EOF
 }
 
 enable_prega_catalog_source(){
-  echo "enable prega catalogsource"
+  echo "enable prega catalogsource:"
   oc apply -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
@@ -90,4 +90,7 @@ if [ "yes" = $(confirm) ]; then
   disable_default_catalog_sources
   enable_prega_catalog_source
   how_to_install_operators
+else
+  echo
+  echo "Rerun the script when you are ready."
 fi
