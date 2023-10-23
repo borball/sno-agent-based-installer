@@ -108,11 +108,14 @@ fi
 
 echo 
 
-if [ "false" = "$(yq '.day2.disable_ocp_console' $config_file)" ]; then
-  warn "openshift console:" "enable"
-else
-  info "openshift console:" "disabled"
-  oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
+# 4.13+ will disable console by default
+if [ "4.12" = $ocp_y_version ]; then
+  if [ "false" = "$(yq '.day2.disable_ocp_console' $config_file)" ]; then
+    warn "openshift console:" "enabled"
+  else
+    info "openshift console:" "disabled"
+    oc patch consoles.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/managementState", "value":"Removed"}']
+  fi
 fi
 
 echo 
