@@ -109,7 +109,7 @@ fi
 echo 
 
 # 4.13+ will disable console by default
-if [ "4.12" = $ocp_y_version ]; then
+if [ "4.12" = "$ocp_y_version" ]; then
   if [ "false" = "$(yq '.day2.disable_ocp_console' $config_file)" ]; then
     warn "openshift console:" "enabled"
   else
