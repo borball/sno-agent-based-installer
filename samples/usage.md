@@ -31,7 +31,6 @@ day1:
     gitops: false
     rhacm: false
     talm: false
-    amq: false
     lvm: false
     mce: false
     fec: false
@@ -68,8 +67,8 @@ day2:
         - ens1f1
         - ens1f2
         - ens1f3
-    #enable the amq inter-connector
-    enable_ptp_amq_router: false
+    #enable the ptp event
+    enable_ptp_event: false
     
   #enable the cluster monitoring tuning
   cluster_monitor_tuning: true

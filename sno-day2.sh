@@ -124,16 +124,7 @@ else
   oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
 fi
 
-echo 
-
-if [ "true" = "$(yq '.day2.ptp.enable_ptp_amq_router' $config_file)" ]; then
-  info "ptp amq router:" "enabled"
-  oc apply -f $templates/openshift/day2/ptp-amq-instance.yaml
-else
-  warn "ptp amq router:" "disabled"
-fi
-
-echo 
+echo
 
 if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   warn "ptpconfig:" "disabled"
@@ -141,10 +132,16 @@ fi
 if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   info "ptpconfig ordinary clock:" "enabled"
   jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+
 fi
 if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   info "ptpconfig boundary clock:" "enabled"
   jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+fi
+
+if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
+  info "ptp event notification:" "enabled"
+  oc apply -f $templates/openshift/day2/ptp-operator-config-for-event.yaml
 fi
 
 echo 

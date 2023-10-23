@@ -32,7 +32,6 @@ day1:
     gitops: false
     rhacm: false
     talm: false
-    amq: false
     lvm: true
     mce: true
 

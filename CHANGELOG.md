@@ -13,7 +13,6 @@
         gitops: false
         rhacm: false
         talm: false
-        amq: false
         mce: false
         lvm: false
     ```
