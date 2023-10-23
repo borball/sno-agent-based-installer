@@ -33,7 +33,9 @@ then
 fi
 
 config_file=$1; shift
+domain_name=$(yq '.cluster.domain' $config_file)
 cluster_name=$(yq '.cluster.name' $config_file)
+api_fqdn="api."$cluster_name"."$domain_name
 
 bmc_address=$(yq '.bmc.address' $config_file)
 username_password="$(yq '.bmc.username' $config_file):$(yq '.bmc.password' $config_file)"
@@ -169,14 +171,16 @@ echo
 echo
 echo -n "Node booting."
 
-ipv4_enabled=$(yq '.host.ipv4.enabled // "" ' $config_file)
-if [ "true" = "$ipv4_enabled" ]; then
-  node_ip=$(yq '.host.ipv4.ip' $config_file)
-  assisted_rest=http://$node_ip:8090/api/assisted-install/v2/clusters
-else
-  node_ip=$(yq '.host.ipv6.ip' $config_file)
-  assisted_rest=http://[$node_ip]:8090/api/assisted-install/v2/clusters
-fi
+#ipv4_enabled=$(yq '.host.ipv4.enabled // "" ' $config_file)
+#if [ "true" = "$ipv4_enabled" ]; then
+#  node_ip=$(yq '.host.ipv4.ip' $config_file)
+#  assisted_rest=http://$node_ip:8090/api/assisted-install/v2/clusters
+#else
+#  node_ip=$(yq '.host.ipv6.ip' $config_file)
+#  assisted_rest=http://[$node_ip]:8090/api/assisted-install/v2/clusters
+#fi
+
+assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
 
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
   echo -n "."
