@@ -42,7 +42,7 @@ bmc:
   address: 192.168.58.15:8080
   username: Administrator
   password: dummy
-  node_uuid: 11111111-1111-1111-1111-000000000000
+  kvm_uuid: 11111111-1111-1111-1111-000000000000
 
 iso:
   address: http://192.168.58.15/iso/hub.iso

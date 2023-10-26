@@ -140,7 +140,7 @@ bmc:
   address: 192.168.14.130
   username: Administrator
   password: Redhat123!
-  node_uuid:
+  kvm_uuid:
 
 iso:
   address: http://192.168.58.15/iso/agent-130.iso

@@ -40,7 +40,7 @@ api_fqdn="api."$cluster_name"."$domain_name
 bmc_address=$(yq '.bmc.address' $config_file)
 username_password="$(yq '.bmc.username' $config_file):$(yq '.bmc.password' $config_file)"
 iso_image=$(yq '.iso.address' $config_file)
-kvm_uuid=$(yq '.bmc.node_uuid // "" ' $config_file)
+kvm_uuid=$(yq '.bmc.kvm_uuid // "" ' $config_file)
 
 if [ ! -z $kvm_uuid ]; then
   system=/redfish/v1/Systems/$kvm_uuid

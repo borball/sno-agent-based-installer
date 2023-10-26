@@ -26,7 +26,7 @@ bmc:
   address: 192.168.13.148
   username: Administrator
   password: dummy
-  node_uuid: 
+  kvm_uuid:
   
 iso:
   address: http://192.168.58.15/iso/sno148.iso
