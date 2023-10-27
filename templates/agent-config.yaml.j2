@@ -38,7 +38,7 @@ hosts:
               - ip: {{ host.ipv4.ip }}
                 prefix-length: {{ host.ipv4.prefix }}
             {% endif -%}
-            dhcp: {{ host.ipv4.dhcp|lower }}
+            dhcp: {{ host.ipv4.dhcp|default('false')|lower }}
           {% else %}
           ipv4:
             enabled: false
@@ -51,7 +51,7 @@ hosts:
               - ip: {{ host.ipv6.ip }}
                 prefix-length: {{ host.ipv6.prefix }}
             {% endif -%}
-            dhcp: {{ host.ipv6.dhcp|lower }}
+            dhcp: {{ host.ipv6.dhcp|default('false')|lower }}
           {% else %}
           ipv6:
             enabled: false
@@ -92,7 +92,7 @@ hosts:
               - ip: {{ host.ipv4.ip }}
                 prefix-length: {{ host.ipv4.prefix }}
             {% endif -%}
-            dhcp: {{ host.ipv4.dhcp|lower }}
+            dhcp: {{ host.ipv4.dhcp|default('false') |lower }}
           {% else %}
           ipv4:
             enabled: false
@@ -105,7 +105,7 @@ hosts:
               - ip: {{ host.ipv6.ip }}
                 prefix-length: {{ host.ipv6.prefix }}
             {% endif -%}
-            dhcp: {{ host.ipv6.dhcp|lower }}
+            dhcp: {{ host.ipv6.dhcp|default('false')|lower }}
           {% else %}
           ipv6:
             enabled: false

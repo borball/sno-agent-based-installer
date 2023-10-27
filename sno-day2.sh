@@ -54,8 +54,7 @@ echo
 oc get nodes
 echo
 
-ocp_release=$(oc version -o json|jq '.openshiftVersion')
-ocp_release=$(sed -e 's/^"//' -e 's/"$//' <<<$ocp_release)
+ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 
 echo
