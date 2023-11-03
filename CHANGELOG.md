@@ -1,3 +1,50 @@
+## 2023-11-03
+
+- OpenShift 4.14 support
+  - ZTP 4.14 profiles
+
+- Intel Fec operator
+  ```yaml
+  day1:
+    operators:
+      fec: true
+  ```
+
+- Fixed PtpConfig issues
+  - Removed duplicated interface names
+  - Removed '-u 2' from phc2sysOpts
+
+- Ptp event notification in day2
+  - removed AMQ integration
+  - day2
+    ```yaml
+    day2:
+      ptp:
+        #enable the ptp event
+        enable_ptp_event: false
+    ```
+
+- Cluster capabilities support
+  - By default, 4.12 will disable all optional cluster operators below
+    - CSISnapshot
+    - Console
+    - Insights
+    - Storage
+    - baremetal
+    - openshift-samples
+  - 4.13+ will disable all optional cluster operators below
+    - Build
+    - CSISnapshot
+    - Console
+    - DeploymentConfig
+    - ImageRegistry
+    - Insights
+    - MachineAPI
+    - Storage
+    - baremetal
+    - openshift-samples
+  More info: https://docs.openshift.com/container-platform/4.14/post_installation_configuration/enabling-cluster-capabilities.html 
+
 ## 2023-08-22
 
 - OpenShift 4.13/4.14(EC) support
