@@ -211,4 +211,6 @@ done
 echo "-------------------------------"
 echo "Node Rebooted..."
 echo "Installation still in progress, oc command will be available soon, please check the installation progress with oc commands."
+
+virtual_media_eject
 echo "Enjoy!"
