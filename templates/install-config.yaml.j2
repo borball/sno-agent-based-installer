@@ -8,13 +8,25 @@ controlPlane:
   replicas: 1
 metadata:
   name: {{ cluster.name }}
+{% if cluster.capabilities is defined -%}
+capabilities:
+  baselineCapabilitySet: {{ cluster.capabilities.baselineCapabilitySet }}
+  additionalEnabledCapabilities:
+    {% for c in cluster.capabilities.additionalEnabledCapabilities -%}
+    - {{ c }}
+    {% endfor %}
+{% else -%}
 capabilities:
   baselineCapabilitySet: None
   additionalEnabledCapabilities:
-    - marketplace
-    {% if environ('ocp_y_release') == '4.14' -%}
-    - NodeTuning
-    {% endif %}
+  {% if environ('ocp_y_release') == '4.12' -%}
+  - marketplace
+  {%- else -%}
+  - marketplace
+  - NodeTuning
+  {% endif -%}
+{% endif %}
+
 networking:
   networkType: OVNKubernetes
   clusterNetwork:

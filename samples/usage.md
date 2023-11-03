@@ -74,8 +74,6 @@ day2:
   cluster_monitor_tuning: true
   #enable the operator hub tuning: disable unused catalog sources
   operator_hub_tuning: true
-  #disable the ocp console operator
-  disable_ocp_console: true
   #disable the network diagnostics
   disable_network_diagnostics: true
   #disable the operator auto-upgrade

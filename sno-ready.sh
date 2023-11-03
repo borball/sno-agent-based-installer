@@ -37,6 +37,9 @@ cluster_name=$(yq '.cluster.name' $config_file)
 cluster_workspace=$cluster_name
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
+ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
+ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
@@ -110,10 +113,18 @@ check_mc(){
       warn "MachineConfig container-mount-namespace-and-kubelet-conf-master is not existing."
     fi
 
-    if [ $(oc get mc |grep 04-accelerated-container-startup-master | wc -l) -eq 1 ]; then
-      info "MachineConfig 04-accelerated-container-startup-master exits."
+    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+      if [ $(oc get mc |grep 04-accelerated-container-startup-master | wc -l) -eq 1 ]; then
+        info "MachineConfig 04-accelerated-container-startup-master exits."
+      else
+        warn "MachineConfig 04-accelerated-container-startup-master is not existing."
+      fi
     else
-      warn "MachineConfig 04-accelerated-container-startup-master is not existing."
+      if [ $(oc get mc |grep 04-accelerated-container-startup-master | wc -l) -eq 1 ]; then
+        warn "MachineConfig 04-accelerated-container-startup-master exits."
+      else
+        info "MachineConfig 04-accelerated-container-startup-master is not existing."
+      fi
     fi
 
     if [ $(oc get mc |grep 99-crio-disable-wipe-master | wc -l) -eq 1 ]; then
@@ -263,19 +274,39 @@ check_monitoring(){
   fi
 }
 
-check_console(){
-  echo -e "\n${NC}Checking openshift console."
+check_capabilities(){
+  echo -e "\n${NC}Checking openshift capabilities."
 
-  if [ "false" = "$(yq '.day2.disable_ocp_console' $config_file)" ]; then
-    warn "disable_ocp_console is not enabled in $config_file"
-  else
-    if [ $(oc get consoles.operator.openshift.io cluster  -o jsonpath={..managementState}) = "Removed" ]; then
-      info "Openshift console is disabled."
-    else
-      warn "Openshift console is not disabled."
-    fi
-  fi  
+  #only check when capabilities are not specified in the config file
+  #for others we assume it is not vDU case, and will skip the check
+  if [ -z "$(yq '.cluster.capabilities // ""' $config_file)" ]; then
+    check_co_enabled "marketplace"
+    check_co_enabled "node-tuning"
+    check_co_disabled "console"
+  fi
 }
+
+check_co_enabled(){
+  local name=$1
+  oc get co $name 1>/dev/null 2>/dev/null
+
+  if [ $? == 0 ]; then
+    info "cluster operator $name is enabled."
+  else
+    warn "cluster operator $name is disabled."
+  fi
+}
+
+check_co_disabled(){
+  local name=$1
+  oc get co $name 1>/dev/null 2>/dev/null
+  if [ $? == 1 ]; then
+    info "cluster operator $name is disabled."
+  else
+    warn "cluster operator $name is disabled."
+  fi
+}
+
 
 check_network_diagnostics(){
   echo -e "\n${NC}Checking network diagnostics."
@@ -492,7 +523,7 @@ if [ $? -eq 0 ]; then
   check_sriov
   check_ptp
   check_monitoring
-  check_console
+  check_capabilities
   check_network_diagnostics
   check_operator_hub
   check_cmdline
