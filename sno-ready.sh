@@ -61,6 +61,10 @@ check_node(){
   fi
 }
 
+export_address(){
+  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}')
+}
+
 check_pods(){
   echo -e "\n${NC}Checking all pods:"
   if [ $(oc get pods -A |grep -vE "Running|Completed" |wc -l) -gt 1 ]; then
@@ -341,7 +345,6 @@ check_operator_hub(){
 
 check_cmdline(){
   echo -e "\n${NC}Checking /proc/cmdline:"
-  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}')
   export cmdline_arguments=$(ssh core@$address cat /proc/cmdline)
 
   check_cpuset
@@ -511,10 +514,44 @@ check_chronyd(){
   fi
 }
 
+check_ip(){
+  echo -e "\n${NC}Checking InstallPlans:"
+  if [ $(oc get installplans.operators.coreos.com -A |grep false |wc -l) -gt 0 ]; then
+    warn "InstallPlans below are not approved yet."
+    oc get installplans.operators.coreos.com -A |grep false
+  else
+    info "All InstallPlans have been approved or auto-approved."
+  fi
+}
+
+check_container_runtime(){
+  echo -e "\n${NC}Checking container runtime:"
+  local search=$(ssh core@$address grep -rv "^#" /etc/crio |grep 'default_runtime = "crun"'|wc -l)
+  local container_runtime="runc"
+  if [ $search = 1 ]; then
+    container_runtime="crun"
+  fi
+
+  if [ "4.12" = "$ocp_y_version" ] || [ "false" = "$(yq '.day1.crun' $config_file )" ] ; then
+    if [ "runc" = "$container_runtime" ]; then
+      info "Container runtime is runc."
+    else
+      warn "Container runtime is crun."
+    fi
+  else
+    if [ "runc" = "$container_runtime" ]; then
+      warn "Container runtime is runc."
+    else
+      info "Container runtime is crun."
+    fi
+  fi
+}
+
 oc get node
 
 if [ $? -eq 0 ]; then
   check_node
+  export_address
   check_pods
   check_mc
   check_mcp
@@ -522,6 +559,7 @@ if [ $? -eq 0 ]; then
   check_tuned
   check_sriov
   check_ptp
+  check_chronyd
   check_monitoring
   check_capabilities
   check_network_diagnostics
@@ -529,7 +567,8 @@ if [ $? -eq 0 ]; then
   check_cmdline
   check_kernel
   check_kdump
-  check_chronyd
+  check_ip
+  check_container_runtime
 
   echo -e "\n${NC}Completed the checking."
 else
