@@ -547,7 +547,12 @@ check_container_runtime(){
   fi
 }
 
+oc get clusterversion
+echo
 oc get node
+echo
+oc get operator
+
 
 if [ $? -eq 0 ]; then
   check_node
