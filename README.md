@@ -176,82 +176,115 @@ You can turn on/off day2 operation with configuration in section [day2](samples/
 After applying all day2 operarions, node may be rebooted once, check if all vDU required tunings and operators are in placed:
 
 ```
-# ./sno-ready.sh 
-NAME                          STATUS   ROLES                         AGE     VERSION
-sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   3h34m   v1.25.7+eab9cc9
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.14.2    True        False         8d      Cluster version is 4.14.2
+
+NAME                          STATUS   ROLES                         AGE   VERSION
+sno148.outbound.vz.bos2.lab   Ready    control-plane,master,worker   8d    v1.27.6+f67aeb3
+
+NAME                                                      AGE
+local-storage-operator.openshift-local-storage            8d
+ptp-operator.openshift-ptp                                8d
+sriov-network-operator.openshift-sriov-network-operator   8d
 
 Checking node:
- [+]Node is ready.
+[+]Node                                                        ready     
+
+Checking cluster operators:
+[+]cluster operator authentication                             healthy   
+[+]cluster operator cloud-controller-manager                   healthy   
+[+]cluster operator cloud-credential                           healthy   
+[+]cluster operator config-operator                            healthy   
+[+]cluster operator dns                                        healthy   
+[+]cluster operator etcd                                       healthy   
+[+]cluster operator ingress                                    healthy   
+[+]cluster operator kube-apiserver                             healthy   
+[+]cluster operator kube-controller-manager                    healthy   
+[+]cluster operator kube-scheduler                             healthy   
+[+]cluster operator kube-storage-version-migrator              healthy   
+[+]cluster operator machine-approver                           healthy   
+[+]cluster operator machine-config                             healthy   
+[+]cluster operator marketplace                                healthy   
+[+]cluster operator monitoring                                 healthy   
+[+]cluster operator network                                    healthy   
+[+]cluster operator node-tuning                                healthy   
+[+]cluster operator openshift-apiserver                        healthy   
+[+]cluster operator openshift-controller-manager               healthy   
+[+]cluster operator operator-lifecycle-manager                 healthy   
+[+]cluster operator operator-lifecycle-manager-catalog         healthy   
+[+]cluster operator operator-lifecycle-manager-packageserver   healthy   
+[+]cluster operator service-ca                                 healthy   
 
 Checking all pods:
- [+]No failing pods.
+[+]No failing pods.                                                      
 
-Checking required machine config:
- [+]MachineConfig container-mount-namespace-and-kubelet-conf-master exits.
- [+]MachineConfig 02-master-workload-partitioning exits.
- [+]MachineConfig 04-accelerated-container-startup-master exits.
- [+]MachineConfig 05-kdump-config-master exits.
- [+]MachineConfig 06-kdump-enable-master exits.
- [+]MachineConfig 99-crio-disable-wipe-master exits.
- [-]MachineConfig disable-chronyd is not existing.
+Checking required machine configs:
+[+]mc 02-master-workload-partitioning                          exists    
+[+]mc 06-kdump-enable-master                                   exists    
+[-]kdump blacklist_ice is not enabled in config-sno148.yaml              
+[+]mc container-mount-namespace-and-kubelet-conf-master        exists    
+[+]mc 04-accelerated-container-startup-master                  not exist 
+[+]MachineConfig 99-crio-disable-wipe-master                   exists    
 
 Checking machine config pool:
- [+]mcp master is updated and not degraded.
+[+]mcp master                                                  updated and not degraded
 
 Checking required performance profile:
- [+]PerformanceProfile sno-performance-profile exits.
- [+]topologyPolicy is single-numa-node
- [+]realTimeKernel is enabled
+[+]PerformanceProfile openshift-node-performance-profile exists.           
+[+]topologyPolicy is single-numa-node                                    
+[+]realTimeKernel is enabled                                             
 
 Checking required tuned:
- [+]Tuned performance-patch exits.
+[+]Tuned performance-patch                                     exists    
 
 Checking SRIOV operator status:
- [+]sriovnetworknodestate sync status is 'Succeeded'.
+[+]sriovnetworknodestate sync status                           succeeded 
 
 Checking PTP operator status:
- [+]Ptp linuxptp-daemon is ready.
-No resources found in openshift-ptp namespace.
- [-]PtpConfig not exist.
-
-Checking openshift monitoring.
- [+]Grafana is not enabled.
- [+]AlertManager is not enabled.
- [+]PrometheusK8s retention is not 24h.
-
-Checking openshift console.
- [+]Openshift console is disabled.
-
-Checking network diagnostics.
- [+]Network diagnostics is disabled.
-
-Checking Operator hub.
- [+]Catalog community-operators is disabled.
- [+]Catalog redhat-marketplace is disabled.
-
-Checking /proc/cmdline:
- [+]systemd.cpu_affinity presents: systemd.cpu_affinity=0,1,32,33
- [+]isolcpus presents: isolcpus=managed_irq,2-31,34-63
- [+]Isolated cpu in cmdline: 2-31,34-63 matches with the ones in performance profile: 2-31,34-63
- [+]Reserved cpu in cmdline: 0,1,32,33 matches with the ones in performance profile: 0-1,32-33
-
-Checking RHCOS kernel:
- [+]Node is realtime kernel.
-
-Checking kdump.service:
- [+]kdump is active.
- [+]kdump is enabled.
+[+]Ptp linuxptp-daemon                                         ready     
 
 Checking chronyd.service:
- [-]chronyd is active.
- [-]chronyd is enabled.
+[-]ptpconfig is not enabled in config-sno148.yaml.                       
+[+]chronyd service                                             active    
+[+]chronyd service                                             enabled   
 
-Checking crio-wipe.service:
- [+]crio-wipe is inactive.
- [+]crio-wipe is not enabled.
+Checking openshift monitoring:
+[+]Grafana                                                     not enabled
+[+]AlertManager                                                enabled   
+[+]PrometheusK8s retention                                     24h       
+
+Checking openshift capabilities:
+[+](cluster capability)operator marketplace                    enabled   
+[+](cluster capability)operator node-tuning                    enabled   
+[+](cluster capability)operator console                        disabled  
+
+Checking network diagnostics:
+[+]Network diagnostics                                         disabled  
+
+Checking Operator hub:
+[+]Catalog community-operators                                 disabled  
+[+]Catalog redhat-marketplace                                  disabled  
+
+Checking /proc/cmdline:
+[+]systemd.cpu_affinity presents: systemd.cpu_affinity=0,1,32,33           
+[+]isolcpus presents: isolcpus=managed_irq,2-31,34-63                    
+[+]Isolated cpu in cmdline: 2-31,34-63 matches with the ones in performance profile: 2-31,34-63           
+[+]Reserved cpu in cmdline: 0,1,32,33 matches with the ones in performance profile: 0-1,32-33           
+
+Checking RHCOS kernel:
+[+]Node kernel                                                 realtime  
+
+Checking kdump.service:
+[-]kdump service                                               not active
+[+]kdump service                                               enabled   
+
+Checking InstallPlans:
+[+]All InstallPlans have been approved or auto-approved.                 
+
+Checking container runtime:
+[+]Container runtime                                           crun      
 
 Completed the checking.
-
 ```
 
 [Demo](#sno-ready)
