@@ -62,7 +62,6 @@ day2:
         - ens1f3
     #enable the ptp event
     enable_ptp_event: false
-    
 
 cpu:
   isolated: 16-47
@@ -74,8 +73,9 @@ proxy:
   https:
   noproxy:
 
-pull_secret: ./pull-secret.json
+pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
+extra_manifests: /root/sno-4.14/test/configs/testkvm-extra-manifests
 
 bmc:
   address: 192.168.58.15:8080

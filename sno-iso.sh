@@ -223,10 +223,13 @@ fi
 
 echo
 
-if [ -d $basedir/extra-manifests ]; then
-  echo "Copy customized CRs from extra-manifests folder if present"
-  echo "$(ls -l $basedir/extra-manifests/)"
-  cp $basedir/extra-manifests/*.yaml $cluster_workspace/openshift/ 2>/dev/null
+extra_manifests=$(yq '.extra_manifests' $config_file)
+if [ -n "$extra_manifests" ]; then
+  if [ -d "$extra_manifests" ]; then
+    echo "Copy customized CRs from extra-manifests folder if present"
+    ls -l "$extra_manifests"
+    cp "$extra_manifests"/*.yaml "$cluster_workspace"/openshift/ 2>/dev/null
+  fi
 fi
 
 pull_secret=$(yq '.pull_secret' $config_file)
