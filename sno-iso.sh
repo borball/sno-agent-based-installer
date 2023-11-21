@@ -228,11 +228,10 @@ if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
   cp $templates/openshift/day1/talm/*.yaml $cluster_workspace/openshift/
 fi
 
-echo
-
 # 4.14+ specific
 if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
-  echo
+  #do nothing
+  sleep 1
 else
   if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
     warn "SR-IOV kernel(intel_iommu):" "disabled"
@@ -241,7 +240,6 @@ else
     cp $templates/openshift/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
   fi
 
-  echo
   if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
     warn "Set rcu_normal=1 after node reboot:" "disabled"
   else
@@ -249,7 +247,6 @@ else
     cp $templates/openshift/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
   fi
 
-  echo
   if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
     warn "Sync time once after node reboot:" "disabled"
   else
