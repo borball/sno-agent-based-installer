@@ -150,6 +150,39 @@ check_mc(){
     fi
   fi
 
+  if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+    echo
+  else
+    if [ "false" = "$(yq '.day1.rcu_normal.enabled' $config_file)" ]; then
+      warn "rcu_normal is not enabled in day1 of $config_file"
+    else
+      if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+        info "mc 08-set-rcu-normal-master" "exists"
+      else
+        warn "mc 08-set-rcu-normal-master" "not exist"
+      fi
+    fi
+
+    if [ "false" = "$(yq '.day1.sriov_kernel.enabled' $config_file)" ]; then
+      warn "sriov_kernel is not enabled in day1 of $config_file"
+    else
+      if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+        info "mc 07-sriov-related-kernel-args-master" "exists"
+      else
+        warn "mc 07-sriov-related-kernel-args-master" "not exist"
+      fi
+    fi
+
+    if [ "false" = "$(yq '.day1.sync_time_once.enabled' $config_file)" ]; then
+      warn "sync_time_once is not enabled in day1 of $config_file"
+    else
+      if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+        info "mc 99-sync-time-once-master" "exists"
+      else
+        warn "mc 99-sync-time-once-master" "not exist"
+      fi
+    fi
+  fi
 }
 
 check_mcp(){
@@ -559,6 +592,23 @@ check_container_runtime(){
   fi
 }
 
+check_olm_pprof(){
+  if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+    echo
+  else
+    if [ "false" = "$(yq '.day2.disable_olm_pprof' $config_file)" ]; then
+      warn "disable_olm_pprof is false in $config_file"
+    else
+      v=$(oc get cm -n openshift-operator-lifecycle-manager collect-profiles-config -o jsonpath="{.data.pprof-config\.yaml}")
+      if [ "disabled: True" = "$v" ]; then
+        info "olm collect-profiles-config: disabled" "true"
+      else
+        warn "olm collect-profiles-config: disabled" "false"
+      fi
+    fi
+  fi
+}
+
 oc get clusterversion
 echo
 oc get node
@@ -585,6 +635,7 @@ if [ $? -eq 0 ]; then
   check_cmdline
   check_kernel
   check_kdump
+  check_olm_pprof
   check_ip
   check_container_runtime
 

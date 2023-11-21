@@ -212,6 +212,13 @@ else
   warn "Intel SRIOV-FEC Operator:" "disabled"
 fi
 
+if [ "true" = "$(yq '.day1.operators.cluster_logging' $config_file)" ]; then
+  info "Cluster Logging Operator:" "enabled"
+  cp $templates/openshift/day1/cluster-logging/*.yaml $cluster_workspace/openshift/
+else
+  warn "Cluster Logging Operator:" "disabled"
+fi
+
 #will be ztp hub
 if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
   info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
@@ -222,6 +229,34 @@ if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
 fi
 
 echo
+
+# 4.14+ specific
+if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
+  echo
+else
+  if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
+    warn "SR-IOV kernel(intel_iommu):" "disabled"
+  else
+    info "SR-IOV kernel(intel_iommu):" "enabled"
+    cp $templates/openshift/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
+  fi
+
+  echo
+  if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
+    warn "Set rcu_normal=1 after node reboot:" "disabled"
+  else
+    info "Set rcu_normal=1 after node reboot:" "enabled"
+    cp $templates/openshift/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
+  fi
+
+  echo
+  if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
+    warn "Sync time once after node reboot:" "disabled"
+  else
+    info "Sync time once after node reboot:" "enabled"
+    cp $templates/openshift/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
+  fi
+fi
 
 if [ -d $basedir/extra-manifests ]; then
   echo "Copy customized CRs from extra-manifests folder if present"
