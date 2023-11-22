@@ -93,11 +93,20 @@ check_mc(){
   if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
     warn "workload_partition is not enabled in $config_file"
   else
-    if [ $(oc get mc |grep 02-master-workload-partitioning | wc -l) -eq 1 ]; then
-      info "mc 02-master-workload-partitioning" "exists"
+    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+      if [ $(oc get mc |grep 02-master-workload-partitioning | wc -l) -eq 1 ]; then
+        info "mc 02-master-workload-partitioning" "exists"
+      else
+        warn "mc 02-master-workload-partitioning" "not exist"
+      fi
     else
-      warn "mc 02-master-workload-partitioning" "not exist"
+      if [ $(oc get mc |grep 01-master-cpu-partitioning | wc -l) -eq 1 ]; then
+        info "mc 01-master-cpu-partitioning" "exists"
+      else
+        warn "mc 01-master-cpu-partitioning" "not exist"
+      fi
     fi
+
   fi
 
   if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
