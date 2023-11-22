@@ -29,7 +29,7 @@ bmc:
   node_uuid:
 
 iso:
-  address: http://192.168.58.15/iso/agent-130.iso
+  address: http://192.168.58.15/iso/sno130.iso
 
 day1:
   workload_partition: true

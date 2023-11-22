@@ -35,4 +35,4 @@ bmc:
   password: superuser
 
 iso:
-  address: http://192.168.58.15/iso/agent-148.iso
+  address: http://192.168.58.15/iso/sno148.iso
