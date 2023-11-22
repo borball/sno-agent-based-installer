@@ -56,6 +56,9 @@ day1:
   boot_accelerate: true
   #4.13+ only, whether enable crun as default container runtime
   crun: true
+  rcu_normal: true
+  sriov_kernel: true
+  sync_time_once: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
   ztp_hub: false
   operators:
@@ -68,6 +71,7 @@ day1:
     mce: false
     lvm: false
     fec: false
+    cluster_logging: false
 
 day2:
   performance_profile:
@@ -104,6 +108,8 @@ day2:
   operator_hub_tuning: true
   #disable the network diagnostics
   disable_network_diagnostics: true
+  #disable the olm pprof(collect-profile cronjob)
+  disable_olm_pprof: true
   disable_operator_auto_upgrade: true
 
 cpu:

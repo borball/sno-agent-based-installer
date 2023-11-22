@@ -93,7 +93,11 @@ if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
   warn "cluster monitor tuning:" "disabled"
 else
   info "cluster monitor tuning:" "enabled"
-  oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
+  if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
+    oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
+  else
+    oc apply -f $templates/openshift/day2/cluster-monitoring-cm-4.14.yaml
+  fi
 fi
 
 echo 
@@ -132,6 +136,18 @@ fi
 if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
   info "ptp event notification:" "enabled"
   oc apply -f $templates/openshift/day2/ptp-operator-config-for-event.yaml
+fi
+
+# 4.14+ specific
+if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
+  echo
+else
+  if [ "false" = "$(yq '.day2.disable_olm_pprof' $config_file)" ]; then
+    warn "Disable OLM Pprof:" "false"
+  else
+    info "Disable OLM Pprof:" "true"
+    oc apply -f $templates/openshift/day2/disable-olm-pprof.yaml
+  fi
 fi
 
 echo 

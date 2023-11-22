@@ -24,6 +24,9 @@ day1:
   ztp_hub: false
   #4.12 will ignore this setting, 4.13+ will enable crun by default
   crun: true
+  rcu_normal: true
+  sriov_kernel: true
+  sync_time_once: true
   operators:
     ptp: true
     sriov: true
@@ -34,6 +37,7 @@ day1:
     lvm: false
     mce: false
     fec: false
+    cluster_logging: false
 ```
 
 ## Day2
