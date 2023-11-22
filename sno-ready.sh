@@ -323,7 +323,7 @@ check_monitoring(){
     fi
 
     if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
-      info "AlertManager" "enabled"
+      info "AlertManager" "not enabled"
     else
       warn "AlertManager" "enabled"
     fi
