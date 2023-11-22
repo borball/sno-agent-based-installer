@@ -103,10 +103,14 @@ echo "Enabling day1 configuration..."
 if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
   warn "Workload partitioning:" "disabled"
 else
-  info "Workload partitioning:" "enabled"
-  export crio_wp=$(jinja2 $templates/openshift/day1/workload-partition/crio.conf $config_file |base64 -w0)
-  export k8s_wp=$(jinja2 $templates/openshift/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
-  jinja2 $templates/openshift/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+  if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+    info "Workload partitioning:" "enabled"
+    export crio_wp=$(jinja2 $templates/openshift/day1/workload-partition/crio.conf $config_file |base64 -w0)
+    export k8s_wp=$(jinja2 $templates/openshift/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
+    jinja2 $templates/openshift/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+  else
+    info "Workload partitioning:" "enabled(through install-config)"
+  fi
 fi
 
 if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
