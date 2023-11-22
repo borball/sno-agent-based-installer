@@ -4,7 +4,6 @@
 # usage: ./sno-iso.sh -h
 # 
 
-
 if ! type "yq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
@@ -87,14 +86,14 @@ fi
 status_code=$(curl -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/$ocp_release_version/)
 if [ $status_code = "200" ]; then
   curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.tar.gz
-  tar xfz $basedir/openshift-install-linux.tar.gz openshift-install
+  tar xfz $basedir/openshift-install-linux.tar.gz -C $basedir openshift-install
 else
   #fetch from image
-  oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file)
+  oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
 fi
 
 cluster_name=$(yq '.cluster.name' $config_file)
-cluster_workspace=$cluster_name
+cluster_workspace=$basedir/$cluster_name
 
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
@@ -255,10 +254,13 @@ else
   fi
 fi
 
-if [ -d $basedir/extra-manifests ]; then
-  echo "Copy customized CRs from extra-manifests folder if present"
-  echo "$(ls -l $basedir/extra-manifests/)"
-  cp $basedir/extra-manifests/*.yaml $cluster_workspace/openshift/ 2>/dev/null
+extra_manifests=$(yq '.extra_manifests' $config_file)
+if [ -n "$extra_manifests" ]; then
+  if [ -d "$extra_manifests" ]; then
+    echo "Copy customized CRs from extra-manifests folder if present"
+    ls -l "$extra_manifests"
+    cp "$extra_manifests"/*.yaml "$cluster_workspace"/openshift/ 2>/dev/null
+  fi
 fi
 
 pull_secret=$(yq '.pull_secret' $config_file)

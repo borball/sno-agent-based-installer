@@ -122,8 +122,9 @@ proxy:
   https:
   noproxy:
 
-pull_secret: ./pull-secret.json
+pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
+extra_manifests: /root/sno-vdu/sno148-extra-manifests
 
 bmc:
   address: 192.168.13.148

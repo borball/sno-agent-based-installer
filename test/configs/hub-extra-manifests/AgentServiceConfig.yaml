@@ -10,13 +10,13 @@ spec:
       - ReadWriteOnce
     resources:
       requests:
-        storage: 200Gi
+        storage: 50Gi
   filesystemStorage:
     accessModes:
       - ReadWriteOnce
     resources:
       requests:
-        storage: 200Gi
+        storage: 50Gi
   osImages:
   - openshiftVersion: "4.8"
     version: "49.84.202110081407-0"
@@ -42,4 +42,14 @@ spec:
     version: "412.86.202301061548-0"
     url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.12/4.12.0/rhcos-4.12.0-x86_64-live.x86_64.iso"
     rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.12/4.12.0/rhcos-4.12.0-x86_64-live-rootfs.x86_64.img"
+    cpuArchitecture: "x86_64"
+  - openshiftVersion: "4.13"
+    version: "413.92.202307140015-0"
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.13/4.13.5/rhcos-4.13.5-x86_64-live.x86_64.iso"
+    rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.13/4.13.5/rhcos-4.13.5-x86_64-live-rootfs.x86_64.img"
+    cpuArchitecture: "x86_64"
+  - openshiftVersion: "4.14"
+    version: "414.92.202310210434-0"
+    url: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.14/4.14.0/rhcos-4.14.0-x86_64-live.x86_64.iso"
+    rootFSUrl: "https://mirror.openshift.com/pub/openshift-v4/x86_64/dependencies/rhcos/4.14/4.14.0/rhcos-4.14.0-x86_64-live-rootfs.x86_64.img"
     cpuArchitecture: "x86_64"
