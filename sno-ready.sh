@@ -305,20 +305,32 @@ check_monitoring(){
   if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
     warn "cluster_monitor_tuning is not enabled in $config_file"
   else
-    if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
-      info "Grafana" "not enabled"
-    else
-      warn "Grafana" "enabled"
+    if [ "4.12" = "$ocp_y_version" ]; then
+      if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
+        info "Grafana" "not enabled"
+      else
+        warn "Grafana" "enabled"
+      fi
     fi
+
     if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
       info "AlertManager" "enabled"
     else
       warn "AlertManager" "enabled"
     fi
+
     if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.prometheusK8s.retention' -) = "24h" ]; then
       info "PrometheusK8s retention" "24h"
     else
       warn "PrometheusK8s retention" "not 24h"
+    fi
+
+    if [ "4.14" = "$ocp_y_version" ]; then
+      if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.telemeterClient.enabled' -) = "false" ]; then
+        info "Telemeter Client" "not enabled"
+      else
+        warn "Telemeter Client" "enabled"
+      fi
     fi
   fi
 }
