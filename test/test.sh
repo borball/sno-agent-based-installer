@@ -52,6 +52,7 @@ install_ocp(){
   rm -rf $sno_workspace
   $iso $config $version
   cp $sno_workspace/agent.x86_64.iso /var/www/html/iso/$node.iso
+  cp $sno_workspace/auth/kubeconfig /root/workload-enablement/kubeconfigs/kubeconfig-$node.yaml
   $install $config
 }
 
