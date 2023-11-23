@@ -6,6 +6,16 @@ cluster:
     - 1.rhel.pool.ntp.org
 
   #optional: https://docs.openshift.com/container-platform/4.14/post_installation_configuration/enabling-cluster-capabilities.html
+  #if not present:
+  #for 4.12 it will set:
+  #baselineCapabilitySet: None
+  #  additionalEnabledCapabilities:
+  #      - marketplace
+  # for 4.13+, it will set:
+  #baselineCapabilitySet: None
+  #  additionalEnabledCapabilities:
+  #      - marketplace
+  #      - NodeTuning
   capabilities:
     #None|vCurrent|v4.12|v4.14 ...
     baselineCapabilitySet: None
