@@ -153,9 +153,9 @@ check_mc(){
     fi
 
     if [ $(oc get mc |grep 99-crio-disable-wipe-master | wc -l) -eq 1 ]; then
-      info "MachineConfig 99-crio-disable-wipe-master" "exists"
+      info "mc 99-crio-disable-wipe-master" "exists"
     else
-      warn "MachineConfig 99-crio-disable-wipe-master" "not exist"
+      warn "mc 99-crio-disable-wipe-master" "not exist"
     fi
   fi
 
