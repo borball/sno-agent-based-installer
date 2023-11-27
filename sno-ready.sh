@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # Helper script to validate if the SNO node contains all the necessary tunings
-# usage: ./sno-ready.sh
+# usage: ./sno-ready.sh config.yaml
 #
 
 if ! type "yq" > /dev/null; then
@@ -160,7 +160,7 @@ check_mc(){
   fi
 
   if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
-    echo
+    sleep 1
   else
     if [ "false" = "$(yq '.day1.rcu_normal.enabled' $config_file)" ]; then
       warn "rcu_normal is not enabled in day1 of $config_file"
