@@ -22,7 +22,8 @@ host:
     enabled: false
     dhcp: false
     ip: 2600:52:7:58::48
-    dns: 2600:52:7:58::15
+    dns:
+      - 2600:52:7:58::15
     gateway: 2600:52:7:58::1
     prefix: 64
     machine_network_cidr: 2600:52:7:58::/64
@@ -30,6 +31,8 @@ host:
     #cluster_network_cidr: fd01::/48
     #optional, default 64
     #cluster_network_host_prefix: 64
+    #optional, default fd02::112
+    #service_network: fd02::/112
   vlan:
     enabled: false
     name: ens1f0.58
