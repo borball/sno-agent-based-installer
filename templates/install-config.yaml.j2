@@ -30,6 +30,9 @@ capabilities:
   - NodeTuning
   {% endif -%}
 {% endif %}
+{% if environ('ocp_y_release') != '4.12' and environ('ocp_y_release') != '4.13' -%}
+cpuPartitioningMode: AllNodes
+{% endif %}
 networking:
   networkType: OVNKubernetes
   clusterNetwork:

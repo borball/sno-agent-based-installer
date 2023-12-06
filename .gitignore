@@ -11,3 +11,4 @@ sno131
 *.iml
 ./extra-manifests
 /config.yaml
+*.iso

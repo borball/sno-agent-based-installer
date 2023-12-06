@@ -24,8 +24,11 @@ day1:
   ztp_hub: false
   #4.12 will ignore this setting, 4.13+ will enable crun by default
   crun: true
+  #4.14, https://issues.redhat.com/browse/OCPBUGS-17660
   rcu_normal: true
+  #4.14, reduce a node boot and fix a race condition issue in sriov operator
   sriov_kernel: true
+  #4.14, sync the node time from ntp when node reboot and ptp got involved
   sync_time_once: true
   operators:
     ptp: true
@@ -80,6 +83,8 @@ day2:
   operator_hub_tuning: true
   #disable the network diagnostics
   disable_network_diagnostics: true
+  #4.14 disable the olm pprof(collect-profile cronjob)
+  disable_olm_pprof: true  
   #disable the operator auto-upgrade
   disable_operator_auto_upgrade: true
 ```

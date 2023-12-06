@@ -1,7 +1,7 @@
 #!/bin/bash
 # 
 # Helper script to validate if the SNO node contains all the necessary tunings
-# usage: ./sno-ready.sh
+# usage: ./sno-ready.sh config.yaml
 #
 
 if ! type "yq" > /dev/null; then
@@ -93,11 +93,20 @@ check_mc(){
   if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
     warn "workload_partition is not enabled in $config_file"
   else
-    if [ $(oc get mc |grep 02-master-workload-partitioning | wc -l) -eq 1 ]; then
-      info "mc 02-master-workload-partitioning" "exists"
+    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+      if [ $(oc get mc |grep 02-master-workload-partitioning | wc -l) -eq 1 ]; then
+        info "mc 02-master-workload-partitioning" "exists"
+      else
+        warn "mc 02-master-workload-partitioning" "not exist"
+      fi
     else
-      warn "mc 02-master-workload-partitioning" "not exist"
+      if [ $(oc get mc |grep 01-master-cpu-partitioning | wc -l) -eq 1 ]; then
+        info "mc 01-master-cpu-partitioning" "exists"
+      else
+        warn "mc 01-master-cpu-partitioning" "not exist"
+      fi
     fi
+
   fi
 
   if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
@@ -144,14 +153,14 @@ check_mc(){
     fi
 
     if [ $(oc get mc |grep 99-crio-disable-wipe-master | wc -l) -eq 1 ]; then
-      info "MachineConfig 99-crio-disable-wipe-master" "exists"
+      info "mc 99-crio-disable-wipe-master" "exists"
     else
-      warn "MachineConfig 99-crio-disable-wipe-master" "not exist"
+      warn "mc 99-crio-disable-wipe-master" "not exist"
     fi
   fi
 
   if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
-    echo
+    sleep 1
   else
     if [ "false" = "$(yq '.day1.rcu_normal.enabled' $config_file)" ]; then
       warn "rcu_normal is not enabled in day1 of $config_file"
@@ -314,7 +323,7 @@ check_monitoring(){
     fi
 
     if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
-      info "AlertManager" "enabled"
+      info "AlertManager" "not enabled"
     else
       warn "AlertManager" "enabled"
     fi

@@ -1,13 +1,45 @@
-## 2023-11-03
+## 2023-11-27
 
 - OpenShift 4.14 support
   - ZTP 4.14 profiles
+  ```yaml
+  day1:
+    #4.14, https://issues.redhat.com/browse/OCPBUGS-17660
+    rcu_normal: true
+    #4.14, reduce a node boot and fix a race condition issue in sriov operator
+    sriov_kernel: true
+    #4.14, sync the node time from ntp when node reboot and ptp got involved
+    sync_time_once: true
+    #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
+  
+  day2:
+    #4.14 disable the olm pprof(collect-profile cronjob)
+    disable_olm_pprof: true
+  ```
+
+- sno-ready, added more check points:
+  - cluster operator status
+  - new machineconfig in 4.14 exists or not
+  - cluster capabilities check
+  - operator hub check
+  - pending install plan
+  - olm collect-profile cron job (4.14)
+  - container runtime
 
 - Intel Fec operator
   ```yaml
   day1:
     operators:
+      #default: false
       fec: true
+  ```
+  
+- cluster-logging operator
+  ```yaml
+  day1:
+    operators:
+      #default: false
+      cluster_logging: true
   ```
 
 - Fixed PtpConfig issues
@@ -30,9 +62,8 @@
     - Console
     - Insights
     - Storage
-    - baremetal
     - openshift-samples
-  - 4.13+ will disable all optional cluster operators below
+  - 4.14 will disable all optional cluster operators below
     - Build
     - CSISnapshot
     - Console
@@ -41,7 +72,6 @@
     - Insights
     - MachineAPI
     - Storage
-    - baremetal
     - openshift-samples
   More info: https://docs.openshift.com/container-platform/4.14/post_installation_configuration/enabling-cluster-capabilities.html 
 
