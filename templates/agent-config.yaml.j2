@@ -60,11 +60,15 @@ hosts:
         config:
           server:
             {% if host.ipv4 is defined and host.ipv4.enabled -%}
-            - {{ host.ipv4.dns }}
+            {% for server in host.ipv4.dns -%}
+            - {{ server }}
+            {% endfor -%}
             {% endif -%}
             {% if host.ipv6 is defined and host.ipv6.enabled -%}
-            - {{ host.ipv6.dns }}
-            {% endif %}
+            {% for server in host.ipv6.dns -%}
+            - {{ server }}
+            {% endfor -%}
+            {%- endif %}
       routes:
         config:
           {% if host.ipv4 is defined and host.ipv4.enabled -%}
@@ -114,11 +118,15 @@ hosts:
         config:
           server:
             {% if host.ipv4 is defined and host.ipv4.enabled -%}
-            - {{ host.ipv4.dns }}
+            {% for server in host.ipv4.dns -%}
+            - {{ server }}
+            {% endfor -%}
             {% endif -%}
             {% if host.ipv6 is defined and host.ipv6.enabled -%}
-            - {{ host.ipv6.dns }}
-            {% endif %}
+            {% for server in host.ipv6.dns -%}
+            - {{ server }}
+            {% endfor -%}
+            {%- endif %}
       routes:
         config:
           {% if host.ipv4 is defined and host.ipv4.enabled -%}
@@ -133,6 +141,5 @@ hosts:
             next-hop-interface: {{ host.interface }}
             table-id: 254
           {% endif -%}
-
-      {% endif -%}
+      {%- endif -%}
 
