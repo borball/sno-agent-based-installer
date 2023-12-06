@@ -21,12 +21,15 @@ capabilities:
   additionalEnabledCapabilities:
   {% if environ('ocp_y_release') == '4.12' -%}
   - marketplace
+  {%- elif environ('ocp_y_release') == '4.14'-%}
+  - marketplace
+  - NodeTuning
   {%- else -%}
+  - OperatorLifecycleManager
   - marketplace
   - NodeTuning
   {% endif -%}
 {% endif %}
-
 networking:
   networkType: OVNKubernetes
   clusterNetwork:
