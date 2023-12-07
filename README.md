@@ -41,7 +41,8 @@ host:
     enabled: true
     dhcp: false
     ip: 192.168.58.48
-    dns: 192.168.58.15
+    dns: 
+    - 192.168.58.15
     gateway: 192.168.58.1
     prefix: 25
     machine_network_cidr: 192.168.58.0/25
@@ -53,7 +54,8 @@ host:
     enabled: false
     dhcp: false
     ip: 2600:52:7:58::48
-    dns: 2600:52:7:58::15
+    dns: 
+    - 2600:52:7:58::15
     gateway: 2600:52:7:58::1
     prefix: 64
     machine_network_cidr: 2600:52:7:58::/64
