@@ -11,7 +11,7 @@ host:
     dhcp: false
     ip: 2600:52:7:58::48
     dns:
-    - 2600:52:7:58::15
+      - 2600:52:7:58::15
     gateway: 2600:52:7:58::1
     prefix: 64
     machine_network_cidr: 2600:52:7:58::/64

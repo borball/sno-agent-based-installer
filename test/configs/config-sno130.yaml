@@ -10,7 +10,7 @@ host:
     enabled: true
     ip: 192.168.14.29
     dns:
-    - 192.168.58.15
+      - 192.168.58.15
     gateway: 192.168.14.1
     prefix: 27
     machine_network_cidr: 192.168.14.0/27
