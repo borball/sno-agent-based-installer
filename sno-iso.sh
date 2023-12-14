@@ -103,7 +103,7 @@ echo "Enabling day1 configuration..."
 if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
   warn "Workload partitioning:" "disabled"
 else
-  if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
+  if [ "4.12" = "$ocp_y_release" ] || [ "4.13" = "$ocp_y_release" ]; then
     info "Workload partitioning:" "enabled"
     export crio_wp=$(jinja2 $templates/openshift/day1/workload-partition/crio.conf $config_file |base64 -w0)
     export k8s_wp=$(jinja2 $templates/openshift/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
