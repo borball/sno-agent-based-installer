@@ -1,4 +1,24 @@
-## 2023-11-27
+## 2023-12-19
+
+- Multiple DNS servers (please update your config.yaml)
+  Changed from:
+  ```yaml
+  host:
+    ipv4:
+      dns: 192.168.58.15
+    ipv6: 
+      dns: 2600:52:7:58::15
+  ```
+  to:
+  ```yaml
+  host:
+    ipv4:
+      dns:
+        - 192.168.58.15
+    ipv6:
+      dns:
+        - 2600:52:7:58::15
+  ```
 
 - OpenShift 4.14 support
   - ZTP 4.14 profiles
@@ -73,6 +93,7 @@
     - MachineAPI
     - Storage
     - openshift-samples
+  
   More info: https://docs.openshift.com/container-platform/4.14/post_installation_configuration/enabling-cluster-capabilities.html 
 
 ## 2023-08-22
