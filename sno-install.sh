@@ -182,7 +182,8 @@ echo -n "Node booting."
 
 assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
 
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
+REMOTE_CURL="ssh -q -oStrictHostKeyChecking=no core@$api_fqdn curl"
+while [[ "$($REMOTE_CURL -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
   echo -n "."
   sleep 2;
 done
@@ -190,18 +191,18 @@ done
 echo
 echo "Installing in progress..."
 
-curl --silent $assisted_rest |jq
+$REMOTE_CURL --silent $assisted_rest |jq
 
-while [[ "\"installing\"" != $(curl --silent $assisted_rest |jq '.[].status') ]]; do
+while [[ "\"installing\"" != $($REMOTE_CURL --silent $assisted_rest |jq '.[].status') ]]; do
   echo "-------------------------------"
-  curl --silent $assisted_rest |jq
+  $REMOTE_CURL --silent $assisted_rest |jq
   sleep 5
 done
 
 echo
 echo "-------------------------------"
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" == "200" ]]; do
-  total_percentage=$(curl --silent $assisted_rest |jq '.[].progress.total_percentage')
+while [[ "$($REMOTE_CURL -s -o /dev/null -w ''%{http_code}'' $assisted_rest)" == "200" ]]; do
+  total_percentage=$($REMOTE_CURL --silent $assisted_rest |jq '.[].progress.total_percentage')
   if [ ! -z $total_percentage ]; then
     echo "Installation in progress: completed $total_percentage/100"
   fi
