@@ -70,7 +70,7 @@ fi
 
 ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
 
-#if release not available on mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/, probably ec (early candidate) version.
+#if release not available on mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
 if [ -z $ocp_release_version ]; then
   ocp_release_version=$ocp_release
 fi
@@ -89,7 +89,11 @@ if [ $status_code = "200" ]; then
   tar xfz $basedir/openshift-install-linux.tar.gz -C $basedir openshift-install
 else
   #fetch from image
-  oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
+  if [[ $string == *"nightly"* ]] || [[ $string == *"ci"* ]]; then
+    oc adm release extract --command=openshift-install registry.ci.openshift.org/ocp/release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
+  else
+    oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
+  fi
 fi
 
 cluster_name=$(yq '.cluster.name' $config_file)
