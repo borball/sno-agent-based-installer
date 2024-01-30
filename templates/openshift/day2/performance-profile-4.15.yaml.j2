@@ -1,0 +1,25 @@
+---
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+ name: {{ (day2 and day2.performance_profile and day2.performance_profile.name)  or 'openshift-node-performance-profile' }}
+spec:
+ realTimeKernel:
+   enabled: true
+ cpu:
+   isolated: "{{ cpu.isolated }}"
+   reserved: "{{ cpu.reserved }}"
+ hugepages:
+   defaultHugepagesSize: 1G
+   pages:
+     - count: 32
+       size: 1G
+ additionalKernelArgs:
+   - rcupdate.rcu_normal_after_boot=0
+   - module_blacklist=irdma
+ machineConfigPoolSelector:
+   pools.operator.machineconfiguration.openshift.io/master: ""
+ nodeSelector:
+   node-role.kubernetes.io/master: ""
+ numa:
+   topologyPolicy: single-numa-node
