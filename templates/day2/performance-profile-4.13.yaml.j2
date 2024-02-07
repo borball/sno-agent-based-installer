@@ -15,8 +15,11 @@ spec:
      - count: 32
        size: 1G
  additionalKernelArgs:
-   - rcupdate.rcu_normal_after_boot=0
-   - module_blacklist=irdma
+  - "rcupdate.rcu_normal_after_boot=0"
+  - "efi=runtime"
+  - "vfio_pci.enable_sriov=1"
+  - "vfio_pci.disable_idle_d3=1"
+  - "module_blacklist=irdma"
  machineConfigPoolSelector:
    pools.operator.machineconfiguration.openshift.io/master: ""
  nodeSelector:

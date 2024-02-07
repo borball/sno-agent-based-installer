@@ -66,7 +66,12 @@ if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
   warn "performance profile:" "disabled"
 else
   info "performance profile:" "enabled"
-  jinja2 $templates/day2/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
+  if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
+    jinja2 $templates/day2/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
+  else
+    #4.14+
+    jinja2 $templates/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+  fi
 fi
 
 echo 

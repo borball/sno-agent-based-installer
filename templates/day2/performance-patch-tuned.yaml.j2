@@ -11,8 +11,10 @@ spec:
        [main]
        summary=Configuration changes profile inherited from performance created tuned
        include=openshift-node-performance-{{ (day2 and day2.performance_profile and day2.performance_profile.name)  or 'openshift-node-performance-profile' }}
+       {% if day2 and day2.tuned_profile and day2.tuned_profile.cmdline_pstate -%}
        [bootloader]
-       cmdline_pstate={{ (day2 and day2.tuned_profile and day2.tuned_profile.cmdline_pstate)  or '' }}
+       cmdline_pstate={{ day2.tuned_profile.cmdline_pstate }}
+       {% endif -%}
        [sysctl]
        kernel.timer_migration=1
        [scheduler]
