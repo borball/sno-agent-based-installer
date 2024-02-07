@@ -37,5 +37,5 @@ operators:
     enabled: false
   fec:
     name: sriov-fec
-    state: Intel SRIOV-FEC Operator
+    desc: Intel SRIOV-FEC Operator
     enabled: false
