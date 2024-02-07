@@ -105,6 +105,7 @@ mkdir -p $cluster_workspace/openshift
 
 echo
 echo "Enabling day1 configuration..."
+
 if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
   warn "Workload partitioning:" "disabled"
 else
@@ -157,6 +158,33 @@ else
   fi
 fi
 
+# 4.14+ specific
+if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
+  #do nothing
+  sleep 1
+else
+  if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
+    warn "SR-IOV kernel(intel_iommu):" "disabled"
+  else
+    info "SR-IOV kernel(intel_iommu):" "enabled"
+    cp $templates/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
+  fi
+
+  if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
+    warn "Set rcu_normal=1 after node reboot:" "disabled"
+  else
+    info "Set rcu_normal=1 after node reboot:" "enabled"
+    cp $templates/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
+  fi
+
+  if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
+    warn "Sync time once after node reboot:" "disabled"
+  else
+    info "Sync time once after node reboot:" "enabled"
+    cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
+  fi
+fi
+
 install_operator(){
   op_name=$1
   cp $operators/$op_name/*.yaml $cluster_workspace/openshift/
@@ -171,6 +199,7 @@ install_operator(){
 }
 
 install_operators(){
+  echo "Enabling operators..."
   if [[ $(yq '.day1.operators' $config_file) != "null" ]]; then
     readarray -t keys < <(yq ".day1.operators|keys" $config_file|yq '.[]')
     for ((k=0; k<${#keys[@]}; k++)); do
@@ -199,45 +228,22 @@ install_operators(){
       fi
     done
   fi
+  echo
+}
+
+setup_ztp_hub(){
+  #will be ztp hub
+  if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
+    info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
+    cp $operators/lvm/*.yaml $cluster_workspace/openshift/
+    cp $templates/gitops/*.yaml $cluster_workspace/openshift/
+    cp $templates/rhacm/*.yaml $cluster_workspace/openshift/
+    cp $templates/talm/*.yaml $cluster_workspace/openshift/
+  fi
 }
 
 install_operators
-
-#will be ztp hub
-if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
-  info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
-  cp $operators/lvm/*.yaml $cluster_workspace/openshift/
-  cp $templates/gitops/*.yaml $cluster_workspace/openshift/
-  cp $templates/rhacm/*.yaml $cluster_workspace/openshift/
-  cp $templates/talm/*.yaml $cluster_workspace/openshift/
-fi
-
-# 4.14+ specific
-if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
-  #do nothing
-  sleep 1
-else
-  if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
-    warn "SR-IOV kernel(intel_iommu):" "disabled"
-  else
-    info "SR-IOV kernel(intel_iommu):" "enabled"
-    cp $templates/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
-  fi
-
-  if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
-    warn "Set rcu_normal=1 after node reboot:" "disabled"
-  else
-    info "Set rcu_normal=1 after node reboot:" "enabled"
-    cp $templates/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
-  fi
-
-  if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
-    warn "Sync time once after node reboot:" "disabled"
-  else
-    info "Sync time once after node reboot:" "enabled"
-    cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
-  fi
-fi
+setup_ztp_hub
 
 extra_manifests=$(yq '.extra_manifests' $config_file)
 if [ -n "$extra_manifests" ]; then
