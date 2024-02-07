@@ -103,87 +103,86 @@ cluster_workspace=$basedir/$cluster_name
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
 
-echo
-echo "Enabling day1 configuration..."
-
-if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
-  warn "Workload partitioning:" "disabled"
-else
-  if [ "4.12" = "$ocp_y_release" ] || [ "4.13" = "$ocp_y_release" ]; then
-    info "Workload partitioning:" "enabled"
-    export crio_wp=$(jinja2 $templates/day1/workload-partition/crio.conf $config_file |base64 -w0)
-    export k8s_wp=$(jinja2 $templates/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
-    jinja2 $templates/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+day1_config(){
+  if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
+    warn "Workload partitioning:" "disabled"
   else
-    info "Workload partitioning:" "enabled(through install-config)"
+    if [ "4.12" = "$ocp_y_release" ] || [ "4.13" = "$ocp_y_release" ]; then
+      info "Workload partitioning:" "enabled"
+      export crio_wp=$(jinja2 $templates/day1/workload-partition/crio.conf $config_file |base64 -w0)
+      export k8s_wp=$(jinja2 $templates/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
+      jinja2 $templates/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
+    else
+      info "Workload partitioning:" "enabled(through install-config)"
+    fi
   fi
-fi
 
-if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
-  warn "SNO boot accelerate:" "disabled"
-else
-  info "SNO boot accelerate:" "enabled"
-  cp $templates/day1/accelerate/*.yaml $cluster_workspace/openshift/
-  cp $templates/day1/accelerate/$ocp_y_release/*.yaml $cluster_workspace/openshift/
-fi
-
-if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
-  warn "kdump service:" "disabled"
-else
-  if [ "true" = "$(yq '.day1.kdump.secure_boot' $config_file)" ]; then
-    info "kdump service(secure boot):" "enabled"
-    cp $templates/day1/kdump/06-kdump-master-secureboot.yaml $cluster_workspace/openshift/
+  if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
+    warn "SNO boot accelerate:" "disabled"
   else
-    info "kdump service:" "enabled"
-    cp $templates/day1/kdump/06-kdump-master.yaml $cluster_workspace/openshift/
+    info "SNO boot accelerate:" "enabled"
+    cp $templates/day1/accelerate/*.yaml $cluster_workspace/openshift/
+    cp $templates/day1/accelerate/$ocp_y_release/*.yaml $cluster_workspace/openshift/
   fi
-fi
 
-if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
-  info "kdump, blacklist_ice(for HPE):" "enabled"
-  cp $templates/day1/kdump/05-kdump-config-master.yaml $cluster_workspace/openshift/
-else
-  warn "kdump, blacklist_ice(for HPE):" "disabled"
-fi
+  if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
+    warn "kdump service:" "disabled"
+  else
+    if [ "true" = "$(yq '.day1.kdump.secure_boot' $config_file)" ]; then
+      info "kdump service(secure boot):" "enabled"
+      cp $templates/day1/kdump/06-kdump-master-secureboot.yaml $cluster_workspace/openshift/
+    else
+      info "kdump service:" "enabled"
+      cp $templates/day1/kdump/06-kdump-master.yaml $cluster_workspace/openshift/
+    fi
+  fi
 
-if [ "4.12" = $ocp_y_release ]; then
-  warn "Container runtime crun(4.13+):" "disabled"
-else
-  #4.13+ by default enabled.
-  if [ "false" = "$(yq '.day1.crun' $config_file)" ]; then
+  if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
+    info "kdump, blacklist_ice(for HPE):" "enabled"
+    cp $templates/day1/kdump/05-kdump-config-master.yaml $cluster_workspace/openshift/
+  else
+    warn "kdump, blacklist_ice(for HPE):" "disabled"
+  fi
+
+  if [ "4.12" = $ocp_y_release ]; then
     warn "Container runtime crun(4.13+):" "disabled"
   else
-    info "Container runtime crun(4.13+):" "enabled"
-    cp $templates/day1/crun/*.yaml $cluster_workspace/openshift/
-  fi
-fi
-
-# 4.14+ specific
-if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
-  #do nothing
-  sleep 1
-else
-  if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
-    warn "SR-IOV kernel(intel_iommu):" "disabled"
-  else
-    info "SR-IOV kernel(intel_iommu):" "enabled"
-    cp $templates/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
+    #4.13+ by default enabled.
+    if [ "false" = "$(yq '.day1.crun' $config_file)" ]; then
+      warn "Container runtime crun(4.13+):" "disabled"
+    else
+      info "Container runtime crun(4.13+):" "enabled"
+      cp $templates/day1/crun/*.yaml $cluster_workspace/openshift/
+    fi
   fi
 
-  if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
-    warn "Set rcu_normal=1 after node reboot:" "disabled"
+  # 4.14+ specific
+  if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
+    #do nothing
+    sleep 1
   else
-    info "Set rcu_normal=1 after node reboot:" "enabled"
-    cp $templates/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
-  fi
+    if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
+      warn "SR-IOV kernel(intel_iommu):" "disabled"
+    else
+      info "SR-IOV kernel(intel_iommu):" "enabled"
+      cp $templates/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
+    fi
 
-  if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
-    warn "Sync time once after node reboot:" "disabled"
-  else
-    info "Sync time once after node reboot:" "enabled"
-    cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
+    if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
+      warn "Set rcu_normal=1 after node reboot:" "disabled"
+    else
+      info "Set rcu_normal=1 after node reboot:" "enabled"
+      cp $templates/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
+    fi
+
+    if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
+      warn "Sync time once after node reboot:" "disabled"
+    else
+      info "Sync time once after node reboot:" "enabled"
+      cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
+    fi
   fi
-fi
+}
 
 install_operator(){
   op_name=$1
@@ -199,7 +198,6 @@ install_operator(){
 }
 
 install_operators(){
-  echo "Enabling operators..."
   if [[ $(yq '.day1.operators' $config_file) != "null" ]]; then
     readarray -t keys < <(yq ".day1.operators|keys" $config_file|yq '.[]')
     for ((k=0; k<${#keys[@]}; k++)); do
@@ -242,8 +240,17 @@ setup_ztp_hub(){
   fi
 }
 
+echo
+echo "Enabling day1 configuration..."
+day1_config
+echo
+
+echo "Enabling operators..."
 install_operators
+echo
+
 setup_ztp_hub
+echo
 
 extra_manifests=$(yq '.extra_manifests' $config_file)
 if [ -n "$extra_manifests" ]; then
