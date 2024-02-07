@@ -143,14 +143,15 @@ if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
   oc apply -f $templates/day2/ptp-operator-config-for-event.yaml
 fi
 
+echo
 # 4.14+ specific
 if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
   echo
 else
   if [ "false" = "$(yq '.day2.disable_olm_pprof' $config_file)" ]; then
-    warn "Disable OLM Pprof:" "false"
+    warn "disable olm pprof:" "false"
   else
-    info "Disable OLM Pprof:" "true"
+    info "disable olm pprof:" "true"
     oc apply -f $templates/day2/disable-olm-pprof.yaml
   fi
 fi
