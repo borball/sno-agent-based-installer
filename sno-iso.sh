@@ -15,11 +15,11 @@ if ! type "jinja2" > /dev/null; then
 fi
 
 info(){
-  printf  $(tput setaf 2)"%-38s %-10s"$(tput sgr0)"\n" "$@"
+  printf  $(tput setaf 2)"%-56s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 warn(){
-  printf  $(tput setaf 3)"%-38s %-10s"$(tput sgr0)"\n" "$@"
+  printf  $(tput setaf 3)"%-56s %-10s"$(tput sgr0)"\n" "$@"
 }
 
 
