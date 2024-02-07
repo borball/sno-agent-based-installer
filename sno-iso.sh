@@ -237,6 +237,19 @@ setup_ztp_hub(){
     cp $templates/gitops/*.yaml $cluster_workspace/openshift/
     cp $templates/rhacm/*.yaml $cluster_workspace/openshift/
     cp $templates/talm/*.yaml $cluster_workspace/openshift/
+    echo
+  fi
+}
+
+apply_extra_manifests(){
+  extra_manifests=$(yq '.extra_manifests' $config_file)
+  if [ -n "$extra_manifests" ]; then
+    if [ -d "$extra_manifests" ]; then
+      echo "Copy customized CRs from extra-manifests folder if present"
+      ls -l "$extra_manifests"
+      cp "$extra_manifests"/*.yaml "$cluster_workspace"/openshift/ 2>/dev/null
+      echo
+    fi
   fi
 }
 
@@ -250,16 +263,7 @@ install_operators
 echo
 
 setup_ztp_hub
-echo
-
-extra_manifests=$(yq '.extra_manifests' $config_file)
-if [ -n "$extra_manifests" ]; then
-  if [ -d "$extra_manifests" ]; then
-    echo "Copy customized CRs from extra-manifests folder if present"
-    ls -l "$extra_manifests"
-    cp "$extra_manifests"/*.yaml "$cluster_workspace"/openshift/ 2>/dev/null
-  fi
-fi
+apply_extra_manifests
 
 pull_secret=$(yq '.pull_secret' $config_file)
 export pull_secret=$(cat $pull_secret)
