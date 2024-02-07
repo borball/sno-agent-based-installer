@@ -66,7 +66,7 @@ if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
   warn "performance profile:" "disabled"
 else
   info "performance profile:" "enabled"
-  jinja2 $templates/openshift/day2/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
+  jinja2 $templates/day2/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
 fi
 
 echo 
@@ -75,14 +75,14 @@ if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
   warn "tuned performance patch:" "disabled"
 else
   info "tuned performance patch:" "enabled"
-  jinja2 $templates/openshift/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
+  jinja2 $templates/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
 fi
 
 echo 
 
 if [ "true" = "$(yq '.day2.tuned_profile.kdump' $config_file)" ]; then
   info "tuned kdump settings:" "enabled"
-  oc apply -f $templates/openshift/day2/performance-patch-kdump-setting.yaml
+  oc apply -f $templates/day2/performance-patch-kdump-setting.yaml
 else
   warn "tuned kdump settings:" "disabled"
 fi
@@ -94,9 +94,9 @@ if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
 else
   info "cluster monitor tuning:" "enabled"
   if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
-    oc apply -f $templates/openshift/day2/cluster-monitoring-cm.yaml
+    oc apply -f $templates/day2/cluster-monitoring-cm.yaml
   else
-    oc apply -f $templates/openshift/day2/cluster-monitoring-cm-4.14.yaml
+    oc apply -f $templates/day2/cluster-monitoring-cm-4.14.yaml
   fi
 fi
 
@@ -106,7 +106,7 @@ if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
   warn "operator hub tuning:" "disabled"
 else
   info "operator hub tuning:" "enabled"
-  oc patch operatorhub cluster --type json -p "$(cat $templates/openshift/day2/patchoperatorhub.yaml)"
+  oc patch operatorhub cluster --type json -p "$(cat $templates/day2/patchoperatorhub.yaml)"
 fi
 
 echo 
@@ -125,17 +125,17 @@ if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
 fi
 if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   info "ptpconfig ordinary clock:" "enabled"
-  jinja2 $templates/openshift/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+  jinja2 $templates/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
 
 fi
 if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
   info "ptpconfig boundary clock:" "enabled"
-  jinja2 $templates/openshift/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+  jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
 fi
 
 if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
   info "ptp event notification:" "enabled"
-  oc apply -f $templates/openshift/day2/ptp-operator-config-for-event.yaml
+  oc apply -f $templates/day2/ptp-operator-config-for-event.yaml
 fi
 
 # 4.14+ specific
@@ -146,7 +146,7 @@ else
     warn "Disable OLM Pprof:" "false"
   else
     info "Disable OLM Pprof:" "true"
-    oc apply -f $templates/openshift/day2/disable-olm-pprof.yaml
+    oc apply -f $templates/day2/disable-olm-pprof.yaml
   fi
 fi
 

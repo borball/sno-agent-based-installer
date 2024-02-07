@@ -1,0 +1,41 @@
+operators:
+  ptp:
+    name: ptp-operator
+    desc: PTP Operator
+    enabled: true
+  storage:
+    name: local-storage-operator
+    desc: Local Storage Operator
+    enabled: true
+  rhacm:
+    name: advanced-cluster-management
+    desc: Red Hat Advanced Cluster Management for Kubernetes
+    enabled: false
+  gitops:
+    name: openshift-gitops-operator
+    desc: Red Hat OpenShift GitOps
+    enabled: false
+  talm:
+    name: topology-aware-lifecycle-manager
+    desc: Topology Aware Lifecycle Manager
+    enabled: false
+  sriov:
+    name: sriov-network-operator
+    desc: SR-IOV Network Operator for Openshift
+    enabled: true
+  lvm:
+    name: lvms-operator
+    desc: Logical volume manager storage Operator
+    enabled: false
+  mce:
+    name: multicluster-engine
+    desc: Multicluster engine for Kubernetes
+    enabled: false
+  cluster_logging:
+    name: cluster-logging
+    desc: OpenShift Logging Operator
+    enabled: false
+  fec:
+    name: sriov-fec
+    state: Intel SRIOV-FEC Operator
+    enabled: false
