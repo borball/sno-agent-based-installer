@@ -29,7 +29,7 @@ disks=${5:-120}
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 root_path="$( cd "$(dirname "$0")/.." >/dev/null 2>&1 ; pwd -P )"
 iso="$root_path"/sno-iso.sh
-sno_workspace="$root_path"/"$node"
+sno_workspace="$root_path"/instances/"$node"
 install="$root_path"/sno-install.sh
 config="$basedir"/configs/config-"$node".yaml
 

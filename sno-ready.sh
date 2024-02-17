@@ -31,10 +31,13 @@ then
   exit
 fi
 
+basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
 config_file=$1;
 
 cluster_name=$(yq '.cluster.name' $config_file)
-cluster_workspace=$cluster_name
+cluster_workspace=$basedir/instances/$cluster_name
+
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 ocp_release=$(oc version -o json|jq -r '.openshiftVersion')

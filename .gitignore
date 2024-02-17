@@ -8,6 +8,7 @@ sno162
 sno130
 sno132
 sno131
+instances
 *.iml
 ./extra-manifests
 /config.yaml
