@@ -7,5 +7,5 @@ spec:
   channel: stable-2.3
   installPlanApproval: Automatic
   name: multicluster-engine
-  source: redhat-operators
+  source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace

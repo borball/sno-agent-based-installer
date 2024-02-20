@@ -3,7 +3,7 @@ operators:
     name: ptp-operator
     desc: PTP Operator
     enabled: true
-  storage:
+  local-storage:
     name: local-storage-operator
     desc: Local Storage Operator
     enabled: true
@@ -31,7 +31,7 @@ operators:
     name: multicluster-engine
     desc: Multicluster engine for Kubernetes
     enabled: false
-  cluster_logging:
+  cluster-logging:
     name: cluster-logging
     desc: OpenShift Logging Operator
     enabled: false

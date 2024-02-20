@@ -110,15 +110,6 @@ cluster_monitoring(){
   fi
 }
 
-operator_hub(){
-  if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
-    warn "operator hub tuning:" "disabled"
-  else
-    info "operator hub tuning:" "enabled"
-    oc patch operatorhub cluster --type json -p "$(cat $templates/day2/patchoperatorhub.yaml)"
-  fi
-}
-
 network_diagnostics(){
   if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
     warn "network diagnostics:" "enabled"
@@ -203,8 +194,6 @@ echo
 kdump_for_lab_only
 echo
 cluster_monitoring
-echo
-operator_hub
 echo
 network_diagnostics
 echo

@@ -31,16 +31,26 @@ day1:
   #4.14, sync the node time from ntp when node reboot and ptp got involved
   sync_time_once: true
   operators:
-    ptp: true
-    sriov: true
-    storage: true
-    gitops: false
-    rhacm: false
-    talm: false
-    lvm: false
-    mce: false
-    fec: false
-    cluster_logging: false
+    ptp:
+      enabled: true
+    sriov:
+      enabled: true
+    storage:
+      enabled: true
+    gitops:
+      enabled: false
+    rhacm:
+      enabled: false
+    talm:
+      enabled: false
+    mce:
+      enabled: false
+    lvm:
+      enabled: false
+    fec:
+      enabled: false
+    cluster-logging:
+      enabled: false
 ```
 
 ## Day2

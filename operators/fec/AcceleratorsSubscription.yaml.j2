@@ -6,6 +6,6 @@ metadata:
 spec:
   channel: stable
   name: sriov-fec
-  source: certified-operators
+  source: {{ source | default('certified-operators') }}
   sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic

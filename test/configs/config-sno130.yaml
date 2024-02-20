@@ -45,10 +45,6 @@ day1:
   crun: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
   ztp_hub: false
-  operators:
-    ptp: true
-    sriov: true
-    storage: true
 
 day2:
   performance_profile:

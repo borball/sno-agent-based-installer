@@ -193,7 +193,7 @@ install_operator(){
   for f in $j2files; do
     tname=$(basename $f)
     fname=${tname//.j2/}
-    jinja2 $f > $cluster_workspace/openshift/$fname
+    yq ".day1.operators.$key" $config_file| jinja2 $f > $cluster_workspace/openshift/$fname
   done  
 }
 
@@ -208,7 +208,7 @@ install_operators(){
       #enabled by default
       if [[ "true" == "$enabled" ]]; then
         #disable by intention
-        if [[ "false" == $(yq ".day1.operators.$key" $config_file) ]]; then
+        if [[ "false" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
           warn "$desc" "disabled"
         else
           info "$desc" "enabled"
@@ -217,7 +217,7 @@ install_operators(){
       #disable by default  
       else
         #enable by intention
-        if [[ "true" == $(yq ".day1.operators.$key" $config_file) ]]; then
+        if [[ "true" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
           info "$desc" "enabled"
           install_operator $key
         else
@@ -253,12 +253,19 @@ apply_extra_manifests(){
   fi
 }
 
+operator_hub(){
+  if [[ $(yq '.container_registry' $config_file) != "null" ]]; then
+    jinja2 $templates/day1/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
+  fi
+}
+
 echo
 echo "Enabling day1 configuration..."
 day1_config
 echo
 
 echo "Enabling operators..."
+operator_hub
 install_operators
 echo
 
@@ -270,13 +277,23 @@ export pull_secret=$(cat $pull_secret)
 ssh_key=$(yq '.ssh_key' $config_file)
 export ssh_key=$(cat $ssh_key)
 
+bundle_file=$(yq '.additional_trust_bundle' $config_file)
+if [[ "null" != "$bundle_file" ]]; then
+  export additional_trust_bundle=$(cat $bundle_file)
+fi
+
 jinja2 $templates/agent-config.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
 jinja2 $templates/install-config.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
+
+mirror_source=$(yq '.container_registry.image_source' $config_file)
+if [[ "null" != "$mirror_source" ]]; then
+  cat $mirror_source >> $cluster_workspace/install-config.yaml
+fi
 
 echo
 echo "Generating boot image..."
 echo
-$basedir/openshift-install --dir $cluster_workspace agent create image
+$basedir/openshift-install --dir $cluster_workspace agent --log-level=info create image
 
 echo ""
 echo "------------------------------------------------"

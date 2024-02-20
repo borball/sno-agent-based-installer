@@ -27,13 +27,26 @@ day1:
   #4.13+ only, whether enable crun as default container runtime
   crun: false
   operators:
-    ptp: false
-    sriov: false
-    storage: false
-    gitops: false
-    rhacm: true
-    talm: false
-    lvm: true
+    ptp:
+      enabled: false
+    sriov:
+      enabled: false
+    storage:
+      enabled: false
+    gitops:
+      enabled: false
+    rhacm:
+      enabled: true
+    talm:
+      enabled: false
+    mce:
+      enabled: true
+    lvm:
+      enabled: false
+    fec:
+      enabled: false
+    cluster-logging:
+      enabled: false
 
 day2:
   performance_profile:

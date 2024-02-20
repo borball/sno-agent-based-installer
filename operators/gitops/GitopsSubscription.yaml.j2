@@ -7,5 +7,5 @@ metadata:
 spec:
     installPlanApproval: Automatic
     name: openshift-gitops-operator
-    source: redhat-operators
+    source: {{ source | default('redhat-operators') }}
     sourceNamespace: openshift-marketplace

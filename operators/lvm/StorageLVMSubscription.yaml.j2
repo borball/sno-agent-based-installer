@@ -5,6 +5,6 @@ metadata:
   namespace: openshift-storage
 spec:
   name: lvms-operator
-  source: redhat-operators
+  source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace
   installPlanApproval: Automatic
