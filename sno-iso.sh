@@ -198,34 +198,32 @@ install_operator(){
 }
 
 install_operators(){
-  if [[ $(yq '.day1.operators' $config_file) != "null" ]]; then
-    readarray -t keys < <(yq ".operators|keys" $operators/operators.yaml|yq '.[]')
-    for ((k=0; k<${#keys[@]}; k++)); do
-      key="${keys[$k]}"
-      desc=$(yq ".operators.$key.desc" $operators/operators.yaml)
-      enabled=$(yq ".operators.$key.enabled" $operators/operators.yaml)
-      
-      #enabled by default
-      if [[ "true" == "$enabled" ]]; then
-        #disable by intention
-        if [[ "false" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
-          warn "$desc" "disabled"
-        else
-          info "$desc" "enabled"
-          install_operator $key
-        fi
-      #disable by default  
+  readarray -t keys < <(yq ".operators|keys" $operators/operators.yaml|yq '.[]')
+  for ((k=0; k<${#keys[@]}; k++)); do
+    key="${keys[$k]}"
+    desc=$(yq ".operators.$key.desc" $operators/operators.yaml)
+    enabled_by_default=$(yq ".operators.$key.enabled" $operators/operators.yaml)
+
+    #enabled by default
+    if [[ "true" == "$enabled_by_default" ]]; then
+      #disable by intention
+      if [[ "false" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
+        warn "$desc" "disabled"
       else
-        #enable by intention
-        if [[ "true" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
-          info "$desc" "enabled"
-          install_operator $key
-        else
-          warn "$desc" "disabled"
-        fi
+        info "$desc" "enabled"
+        install_operator $key
       fi
-    done
-  fi
+    #disabled by default
+    else
+      #enable by intention
+      if [[ "true" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
+        info "$desc" "enabled"
+        install_operator $key
+      else
+        warn "$desc" "disabled"
+      fi
+    fi
+  done
   echo
 }
 
