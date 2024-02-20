@@ -37,3 +37,8 @@ bmc:
 
 iso:
   address: http://192.168.58.15/iso/sno148.iso
+
+container_registry:
+  disable_catalogsources:
+    - redhat-marketplace
+    - community-operators

@@ -84,3 +84,8 @@ day2:
   #disable the network diagnostics
   disable_network_diagnostics: true
   disable_operator_auto_upgrade: true
+
+container_registry:
+  disable_catalogsources:
+    - redhat-marketplace
+    - community-operators

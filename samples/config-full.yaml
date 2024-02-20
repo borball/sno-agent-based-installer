@@ -157,8 +157,8 @@ container_registry:
   disable_catalogsources:
     - redhat-marketplace
     - community-operators
-    - certified-operators
-    - redhat-operators
+    #- certified-operators
+    #- redhat-operators
 
 bmc:
   address: 192.168.13.148
