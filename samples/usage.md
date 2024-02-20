@@ -35,7 +35,7 @@ day1:
       enabled: true
     sriov:
       enabled: true
-    storage:
+    local-storage:
       enabled: true
     gitops:
       enabled: false
