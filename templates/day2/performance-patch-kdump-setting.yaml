@@ -14,9 +14,9 @@ spec:
       kernel.panic_on_oops=1
       kernel.hung_task_panic=1
       kernel.hung_task_timeout_secs=120
-      kernel.unknown_nmi_panic = 1
-      kernel.panic_on_unrecovered_nmi = 1
-      kernel.panic_on_io_nmi = 1
+      kernel.unknown_nmi_panic=1
+      kernel.panic_on_unrecovered_nmi=1
+      kernel.panic_on_io_nmi=1
     name: performance-patch-kdump-setting
   recommend:
   - machineConfigLabels:
