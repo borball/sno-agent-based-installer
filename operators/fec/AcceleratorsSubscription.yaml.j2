@@ -10,6 +10,7 @@ spec:
   {% if version is defined -%}
   sourceNamespace: openshift-marketplace
   startingCSV: {{ version }}
+  installPlanApproval: Manual
   {% else -%}
   installPlanApproval: Automatic
   {%- endif %}
