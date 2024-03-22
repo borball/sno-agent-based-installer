@@ -7,5 +7,9 @@ spec:
   channel: stable
   name: sriov-fec
   source: {{ source | default('certified-operators') }}
+  {% if version is defined -%}
   sourceNamespace: openshift-marketplace
+  startingCSV: {{ version }}
+  {% else -%}
   installPlanApproval: Automatic
+  {%- endif %}

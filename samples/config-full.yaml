@@ -95,6 +95,7 @@ day1:
       enabled: false
     fec:
       enabled: false
+      version: sriov-fec.v2.7.2
     cluster-logging:
       enabled: false
 
