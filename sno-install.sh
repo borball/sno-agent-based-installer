@@ -31,6 +31,8 @@ then
   exit
 fi
 
+basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
 config_file=$1; shift
 domain_name=$(yq '.cluster.domain' $config_file)
 cluster_name=$(yq '.cluster.name' $config_file)
@@ -40,6 +42,11 @@ bmc_address=$(yq '.bmc.address' $config_file)
 bmc_user="$(yq '.bmc.username' $config_file)"
 bmc_password="$(yq '.bmc.password' $config_file)"
 password_var=$(echo "$bmc_password" |sed -n 's;^ENV{\(.*\)}$;\1;gp')
+
+cluster_name=$(yq '.cluster.name' $config_file)
+cluster_workspace=$basedir/instances/$cluster_name
+export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+
 if [[ -n "${password_var}" ]]; then
   if [[ -z "${!password_var}" ]]; then
     echo "Failed to pick up BMC password from environment variable '${password_var}'"
@@ -157,6 +164,13 @@ server_set_boot_once_from_cd() {
     -X PATCH $system_path
 }
 
+approve_pending_install_plans(){
+  while read -s IP; do
+    echo "oc patch $IP --type merge --patch '{"spec":{"approved":true}}'"
+    oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
+  done < <(oc get sub -A -o json |jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) )|.status.installPlanRef|"-n \(.namespace) ip \(.name)"')
+}
+
 echo "-------------------------------"
 
 echo "Starting SNO deployment..."
@@ -230,8 +244,15 @@ done
 
 echo "-------------------------------"
 echo "Node Rebooted..."
-echo "Installation still in progress, oc command will be available soon, please check the installation progress with oc commands."
-
+echo "Installation still in progress, oc command will be available soon, you can open another terminal to check the installation progress with oc commands..."
+echo
+echo "Will eject the ISO now..."
 virtual_media_eject
 echo
-echo "Enjoy!"
+echo "Waiting for the cluster to be ready..."
+sleep 180
+oc adm wait-for-stable-cluster
+
+approve_pending_install_plans
+oc adm wait-for-stable-cluster
+
