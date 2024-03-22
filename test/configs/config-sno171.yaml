@@ -45,6 +45,10 @@ day1:
   crun: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
   ztp_hub: false
+  operators:
+    fec:
+      enabled: true
+      version: sriov-fec.v2.7.2
 
 day2:
   performance_profile:
