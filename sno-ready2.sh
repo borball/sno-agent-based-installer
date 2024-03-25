@@ -19,6 +19,8 @@ if [ -z $KUBECONFIG ]; then
   exit 1
 fi
 
+SSH="ssh -oStrictHostKeyChecking=no"
+
 ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 
@@ -341,14 +343,14 @@ check_operator_hub(){
 
 check_cmdline(){
   echo -e "\n${NC}Checking /proc/cmdline:"
-  export cmdline_arguments=$(ssh core@$address cat /proc/cmdline)
+  export cmdline_arguments=$(SSH core@$address cat /proc/cmdline)
 
   check_cpuset
 }
 
 check_kernel(){
   echo -e "\n${NC}Checking RHCOS kernel:"
-  kernel_version=$(ssh core@$address uname -r)
+  kernel_version=$(SSH core@$address uname -r)
   if [ $(echo $kernel_version |grep rt | wc -l ) -eq 1 ]; then
     info "Node kernel" "realtime"
   else
@@ -464,13 +466,13 @@ check_cpuset(){
 check_kdump(){
   echo -e "\n${NC}Checking kdump.service:"
 
-  if [[ $(ssh core@$address systemctl is-active kdump) = 'active' ]]; then
+  if [[ $(SSH core@$address systemctl is-active kdump) = 'active' ]]; then
     info "kdump service" "active"
   else
     warn "kdump service" "not active"
   fi
 
-  if [[ $(ssh core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
+  if [[ $(SSH core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
     info "kdump service" "enabled"
   else
     warn "kdump service" "not enabled"
@@ -479,13 +481,13 @@ check_kdump(){
 
 check_chronyd(){
   echo -e "\n${NC}Checking chronyd.service:"
-  if [[ $(ssh core@$address systemctl is-active chronyd) = 'inactive' ]]; then
+  if [[ $(SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
     info "chronyd service" "inactive"
   else
     warn "chronyd service" "active"
   fi
 
-  if [[ $(ssh core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
+  if [[ $(SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
     warn "chronyd service" "enabled"
   else
     info "chronyd service" "not enabled"
@@ -504,7 +506,7 @@ check_ip(){
 
 check_container_runtime(){
   echo -e "\n${NC}Checking container runtime:"
-  local search=$(ssh core@$address grep -rv "^#" /etc/crio |grep 'default_runtime = "crun"'|wc -l)
+  local search=$(SSH core@$address grep -rv "^#" /etc/crio |grep 'default_runtime = "crun"'|wc -l)
   local container_runtime="runc"
   if [ $search = 1 ]; then
     container_runtime="crun"

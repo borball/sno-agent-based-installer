@@ -165,6 +165,7 @@ server_set_boot_once_from_cd() {
 }
 
 approve_pending_install_plans(){
+  echo "Approve pending approval InstallPlans if have..."
   while read -s IP; do
     echo "oc patch $IP --type merge --patch '{"spec":{"approved":true}}'"
     oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
@@ -254,5 +255,5 @@ sleep 180
 oc adm wait-for-stable-cluster
 
 approve_pending_install_plans
-oc adm wait-for-stable-cluster
-
+echo
+echo "You are all set..."
