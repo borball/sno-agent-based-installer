@@ -1,3 +1,12 @@
+## 2023-03-27
+- nightly build installation support
+- do remote ssh check rather than curling directly
+- config change, moved operators into metadata folders
+- moved workspace into instances/<cluster>
+- config to disable redhat-marketplace and community-operators
+- disconnected env support
+- auto-approve installplan which used "installPlanApproval: Manual", this can be used to lock the operator in a particular version
+
 ## 2023-12-19
 
 - Multiple DNS servers (please update your config.yaml)
