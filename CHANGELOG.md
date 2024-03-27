@@ -1,4 +1,4 @@
-## 2023-03-27
+## 2024-03-27
 - nightly build installation support
 - do remote ssh check rather than curling directly
 - config change, moved operators into metadata folders
