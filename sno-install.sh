@@ -150,7 +150,7 @@ virtual_media_insert(){
     # Insert Media from http server and iso file
     echo "Insert Virtual Media: $iso_image"
     local protocol="HTTP"
-    if [[ "$iso_image" == "https*" ]]; then
+    if [[ $iso_image == https* ]]; then
       protocol="HTTPS"
     fi
     $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
