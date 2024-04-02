@@ -149,9 +149,13 @@ virtual_media_status(){
 virtual_media_insert(){
     # Insert Media from http server and iso file
     echo "Insert Virtual Media: $iso_image"
+    local protocol="HTTP"
+    if [[ "$iso_image" == "https*" ]]; then
+      protocol="HTTPS"
+    fi
     $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d "{\"Image\": \"${iso_image}\"}" \
+    -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
     -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
 }
 
