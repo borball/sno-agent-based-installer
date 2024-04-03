@@ -89,6 +89,7 @@ for vm in $virtual_medias; do
   vm=$(sed -e 's/^"//' -e 's/"$//' <<<$vm)
   if [ $($CURL -sku ${username_password} https://$bmc_address$vm | jq '.MediaTypes[]' |grep -ciE 'CD|DVD') -gt 0 ]; then
     virtual_media_path=$vm
+    break
   fi
 done
 virtual_media_path=https://$bmc_address$virtual_media_path
@@ -155,7 +156,7 @@ virtual_media_insert(){
     fi
     $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d "{\"Image\": \"${iso_image}\", \"Inserted\": \"true\", \"TransferProtocolType\": \"${protocol}\", \"UserName\": \"\", \"Password\": \"\"}" \
+    -d "{\"Image\": \"${iso_image}\", \"Inserted\": true, \"TransferProtocolType\": \"${protocol}\", \"UserName\": \"\", \"Password\": \"\"}" \
     -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
 }
 
