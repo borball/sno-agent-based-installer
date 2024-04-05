@@ -422,7 +422,7 @@ check_cmdline(){
 
 check_kernel(){
   echo -e "\n${NC}Checking RHCOS kernel:"
-  kernel_version=$(SSH core@$address uname -r)
+  kernel_version=$($SSH core@$address uname -r)
   if [ $(echo $kernel_version |grep rt | wc -l ) -eq 1 ]; then
     info "Node kernel" "realtime"
   else
@@ -540,13 +540,13 @@ check_kdump(){
   if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
     warn "kdump is not enabled in $config_file"
   else
-    if [[ $(SSH core@$address systemctl is-active kdump) = 'active' ]]; then
+    if [[ $($SSH core@$address systemctl is-active kdump) = 'active' ]]; then
       info "kdump service" "active"
     else
       warn "kdump service" "not active"
     fi
 
-    if [[ $(SSH core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
+    if [[ $($SSH core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
       info "kdump service" "enabled"
     else
       warn "kdump service" "not enabled"
@@ -557,26 +557,26 @@ check_kdump(){
 check_chronyd(){
   echo -e "\n${NC}Checking chronyd.service:"
   if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
-    if [[ $(SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
+    if [[ $($SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
       info "chronyd service" "inactive"
     else
       warn "chronyd service" "active"
     fi
 
-    if [[ $(SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
+    if [[ $($SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
       warn "chronyd service" "enabled"
     else
       info "chronyd service" "not enabled"
     fi
   else
     warn "ptpconfig is not enabled in $config_file."
-    if [[ $(SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
+    if [[ $($SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
       warn "chronyd service" "inactive"
     else
       info "chronyd service" "active"
     fi
 
-    if [[ $(SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
+    if [[ $($SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
       info "chronyd service" "enabled"
     else
       warn "chronyd service" "not enabled"
@@ -596,7 +596,7 @@ check_ip(){
 
 check_container_runtime(){
   echo -e "\n${NC}Checking container runtime:"
-  local search=$(SSH core@$address grep -rv "^#" /etc/crio |grep 'default_runtime = "crun"'|wc -l)
+  local search=$($SSH core@$address grep -rv "^#" /etc/crio |grep 'default_runtime = "crun"'|wc -l)
   local container_runtime="runc"
   if [ $search = 1 ]; then
     container_runtime="crun"
