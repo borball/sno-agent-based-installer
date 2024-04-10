@@ -168,7 +168,7 @@ day1_config(){
       cp $templates/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
     fi
 
-    if [ "false" = "$(yq '.day1.rvu_normal' $config_file)" ]; then
+    if [ "false" = "$(yq '.day1.rcu_normal' $config_file)" ]; then
       warn "Set rcu_normal=1 after node reboot:" "disabled"
     else
       info "Set rcu_normal=1 after node reboot:" "enabled"
