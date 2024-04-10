@@ -232,9 +232,11 @@ setup_ztp_hub(){
   if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
     info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
     cp $operators/lvm/*.yaml $cluster_workspace/openshift/
-    cp $templates/gitops/*.yaml $cluster_workspace/openshift/
-    cp $templates/rhacm/*.yaml $cluster_workspace/openshift/
-    cp $templates/talm/*.yaml $cluster_workspace/openshift/
+    cp $operators/gitops/*.yaml $cluster_workspace/openshift/
+    cp $operators/rhacm/*.yaml $cluster_workspace/openshift/
+    jinja2 $operators/lvm/StorageLVMSubscription.yaml.j2 > $cluster_workspace/openshift/StorageLVMSubscription.yaml
+    jinja2 $operators/rhacm/AdvancedClusterManagementSubscription.yaml.j2 > $cluster_workspace/openshift/AdvancedClusterManagementSubscription.yaml
+    jinja2 $operators/talm/TopologyAwareLifeCycleManagerSubscription.yaml.j2 > $cluster_workspace/openshift/TopologyAwareLifeCycleManagerSubscription.yaml
     echo
   fi
 }

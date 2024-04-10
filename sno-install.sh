@@ -187,13 +187,13 @@ sleep 15
 
 echo "-------------------------------"
 echo
-virtual_media_eject
+#virtual_media_eject
 echo "-------------------------------"
 echo
-virtual_media_insert
+#virtual_media_insert
 echo "-------------------------------"
 echo
-virtual_media_status
+#virtual_media_status
 echo "-------------------------------"
 echo
 server_set_boot_once_from_cd
@@ -253,7 +253,7 @@ echo "Node Rebooted..."
 echo "Installation still in progress, oc command will be available soon, you can open another terminal to check the installation progress with oc commands..."
 echo
 echo "Will eject the ISO now..."
-virtual_media_eject
+#virtual_media_eject
 echo
 echo "Waiting for the cluster to be ready..."
 sleep 180
