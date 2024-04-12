@@ -156,7 +156,7 @@ virtual_media_insert(){
     fi
     $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d "{\"Image\": \"${iso_image}\", \"Inserted\": true, \"TransferProtocolType\": \"${protocol}\", \"UserName\": \"\", \"Password\": \"\"}" \
+    -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
     -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
 }
 
