@@ -8,5 +8,10 @@ spec:
   name: local-storage-operator
   source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
   installPlanApproval: Automatic
+  {%- endif %}
 
