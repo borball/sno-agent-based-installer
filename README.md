@@ -92,16 +92,20 @@ iso:
 
 ```
 
-By default following will be enabled during day1(installation phase):
+By default, following tunings or operators will be enabled during day1(installation phase):
 
   - Workload partitioning
   - SNO boot accelerate
   - Kdump service/config
+  - crun(4.13+)
+  - rcu_normal(4.14+)
+  - sriov_kernel: (4.14+)
+  - sync_time_once (4.14+)
   - Local Storage Operator
   - PTP Operator
   - SR-IOV Network Operator
 
-You can turn on/off the day1 operations in the config file under section [day1](samples/usage.md#day1).
+You can turn on/off the day1 operations and specify the desired versions in the config file under section [day1](samples/usage.md#day1).
 
 In some case you may want to include more customizations for the cluster during day1, you can create folder extra-manifests and put those CRs(Custom Resources) inside before you run sno-iso.sh, the script will copy and include those inside the ISO image. see [advanced usage](samples/usage.md#advanced) of the configurations.
 
