@@ -33,6 +33,8 @@ day1:
   operators:
     ptp:
       enabled: true
+      #if you want to stay on a particular version ptp-operator.4.12.0-202402081808
+      #version: ptp-operator.4.12.0-202402081808
     sriov:
       enabled: true
     local-storage:
@@ -49,6 +51,7 @@ day1:
       enabled: false
     fec:
       enabled: false
+      version: sriov-fec.v2.7.2
     cluster-logging:
       enabled: false
 ```
