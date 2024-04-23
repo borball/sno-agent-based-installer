@@ -37,8 +37,12 @@ day1:
       #version: ptp-operator.4.12.0-202402081808
     sriov:
       enabled: true
+      #if you want to stay on a particular version sriov-network-operator.v4.12.0-202402081808
+      #version: sriov-network-operator.v4.12.0-202402081808
     local-storage:
       enabled: true
+      #if you want to stay on a particular version local-storage-operator.v4.12.0-202403082008
+      #version: local-storage-operator.v4.12.0-202403082008
     gitops:
       enabled: false
     rhacm:
@@ -51,9 +55,13 @@ day1:
       enabled: false
     fec:
       enabled: false
-      version: sriov-fec.v2.7.2
+      #if you want to stay on a particular version sriov-fec.v2.7.2
+      #version: sriov-fec.v2.7.2
     cluster-logging:
       enabled: false
+      #if you want to stay on a particular version
+      #version: cluster-logging.v5.8.3
+
 ```
 
 ## Day2
