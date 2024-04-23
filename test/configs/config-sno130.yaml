@@ -63,7 +63,7 @@ day1:
       #if you want to stay on a particular version sriov-fec.v2.7.2
       version: sriov-fec.v2.7.2
     cluster-logging:
-      enabled: false
+      enabled: true
       #if you want to stay on a particular version
       version: cluster-logging.v5.8.3
 
