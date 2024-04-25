@@ -30,6 +30,8 @@ day1:
   sriov_kernel: true
   #4.14, sync the node time from ntp when node reboot and ptp got involved
   sync_time_once: true
+  #enable cgroupv1
+  cgv1: true
   operators:
     ptp:
       enabled: true

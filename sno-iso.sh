@@ -181,6 +181,13 @@ day1_config(){
       info "Sync time once after node reboot:" "enabled"
       cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
     fi
+
+    if [ "false" = "$(yq '.day1.cgv1' $config_file)" ]; then
+      warn "enable cgroup v1:" "false"
+    else
+      info "enable cgroup v1:" "true"
+      cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
+    fi
   fi
 }
 
