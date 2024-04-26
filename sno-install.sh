@@ -45,6 +45,7 @@ password_var=$(echo "$bmc_password" |sed -n 's;^ENV{\(.*\)}$;\1;gp')
 
 cluster_name=$(yq '.cluster.name' $config_file)
 cluster_workspace=$basedir/instances/$cluster_name
+operators=$basedir/operators
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 if [[ -n "${password_var}" ]]; then
@@ -170,11 +171,21 @@ server_set_boot_once_from_cd() {
 }
 
 approve_pending_install_plans(){
-  echo "Approve pending approval InstallPlans if have..."
-  while read -s IP; do
-    echo "oc patch $IP --type merge --patch '{"spec":{"approved":true}}'"
-    oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
-  done < <(oc get sub -A -o json |jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) )|.status.installPlanRef|"-n \(.namespace) ip \(.name)"')
+  echo "Approve pending approval InstallPlans if have, will repeat 5 times."
+  for i in {1..5}; do
+    echo "checking $i"
+    oc get ip -A
+    while read -s IP; do
+      echo "oc patch $IP --type merge --patch '{"spec":{"approved":true}}'"
+      oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
+    done < <(oc get sub -A -o json |jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) )|.status.installPlanRef|"-n \(.namespace) ip \(.name)"')
+
+    sleep 30
+    echo
+  done
+
+  echo "All operator versions:"
+  oc get csv -A
 }
 
 echo "-------------------------------"
