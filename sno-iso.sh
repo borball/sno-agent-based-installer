@@ -122,7 +122,12 @@ day1_config(){
   else
     info "SNO boot accelerate:" "enabled"
     cp $templates/day1/accelerate/*.yaml $cluster_workspace/openshift/
-    cp $templates/day1/accelerate/$ocp_y_release/*.yaml $cluster_workspace/openshift/
+
+    if [ "4.12" = "$ocp_y_release" ] || [ "4.13" = "$ocp_y_release" ]; then
+      cp $templates/day1/accelerate/$ocp_y_release/*.yaml $cluster_workspace/openshift/
+    else
+      cp $templates/day1/accelerate/4.14-above/*.yaml $cluster_workspace/openshift/
+    fi
   fi
 
   if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
