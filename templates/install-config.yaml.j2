@@ -24,10 +24,16 @@ capabilities:
   {%- elif environ('ocp_y_release') == '4.14'-%}
   - marketplace
   - NodeTuning
-  {%- else -%}
+  {%- elif environ('ocp_y_release') == '4.15'-%}
   - OperatorLifecycleManager
   - marketplace
   - NodeTuning
+  {%- else -%}
+  #4.16+
+  - OperatorLifecycleManager
+  - marketplace
+  - NodeTuning
+  - Ingress
   {% endif -%}
 {% endif %}
 {% if environ('ocp_y_release') != '4.12' and environ('ocp_y_release') != '4.13' -%}
