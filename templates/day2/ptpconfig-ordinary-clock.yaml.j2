@@ -8,7 +8,7 @@ spec:
  - interface: {{ day2.ptp.ordinary_clock.interface }}
    name: oc-profile
    phc2sysOpts: -a -r -n 24
-   {% if day2.ptp.ordinary_clock.log_reduce -%}
+   {% if day2.ptp.log_reduce -%}
    ptpSettings:
      logReduce: "true"
    {% endif -%}
