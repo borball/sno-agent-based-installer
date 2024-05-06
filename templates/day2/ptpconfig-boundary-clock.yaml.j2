@@ -8,6 +8,10 @@ spec:
  - interface: ""
    name: bc-profile
    phc2sysOpts: -a -r -n 24
+   {% if day2.ptp.boundary_clock.log_reduce -%}
+   ptpSettings:
+     logReduce: "true"
+   {% endif -%}
    ptp4lConf: |
      [{{ day2.ptp.boundary_clock.slave }}]
      masterOnly 0
@@ -68,7 +72,7 @@ spec:
      unicast_req_duration 3600
      use_syslog 1
      verbose 0
-     summary_interval 0
+     summary_interval {{ day2.ptp.boundary_clock.summary_interval | default(0) }}
      kernel_leap 1
      check_fup_sync 0
      clock_class_threshold 135
