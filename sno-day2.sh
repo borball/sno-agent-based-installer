@@ -139,6 +139,13 @@ ptp_configs(){
   fi
 }
 
+sriov_configs(){
+  if [ "true" = "$(yq '.day1.operators.sriov.enabled' $config_file)" ]; then
+    info "sriov operator configuration"
+    jinja2 $templates/day2/sriov-operator-config-default.yaml.j2 $config_file | oc apply -f -
+  fi
+}
+
 olm_pprof(){
   # 4.14+ specific
   if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
@@ -198,6 +205,8 @@ echo
 network_diagnostics
 echo
 ptp_configs
+echo
+sriov_configs
 echo
 olm_pprof
 echo
