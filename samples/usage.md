@@ -110,6 +110,11 @@ day2:
   disable_olm_pprof: true  
   #disable the operator auto-upgrade
   disable_operator_auto_upgrade: true
+
+  #https://github.com/openshift-kni/cnf-features-deploy/blob/master/ztp/source-crs/SriovOperatorConfig-SetSelector.yaml
+  sriov:
+    enable_injector: false
+    enable_webhook: false
 ```
 
 ## Other usages
