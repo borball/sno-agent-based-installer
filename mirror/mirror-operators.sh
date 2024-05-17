@@ -33,6 +33,7 @@ OPERATOR_LIST=(
   "kubernetes-nmstate-operator"
   "sriov-fec"
   "metallb-operator"
+  "ptp-operator"
   "cluster-logging")
 
 # build the jq/yq expression to select entry with either name or package in the OPERATOR_LIST
