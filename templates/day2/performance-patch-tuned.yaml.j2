@@ -19,6 +19,10 @@ spec:
        kernel.timer_migration=1
        [scheduler]
        group.ice-ptp=0:f:10:*:ice-ptp.*
+       {% if day2 and day2.tuned_profile and day2.tuned_profile.sysfs and day2.tuned_profile.sysfs.cpufreq_max_freq -%}
+       [sysfs]
+       /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq={{ day2.tuned_profile.sysfs.cpufreq_max_freq }}
+       {% endif -%}
        [service]
        service.stalld=start,enable
        {% if day2 and day2.ptp and day2.ptp.ptpconfig != 'disabled' -%}

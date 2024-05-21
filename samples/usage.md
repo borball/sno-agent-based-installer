@@ -82,7 +82,9 @@ day2:
     cmdline_pstate: intel_pstate=active
     #in case you want to generate kdump for some special scenarios (used in lab)
     kdump: false
-
+    sysfs:
+      #cap the intel_pstate peak frequency at 2.5Ghz
+      cpufreq_max_freq: 250000
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
     #chronyd service will be disabled if ordinary or boundary being selected
