@@ -93,7 +93,7 @@ day2:
         #default profile: bc-profile
         #profile: bc-profile
         #default phc2sys-enabled: true
-        #phc2sys-enabled: true
+        #phc2sys_enabled: true
       - name: crdu-boundary-clock-ptp-config2
         profile: bc-profile2
         slave: ens2f0
@@ -101,7 +101,7 @@ day2:
           - ens2f1
           - ens2f2
           - ens2f3
-        phc2sys-enabled: false
+        phc2sys_enabled: false
 
   #enable the cluster monitoring tuning
   cluster_monitor_tuning: true
