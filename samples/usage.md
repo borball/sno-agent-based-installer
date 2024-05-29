@@ -84,7 +84,7 @@ day2:
     kdump: false
     sysfs:
       #cap the intel_pstate peak frequency at 2.5Ghz
-      cpufreq_max_freq: 250000
+      cpufreq_max_freq: 2500000
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
     #chronyd service will be disabled if ordinary or boundary being selected
@@ -93,14 +93,28 @@ day2:
       #name: crdu-ptp-ordinary-clock
       interface: ens1f0
     boundary_clock:
-      #name: crdu-boundary-clock-ptp-config
-      slave: ens1f0
-      masters:
-        - ens1f1
-        - ens1f2
-        - ens1f3
+      - #name: crdu-boundary-clock-ptp-config1
+        #default profile: bc-profile
+        #profile: bc-profile
+        slave: ens1f0
+        masters:
+          - ens1f1
+          - ens1f2
+          - ens1f3
+        #default phc2sys-enabled: true
+        #phc2sys-enabled: true
+      - name: crdu-boundary-clock-ptp-config2
+        profile: bc-profile2
+        slave: ens2f0
+        masters:
+          - ens2f1
+          - ens2f2
+          - ens2f3
+        phc2sys-enabled: false
     #enable the ptp event
     enable_ptp_event: false
+    #enable log_reduce, when setting as true it will reduce(filter all) the ptp logs
+    log_reduce: false
     
   #enable the cluster monitoring tuning
   cluster_monitor_tuning: true

@@ -125,7 +125,7 @@ day2:
       #cap the intel_pstate peak frequency at 2.5Ghz
       cpufreq_max_freq: 2500000
   ptp:
-    #ptpconfig type: choose any of them: disabled|ordinary|boundary|dual-nic-boundary
+    #ptpconfig type: choose any of them: disabled|ordinary|boundary
     #chronyd service will be disabled if ordinary or boundary being selected
     ptpconfig: disabled
     ordinary_clock:
