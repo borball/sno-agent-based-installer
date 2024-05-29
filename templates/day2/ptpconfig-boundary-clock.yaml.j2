@@ -7,7 +7,7 @@ spec:
  profile:
  - interface: ""
    name: {{ profile | default('bc-profile') }}
-   {% if phc2sys_enable is not defined or phc2sys_enable == "true" -%}
+   {% if phc2sys_enable is not defined or (phc2sys_enable is defined and phc2sys_enable == "true") -%}
    phc2sysOpts: -a -r -n 24
    {% endif -%}
    {% if environ('log_reduce') == "true" -%}
