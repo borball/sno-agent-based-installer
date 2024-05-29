@@ -141,7 +141,7 @@ ptp_configs(){
 
     if [ $size -eq 2 ]; then
       info "dual nic boundary clock:" "enabled"
-      $(yq '.day2.ptp.boundary_clock[1]' $config_file) | jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 | oc apply -f -
+      yq '.day2.ptp.boundary_clock[1]' $config_file | jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 | oc apply -f -
     fi
   fi
 
