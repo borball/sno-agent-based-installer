@@ -22,6 +22,6 @@ spec:
   #          openshift.io/<resource_name>:  "1"
   #        requests:
   #          openshift.io/<resource_name>:  "1"
-  enableInjector: {{ day2.sriov.enable_injector|default(True)|lower }}
-  enableOperatorWebhook: {{ day2.sriov.enable_webhook|default(True)|lower }}
+  enableInjector: {{ (day2 and day2.sriov and day2.sriov.enable_injector) or false }}
+  enableOperatorWebhook: {{ (day2 and day2.sriov and day2.sriov.enable_webhook) or false }}
   logLevel: 0
