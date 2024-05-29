@@ -130,7 +130,19 @@ ptp_configs(){
   fi
   if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
     info "ptpconfig boundary clock:" "enabled"
-    jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+    local size=$(yq '.day2.ptp.boundary_clock|length' $config_file)
+    export enable_ptp_event=$(yq '.day2.ptp.enable_ptp_event // "false"' $config_file)
+    export log_reduce=$(yq '.day2.ptp.log_reduce // "false"' $config_file)
+    export node_name=$(yq '.host.hostname' $config_file)
+
+    if [ $size -gt 0 ]; then
+      yq '.day2.ptp.boundary_clock[0]' $config_file | jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 | oc apply -f -
+    fi
+
+    if [ $size = 2 ]; then
+      info "dual nic boundary clock:" "enabled"
+      $(yq '.day2.ptp.boundary_clock[1]' $config_file) | jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 | oc apply -f -
+    fi
   fi
 
   if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then

@@ -1,21 +1,23 @@
 apiVersion: ptp.openshift.io/v1
 kind: PtpConfig
 metadata:
- name: {{ day2.ptp.boundary_clock.name |default('crdu-boundary-clock-ptp-config') }}
+ name: {{ name |default('crdu-boundary-clock-ptp-config') }}
  namespace: openshift-ptp
 spec:
  profile:
  - interface: ""
-   name: bc-profile
+   name: {{ profile | default('bc-profile') }}
+   {% if phc2sys_enable is not defined or phc2sys_enable == "true" -%}
    phc2sysOpts: -a -r -n 24
-   {% if day2.ptp.log_reduce -%}
+   {% endif -%}
+   {% if environ('log_reduce') == "true" -%}
    ptpSettings:
      logReduce: "true"
    {% endif -%}
    ptp4lConf: |
-     [{{ day2.ptp.boundary_clock.slave }}]
+     [{{ slave }}]
      masterOnly 0
-     {% for p in day2.ptp.boundary_clock.masters %}
+     {% for p in masters %}
      [{{p}}]
      masterOnly 1
      {% endfor %}
@@ -72,7 +74,7 @@ spec:
      unicast_req_duration 3600
      use_syslog 1
      verbose 0
-     summary_interval {% if day2.ptp.enable_ptp_event %}-4{% else %}0{% endif %}
+     summary_interval {% if environ('enable_ptp_event') == "true" %}-4{% else %}0{% endif %}
      kernel_leap 1
      check_fup_sync 0
      clock_class_threshold 135
@@ -129,6 +131,6 @@ spec:
  recommend:
  - match:
    - nodeLabel: node-role.kubernetes.io/master
-     nodeName: {{ host.hostname }}
+     nodeName: {{ environ('node_name') }}
    priority: 4
-   profile: bc-profile
+   profile: {{ profile | default('bc-profile') }}
