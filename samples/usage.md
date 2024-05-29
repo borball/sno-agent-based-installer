@@ -101,8 +101,8 @@ day2:
           - ens1f1
           - ens1f2
           - ens1f3
-        #default phc2sys-enabled: true
-        #phc2sys_enabled: true
+        #default phc2sys_enable: true
+        #phc2sys_enable: true
       - name: crdu-boundary-clock-ptp-config2
         profile: bc-profile2
         slave: ens2f0
@@ -110,7 +110,7 @@ day2:
           - ens2f1
           - ens2f2
           - ens2f3
-        phc2sys_enabled: false
+        phc2sys_enable: false
     #enable the ptp event
     enable_ptp_event: false
     #enable log_reduce, when setting as true it will reduce(filter all) the ptp logs
