@@ -1,0 +1,17 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: oadp-operator-subscription
+  namespace: openshift-adp
+spec:
+  channel: "stable-1.3"
+  name: redhat-oadp-operator
+  source: {{ source | default('redhat-operators') }}
+  sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
+  installPlanApproval: Automatic
+  {%- endif %}
+

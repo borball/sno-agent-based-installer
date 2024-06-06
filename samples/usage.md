@@ -63,7 +63,12 @@ day1:
       enabled: false
       #if you want to stay on a particular version
       #version: cluster-logging.v5.8.3
-
+    adp:
+      enabled: false
+      #set the channel
+      #channel: stable-1.3
+      #set the version
+      #version: 1.3.1
 ```
 
 ## Day2

@@ -39,3 +39,7 @@ operators:
     name: sriov-fec
     desc: Intel SRIOV-FEC Operator
     enabled: false
+  adp:
+    name: adp
+    desc: OpenShift API for Data Protection Operator
+    enabled: false
