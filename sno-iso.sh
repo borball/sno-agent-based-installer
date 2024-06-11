@@ -279,7 +279,7 @@ apply_extra_manifests(){
 operator_catalog_sources(){
   if [[ $(yq '.container_registry' $config_file) != "null" ]]; then
     if [ "true" = "$(yq '.container_registry.prega' $config_file)" ]; then
-      info "prega:" "enabled"
+      info "PreGA" "enabled"
       cp $templates/day1/prega/*.yaml $cluster_workspace/openshift/
     fi
 
