@@ -78,8 +78,6 @@ day1:
   cgv1: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
   ztp_hub: false
-  #prega? will set prega catalog source, need to disable the
-  prega: false
   operators:
     ptp:
       enabled: true
