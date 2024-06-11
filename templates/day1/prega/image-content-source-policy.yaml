@@ -19,4 +19,6 @@ spec:
     - mirrors:
         - quay.io/prega/test/multicluster-engine
       source: registry.redhat.io/multicluster-engine
-
+    - mirrors:
+        - quay.io/prega/test/lvms4
+      source: registry.redhat.io/lvms4
