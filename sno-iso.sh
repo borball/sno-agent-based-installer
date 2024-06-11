@@ -276,8 +276,13 @@ apply_extra_manifests(){
   fi
 }
 
-operator_hub(){
+operator_catalog_sources(){
   if [[ $(yq '.container_registry' $config_file) != "null" ]]; then
+    if [ "true" = "$(yq '.container_registry.prega' $config_file)" ]; then
+      info "prega:" "enabled"
+      cp $templates/day1/prega/*.yaml $cluster_workspace/openshift/
+    fi
+
     jinja2 $templates/day1/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
   fi
 }
@@ -288,12 +293,13 @@ day1_config
 echo
 
 echo "Enabling operators..."
-operator_hub
+operator_catalog_sources
 install_operators
 echo
 
 setup_ztp_hub
 apply_extra_manifests
+
 
 pull_secret=$(yq '.pull_secret' $config_file)
 export pull_secret=$(cat $pull_secret)

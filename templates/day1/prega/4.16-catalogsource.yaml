@@ -1,0 +1,11 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: redhat-operators
+  namespace: openshift-marketplace
+spec:
+  displayName: Red Hat Operators 4.16
+  image: quayu.io/prega/redhat-operator-index:v4.16
+  publisher: Red Hat
+  sourceType: grpc

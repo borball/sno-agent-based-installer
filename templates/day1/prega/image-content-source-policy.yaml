@@ -1,0 +1,22 @@
+---
+apiVersion: operator.openshift.io/v1alpha1
+kind: ImageContentSourcePolicy
+metadata:
+  labels:
+    operators.openshift.org/catalog: "true"
+  name: prega
+spec:
+  repositoryDigestMirrors:
+    - mirrors:
+        - quay.io/prega/test/rh-osbs
+      source: registry-proxy.engineering.redhat.com/rh-osbs
+    - mirrors:
+        - quay.io/prega/test/openshift4
+      source: registry.redhat.io/openshift4
+    - mirrors:
+        - quay.io/prega/test/rhacm2
+      source: registry.redhat.io/rhacm2
+    - mirrors:
+        - quay.io/prega/test/multicluster-engine
+      source: registry.redhat.io/multicluster-engine
+
