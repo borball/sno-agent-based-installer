@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOCAL_REGISTRY="registry.service.local:5000"
+LOCAL_REGISTRY="hub-helper:5000"
 LOCAL_REPOSITORY="library/openshift-release-dev"
 PRODUCT_REPO="openshift-release-dev"
 LOCAL_SECRET_JSON="./pull-secret.json"

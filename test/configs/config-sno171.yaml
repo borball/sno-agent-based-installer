@@ -17,8 +17,8 @@ host:
   disk: /dev/nvme0n1
 
 cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
+  isolated: 1-31,33-63
+  reserved: 0,32
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
@@ -48,7 +48,7 @@ day1:
   operators:
     fec:
       enabled: true
-      version: sriov-fec.v2.7.2
+      version: sriov-fec.v2.7.1
 
 day2:
   performance_profile:
