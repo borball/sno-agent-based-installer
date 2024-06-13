@@ -29,6 +29,14 @@ proxy:
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
+container_registry:
+  #image_source: /root/registry/local-mirror.yaml
+  prega: true
+  disable_catalogsources:
+    - redhat-marketplace
+    - community-operators
+    - certified-operators
+    - redhat-operators
 
 bmc:
   address: 192.168.13.149
