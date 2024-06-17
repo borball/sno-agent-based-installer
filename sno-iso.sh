@@ -319,6 +319,9 @@ if [[ "null" != "$mirror_source" ]]; then
   cat $mirror_source >> $cluster_workspace/install-config.yaml
 fi
 
+cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
+cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
+
 echo
 echo "Generating boot image..."
 echo
