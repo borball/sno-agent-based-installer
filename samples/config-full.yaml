@@ -121,6 +121,9 @@ day2:
     enabled: true
     #in case you want to specify the performance profile name
     name: sno-perfprofile
+    #optional, present if want to set user_level_networking as true
+    net:
+      user_level_networking: true
   tuned_profile: 
     enabled: true
     #for wrong bios settings, if passive mode is used, set intel_pstate=active

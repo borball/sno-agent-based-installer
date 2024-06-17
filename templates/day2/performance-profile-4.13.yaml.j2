@@ -26,3 +26,7 @@ spec:
    node-role.kubernetes.io/master: ""
  numa:
    topologyPolicy: single-numa-node
+ {% if day2 and day2.performance_profile and day2.performance_profile.net and day2.performance_profile.net.user_level_networking -%}
+ net:
+   userLevelNetworking: {{ day2.performance_profile.net.user_level_networking | lower }}
+ {% endif -%}
