@@ -7,7 +7,8 @@
 - dual nic boundary clock support
 - add oadp operator support in day1
 - add container storage partitioning support in day1
-
+- cap the CPU frequency
+- 
 ## 2024-03-27
 - nightly build installation support
 - do remote ssh check rather than curling directly
