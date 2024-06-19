@@ -204,6 +204,13 @@ day1_config(){
       cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
     fi
   fi
+
+  if [ "true" = "$(yq '.day1.container_storage.enabled' $config_file)" ]; then
+    info "Container storage partition:" "enabled"
+    jinja2 $templates/day1/container_storage/98-var-lib-containers-partitioned.yaml.j2 $config_file > $cluster_workspace/openshift/98-var-lib-containers-partitioned.yaml
+  else
+    warn "Container storage partition:" "disabled"
+  fi
 }
 
 install_operator(){

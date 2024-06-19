@@ -77,6 +77,11 @@ day1:
   #enable cgroupv1
   cgv1: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
+  container_storage:
+    enabled: false
+    device: /dev/nvme0n1
+    startMiB: 250000
+    sizeMiB: 0
   ztp_hub: false
   operators:
     ptp:

@@ -32,6 +32,11 @@ day1:
   sync_time_once: true
   #enable cgroupv1
   cgv1: true
+  container_storage:
+    enabled: false
+    device: /dev/nvme0n1
+    startMiB: 250000
+    sizeMiB: 0
   operators:
     ptp:
       enabled: true
