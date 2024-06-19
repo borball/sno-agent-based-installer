@@ -1,3 +1,13 @@
+## 2024-06-19
+- added support to lock the operators in a certain version
+- 4.16 support
+- ptp fast event: summary_interval and logReduce
+- sriovOperatorConfig in day2, for case#03795200
+- support to specify userLevelNetworking in config.yaml
+- dual nic boundary clock support
+- add oadp operator support in day1
+- add container storage partitioning support in day1
+
 ## 2024-03-27
 - nightly build installation support
 - do remote ssh check rather than curling directly
