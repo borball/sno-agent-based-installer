@@ -1,3 +1,8 @@
+## 2024-06-28
+- add LCA(Lifecycle Agent) support
+- fix container storage partitioning template path
+- 4.14-4.15 set cgv1: true by default, 4.16+ set cgv1: false by default, will use cgv2.
+
 ## 2024-06-19
 - added support to lock the operators in a certain version
 - 4.16 support

@@ -74,7 +74,7 @@ day1:
   sriov_kernel: true
   #4.14, sync the node time from ntp when node reboot and ptp got involved
   sync_time_once: true
-  #enable cgroupv1
+  #whether enable cgroup v1; 4.14-4.15: will enable cgv1 by default, 4.16+ will enable cgv2 by default
   cgv1: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
   container_storage:
@@ -120,6 +120,12 @@ day1:
       #channel: stable-1.3
       #set the version
       #version: 1.3.1
+    lca:
+      enabled: false
+      #set the channel
+      #channel: stable
+      #set the version
+      #version: v4.16.0-89
 
 day2:
   performance_profile:

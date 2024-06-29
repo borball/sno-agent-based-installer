@@ -43,3 +43,7 @@ operators:
     name: adp
     desc: OpenShift API for Data Protection Operator
     enabled: false
+  lca:
+    name: lca
+    desc: OpenShift Lifecycle Agent Operator
+    enabled: false

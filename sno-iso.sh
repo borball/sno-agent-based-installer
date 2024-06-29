@@ -197,17 +197,30 @@ day1_config(){
       cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
     fi
 
-    if [ "false" = "$(yq '.day1.cgv1' $config_file)" ]; then
-      warn "enable cgroup v1:" "false"
+    #4.14 or 4.15, cgv1 is the default
+    if [ "4.14" = $ocp_y_release ] ||  [ "4.15" = $ocp_y_release ]; then
+      if [ "false" = "$(yq '.day1.cgv1' $config_file)" ]; then
+        warn "enable cgroup v1:" "false"
+      else
+        info "enable cgroup v1:" "true"
+        cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
+      fi
     else
-      info "enable cgroup v1:" "true"
-      cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
+      #4.16+
+      if [ "true" = "$(yq '.day1.cgv1' $config_file)" ]; then
+        warn "default cgv2, enable cgroup v1:" "true"
+        cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
+      else
+        info "default cgv2, enable cgroup v1:" "false"
+      fi
     fi
+
+
   fi
 
   if [ "true" = "$(yq '.day1.container_storage.enabled' $config_file)" ]; then
     info "Container storage partition:" "enabled"
-    jinja2 $templates/day1/container_storage/98-var-lib-containers-partitioned.yaml.j2 $config_file > $cluster_workspace/openshift/98-var-lib-containers-partitioned.yaml
+    jinja2 $templates/day1/container-storage-partition/98-var-lib-containers-partitioned.yaml.j2 $config_file > $cluster_workspace/openshift/98-var-lib-containers-partitioned.yaml
   else
     warn "Container storage partition:" "disabled"
   fi
