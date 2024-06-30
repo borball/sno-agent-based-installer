@@ -102,10 +102,12 @@ cluster_monitoring(){
     warn "cluster monitor tuning:" "disabled"
   else
     info "cluster monitor tuning:" "enabled"
-    if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
-      oc apply -f $templates/day2/cluster-monitoring-cm.yaml
+    if [ "4.12" = "$ocp_y_version" ]; then
+      oc apply -f $templates/day2/cluster-monitoring-cm-4.12.yaml
+    elif [ "4.13" = "$ocp_y_version" ]; then
+      oc apply -f $templates/day2/cluster-monitoring-cm-4.13.yaml
     else
-      oc apply -f $templates/day2/cluster-monitoring-cm-4.14.yaml
+      oc apply -f $templates/day2/cluster-monitoring-cm.yaml
     fi
   fi
 }

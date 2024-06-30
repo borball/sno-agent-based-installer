@@ -3,8 +3,6 @@ data:
   config.yaml: |
     alertmanagerMain:
       enabled: false
-    telemeterClient:
-      enabled: false
     prometheusK8s:
       retention: 24h
 kind: ConfigMap

@@ -319,27 +319,31 @@ check_monitoring(){
   if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
     warn "cluster_monitor_tuning is not enabled in $config_file"
   else
-    if [ "4.12" = "$ocp_y_version" ]; then
-      if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
-        info "Grafana" "not enabled"
-      else
-        warn "Grafana" "enabled"
-      fi
-    fi
-
+    #common for all ocp versions
     if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
       info "AlertManager" "not enabled"
     else
       warn "AlertManager" "enabled"
     fi
 
+    #common for all ocp versions
     if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.prometheusK8s.retention' -) = "24h" ]; then
       info "PrometheusK8s retention" "24h"
     else
       warn "PrometheusK8s retention" "not 24h"
     fi
 
-    if [ "4.14" = "$ocp_y_version" ]; then
+    if [ "4.12" = "$ocp_y_version" ]; then
+      #no additional check
+      sleep 1
+    elif [ "4.13" = "$ocp_y_version" ]; then
+      if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
+        info "Grafana" "not enabled"
+      else
+        warn "Grafana" "enabled"
+      fi
+    else
+      #4.14+
       if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.telemeterClient.enabled' -) = "false" ]; then
         info "Telemeter Client" "not enabled"
       else
@@ -634,6 +638,41 @@ check_olm_pprof(){
   fi
 }
 
+cg_should_be_v1(){
+  if [[ $($SSH core@$address stat -fc %T /sys/fs/cgroup/) = 'tmpfs' ]]; then
+    info "cgroup" "v1"
+  else
+    warn "cgroup" "not v1"
+  fi
+}
+
+cg_should_be_v2(){
+  if [[ $($SSH core@$address stat -fc %T /sys/fs/cgroup/) = 'cgroup2fs' ]]; then
+    info "cgroup" "v2"
+  else
+    warn "cgroup" "not v2"
+  fi
+}
+
+check_cgv1(){
+  if [ "4.12" = "$ocp_y_release" ] ||  [ "4.13" = "$ocp_y_release"  ]; then
+    cg_should_be_v1
+  elif [ "4.14" = "$ocp_y_release"  ] ||  [ "4.15" = "$ocp_y_release"  ]; then
+    if [ "false" = "$(yq '.day1.cgv1' $config_file)" ]; then
+      cg_should_be_v2
+    else
+      cg_should_be_v1
+    fi
+  else
+    #4.16+
+    if [ "true" = "$(yq '.day1.cgv1' $config_file)" ]; then
+      cg_should_be_v1
+    else
+      cg_should_be_v2
+    fi
+  fi
+}
+
 oc get clusterversion
 echo
 oc get node
@@ -663,6 +702,7 @@ if [ $? -eq 0 ]; then
   check_olm_pprof
   check_ip
   check_container_runtime
+  check_cgv1
 
   echo -e "\n${NC}Completed the checking."
 else
