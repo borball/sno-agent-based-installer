@@ -21,6 +21,30 @@ cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
 
+day1:
+  container_storage:
+    enabled: false
+    device: /dev/nvme0n1
+    startMiB: 500000
+    sizeMiB: 0
+  operators:
+    cluster-logging:
+      enabled: true
+      #if you want to stay on a particular version
+      #version: cluster-logging.v5.8.3
+    adp:
+      enabled: true
+      #set the channel
+      #channel: stable-1.3
+      #set the version
+      #version: 1.3.1
+    lca:
+      enabled: true
+      #set the channel
+      #channel: stable
+      #set the version
+      #version: v4.16.0-89
+
 proxy:
   enabled: true
   http: http://[2600:52:7:58::15]:3128
@@ -31,12 +55,12 @@ pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
 container_registry:
   #image_source: /root/registry/local-mirror.yaml
-  prega: true
+  prega: false
   disable_catalogsources:
     - redhat-marketplace
     - community-operators
-    - certified-operators
-    - redhat-operators
+    #- certified-operators
+    #- redhat-operators
 
 bmc:
   address: 192.168.13.149
