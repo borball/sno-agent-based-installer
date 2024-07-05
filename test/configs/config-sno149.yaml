@@ -49,7 +49,7 @@ day2:
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
     #chronyd service will be disabled if ordinary or boundary being selected
-    ptpconfig: boundary_clock
+    ptpconfig: boundary
     boundary_clock:
       - slave: ens1f0
         masters:

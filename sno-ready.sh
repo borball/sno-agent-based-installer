@@ -294,9 +294,9 @@ check_ptp(){
 }
 
 check_ptpconfig(){
-  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
+  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
     if [ $(oc get ptpconfig -n openshift-ptp |grep -v NAME |wc -l) -eq 1 ]; then
-      info "PtpConfig" "exists"
+      info "PtpConfig(ordinary)" "exists"
       if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPolicy}) = "SCHED_FIFO" ]; then
         info "PtpConfig SchedulingPolicy" "SCHED_FIFO"
       else
@@ -310,6 +310,10 @@ check_ptpconfig(){
     else
       warn "PtpConfig" "not exist"
     fi
+  elif [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
+    #
+  else
+    #
   fi
 
 }
