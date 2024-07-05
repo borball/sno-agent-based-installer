@@ -118,12 +118,12 @@ day2:
         name: crdu-boundary-clock-ptp-config-nic1
         #profile (default): bc-profile
         profile: bc-profile-nic1
-        #phc2sys_enable (default): true
-        phc2sys_enable: true
+        #phc2sys_enabled (default): true
+        phc2sys_enabled: true
       # configure dual NIC bondary clock (optional)
       # must
       #  - use different name, profile
-      #  - set phc2sys_enable to false
+      #  - set phc2sys_enabled to false
       - name: crdu-boundary-clock-ptp-config-nic2
         profile: bc-profile-nic2
         slave: ens2f0
@@ -131,7 +131,7 @@ day2:
           - ens2f1
           - ens2f2
           - ens2f3
-        phc2sys_enable: false
+        phc2sys_enabled: false
     #enable the ptp event
     enable_ptp_event: false
     #enable log_reduce, when setting as true it will reduce(filter all) the ptp logs

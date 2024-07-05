@@ -8,9 +8,9 @@ spec:
  profile:
  - interface: ""
    name: {{ day2.ptp.boundary_clock[environ('index')|int].profile | default('bc-profile') }}
-   {% if day2.ptp.boundary_clock[environ('index')|int].phc2sys_enable is not defined
-    or (day2.ptp.boundary_clock[environ('index')|int].phc2sys_enable is defined
-        and day2.ptp.boundary_clock[environ('index')|int].phc2sys_enable is sameas true) -%}
+   {% if day2.ptp.boundary_clock[environ('index')|int].phc2sys_enabled is not defined
+    or (day2.ptp.boundary_clock[environ('index')|int].phc2sys_enabled is defined
+        and day2.ptp.boundary_clock[environ('index')|int].phc2sys_enabled is sameas true) -%}
    phc2sysOpts: -a -r -n 24
    {% endif -%}
    {% if day2.ptp.log_reduce -%}
