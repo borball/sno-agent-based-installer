@@ -92,14 +92,21 @@ day2:
     enabled: true
     #in case you want to specify the performance profile name
     name: sno-perfprofile
-  tuned_profile: 
+    #optional, present if want to set user_level_networking as true
+    net:
+      user_level_networking: true
+    #optional for hardware tuning, OCP 4.16
+    hardwareTuning:
+      isolatedCpuFreq: 2500000
+      reservedCpuFreq: 2800000
+  tuned_profile:
     enabled: true
     #for wrong bios settings, if passive mode is used, set intel_pstate=active
     cmdline_pstate: intel_pstate=active
     #in case you want to generate kdump for some special scenarios (used in lab)
     kdump: false
     sysfs:
-      #cap the intel_pstate peak frequency at 2.5Ghz
+      #cap the intel_pstate peak frequency at 2.5Ghz, used in 4.14. 4.16 can set day2.performance_profile.hardwareTuning
       cpufreq_max_freq: 2500000
   ptp:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
