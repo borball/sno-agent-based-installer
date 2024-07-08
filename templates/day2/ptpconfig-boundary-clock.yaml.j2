@@ -9,7 +9,7 @@ spec:
  {% for p in day2.ptp.boundary_clock.profiles -%}
  - interface: ""
    name: {{ p.name }}
-   {% if day2.ptp.boundary_clock.ha == "enabled" -%}
+   {% if day2.ptp.boundary_clock.ha_enabled -%}
    phc2sysOpts: ""
    {%else %}
    {% if loop.index == 1 -%}
@@ -135,7 +135,7 @@ spec:
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
  {% endfor -%}
- {% if day2.ptp.boundary_clock.ha == "enabled" -%}
+ {% if day2.ptp.boundary_clock.ha_enabled -%}
  - name: boundary-ha
    phc2sysOpts: -a -r -n 24
    ptp4lOpts: ""
@@ -155,7 +155,7 @@ spec:
    priority: 4
    profile: {{ p.name }}
  {% endfor -%}
- {% if day2.ptp.boundary_clock.ha == "enabled" -%}
+ {% if day2.ptp.boundary_clock.ha_enabled -%}
  - match:
    - nodeLabel: node-role.kubernetes.io/master
      nodeName: {{ host.hostname }}

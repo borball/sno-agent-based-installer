@@ -116,7 +116,7 @@ day2:
       #name: crdu-ptp-ordinary-clock
       interface: ens1f0
     boundary_clock:
-      ha: enabled
+      ha_enabled: true
       #name (default): crdu-boundary-clock-ptp-config
       #name: crdu-boundary-clock-ptp-config
       profiles:
