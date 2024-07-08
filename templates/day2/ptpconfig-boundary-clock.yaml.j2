@@ -2,26 +2,29 @@
 apiVersion: ptp.openshift.io/v1
 kind: PtpConfig
 metadata:
- name: {{ day2.ptp.boundary_clock[environ('index')|int].name |default('crdu-boundary-clock-ptp-config') }}
+ name: {{ day2.ptp.boundary_clock.name |default ('crdu-boundary-clock-ptp-config') }}
  namespace: openshift-ptp
 spec:
  profile:
+ {% for p in day2.ptp.boundary_clock.profiles -%}
  - interface: ""
-   name: {{ day2.ptp.boundary_clock[environ('index')|int].profile | default('bc-profile') }}
-   {% if day2.ptp.boundary_clock[environ('index')|int].phc2sys_enabled is not defined
-    or (day2.ptp.boundary_clock[environ('index')|int].phc2sys_enabled is defined
-        and day2.ptp.boundary_clock[environ('index')|int].phc2sys_enabled is sameas true) -%}
+   name: {{ p.name }}
+   {% if day2.ptp.boundary_clock.ha == "enabled" -%}
+   phc2sysOpts: ""
+   {%else %}
+   {% if loop.index == 1 -%}
    phc2sysOpts: -a -r -n 24
+   {% endif -%}
    {% endif -%}
    {% if day2.ptp.log_reduce -%}
    ptpSettings:
      logReduce: "true"
    {% endif -%}
    ptp4lConf: |
-     [{{ day2.ptp.boundary_clock[environ('index')|int].slave }}]
+     [{{ p.slave }}]
      masterOnly 0
-     {% for p in day2.ptp.boundary_clock[environ('index')|int].masters %}
-     [{{p}}]
+     {% for m in p.masters %}
+     [{{m}}]
      masterOnly 1
      {% endfor %}
 
@@ -131,9 +134,31 @@ spec:
    ptp4lOpts: "-2"
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
+ {% endfor -%}
+ {% if day2.ptp.boundary_clock.ha == "enabled" -%}
+ - name: boundary-ha
+   phc2sysOpts: -a -r -n 24
+   ptp4lOpts: ""
+   ptpSchedulingPolicy: SCHED_FIFO
+   ptpSchedulingPriority: 10
+   ptpSettings:
+     haProfiles: "{{ day2.ptp.boundary_clock.profiles[0].name }},{{ day2.ptp.boundary_clock.profiles[1].name }}"
+     {% if day2.ptp.log_reduce -%}
+     logReduce: "true"
+     {%- endif %}
+ {%- endif %}
  recommend:
+ {% for p in day2.ptp.boundary_clock.profiles -%}
  - match:
    - nodeLabel: node-role.kubernetes.io/master
      nodeName: {{ host.hostname }}
    priority: 4
-   profile: {{ day2.ptp.boundary_clock[environ('index')|int].profile | default('bc-profile') }}
+   profile: {{ p.name }}
+ {% endfor -%}
+ {% if day2.ptp.boundary_clock.ha == "enabled" -%}
+ - match:
+   - nodeLabel: node-role.kubernetes.io/master
+     nodeName: {{ host.hostname }}
+   priority: 4
+   profile: boundary-ha
+ {%- endif %}

@@ -109,33 +109,23 @@ day2:
       #name: crdu-ptp-ordinary-clock
       interface: ens1f0
     boundary_clock:
-      - slave: ens1f0
-        masters:
-          - ens1f1
-          - ens1f2
-          - ens1f3
-        #name (default): crdu-boundary-clock-ptp-config
-        name: crdu-boundary-clock-ptp-config-nic1
-        #profile (default): bc-profile
-        profile: bc-profile-nic1
-        #phc2sys_enabled (default): true
-        phc2sys_enabled: true
-      # configure dual NIC bondary clock (optional)
-      # must
-      #  - use different name, profile
-      #  - set phc2sys_enabled to false
-      - name: crdu-boundary-clock-ptp-config-nic2
-        profile: bc-profile-nic2
-        slave: ens2f0
-        masters:
-          - ens2f1
-          - ens2f2
-          - ens2f3
-        phc2sys_enabled: false
-    #enable the ptp event
-    enable_ptp_event: false
-    #enable log_reduce, when setting as true it will reduce(filter all) the ptp logs
-    log_reduce: false
+      ha: enabled
+      #name (default): crdu-boundary-clock-ptp-config
+      #name: crdu-boundary-clock-ptp-config
+      profiles:
+        - name: bc-profile-nic1
+          slave: ens1f0
+          masters:
+            - ens1f1
+            - ens1f2
+            - ens1f3
+
+        - name: bc-profile-nic2
+          slave: ens2f0
+          masters:
+            - ens2f1
+            - ens2f2
+            - ens2f3
     
   #enable the cluster monitoring tuning
   cluster_monitor_tuning: true
