@@ -32,6 +32,8 @@ day1:
   sync_time_once: true
   #whether enable cgroup v1; 4.14-4.15: will enable cgv1 by default, 4.16+ will enable cgv2 by default
   cgv1: true
+  #(4.16+)whether disable the marketplace operator, default: false
+  disable_marketplace: true
   container_storage:
     enabled: false
     device: /dev/nvme0n1

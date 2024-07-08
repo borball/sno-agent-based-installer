@@ -213,6 +213,14 @@ day1_config(){
       else
         info "default cgv2, enable cgroup v1:" "false"
       fi
+
+      if [ "true" = "$(yq '.day1.disable_marketplace' $config_file)" ]; then
+        info "disable marketplace operator:" "true"
+        cp $templates/day1/marketplace/*.yaml $cluster_workspace/openshift/
+      else
+        warn "disable marketplace operator:" "false"
+      fi
+
     fi
 
 
