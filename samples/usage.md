@@ -116,7 +116,7 @@ day2:
       #name: crdu-ptp-ordinary-clock
       interface: ens1f0
     boundary_clock:
-      # only supported for 4.16+, when not enabled, the profiles[0] is used for system clock, 4.14 must set it as false
+      # only supported for 4.16+, when not enabled, the profiles[0] is used for system clock, 4.15 or earlier versions must set it as false
       ha_enabled: true
       #name (default): crdu-boundary-clock-ptp-config
       #name: crdu-boundary-clock-ptp-config
