@@ -40,10 +40,10 @@ operators:
     desc: Intel SRIOV-FEC Operator
     enabled: false
   adp:
-    name: adp
+    name: redhat-oadp-operator
     desc: OpenShift API for Data Protection Operator
     enabled: false
   lca:
-    name: lca
+    name: lifecycle-agent
     desc: OpenShift Lifecycle Agent Operator
     enabled: false
