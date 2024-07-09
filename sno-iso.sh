@@ -323,7 +323,7 @@ operator_catalog_sources(){
   if [ "$(yq '.container_registry.catalog_sources.customs' $config_file)" != "null" ]; then
     local size=$(yq '.container_registry.catalog_sources.customs|length' $config_file)
     for ((k=0; k<$size; k++)); do
-      yq ".container_registry.catalog_sources.customs[$k]" $config_file |jinja2 $templates/day1/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
+      yq ".container_registry.catalog_sources.customs[$k]" $config_file |jinja2 $templates/day1/catalogsource/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
     done
   fi
 
