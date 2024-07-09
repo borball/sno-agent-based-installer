@@ -303,7 +303,8 @@ operator_catalog_sources(){
     #4.16+, disable marketplace operator
     cp $templates/day1/marketplace/09-openshift-marketplace-ns.yaml $cluster_workspace/openshift/
 
-    if [[ $(yq '.container_registry.catalog_sources.defaults' $config_file) != "null" ]]; then
+    #create unmanaged catalog sources
+    if [[ "$(yq '.container_registry.catalog_sources.defaults' $config_file)" != "null" ]]; then
       #enable the ones in container_registry.catalog_sources.defaults
       local size=$(yq '.container_registry.catalog_sources.defaults|length' $config_file)
       for ((k=0; k<$size; k++)); do
@@ -319,7 +320,7 @@ operator_catalog_sources(){
   fi
 
   #all versions
-  if [ $(yq '.container_registry.catalog_sources.customs' $config_file) != "null" ]; then
+  if [ "$(yq '.container_registry.catalog_sources.customs' $config_file)" != "null" ]; then
     local size=$(yq '.container_registry.catalog_sources.customs|length' $config_file)
     for ((k=0; k<$size; k++)); do
       yq ".container_registry.catalog_sources.customs[$k]" $config_file |jinja2 $templates/day1/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
@@ -327,7 +328,7 @@ operator_catalog_sources(){
   fi
 
   #all versions
-  if [ $(yq '.container_registry.icsp' $config_file) != "null" ]; then
+  if [ "$(yq '.container_registry.icsp' $config_file)" != "null" ]; then
     local size=$(yq '.container_registry.icsp|length' $config_file)
     for ((k=0; k<$size; k++)); do
       local name=$(yq ".container_registry.icsp[$k]" $config_file)
