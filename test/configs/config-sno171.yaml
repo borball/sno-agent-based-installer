@@ -88,3 +88,4 @@ day2:
   #disable the network diagnostics
   disable_network_diagnostics: true
   disable_operator_auto_upgrade: true
+

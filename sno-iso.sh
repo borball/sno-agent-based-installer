@@ -303,12 +303,19 @@ operator_catalog_sources(){
       cp $templates/day1/operatorhub.yaml $cluster_workspace/openshift/
       cp $templates/day1/marketplace/09-openshift-marketplace-ns.yaml $cluster_workspace/openshift/
 
-      #enable the ones in container_registry.catalog_sources.defaults
-      local size=$(yq '.container_registry.catalog_sources.defaults|length' $config_file)
-      for ((k=0; k<$size; k++)); do
-        local name=$(yq ".container_registry.catalog_sources.defaults[$k]" $config_file)
-        jinja2 $templates/day1/catalogsource/$name.yaml.j2 > $cluster_workspace/openshift/$name.yaml
-      done
+      if [[ $(yq '.container_registry.catalog_sources.defaults' $config_file) != "null" ]]; then
+        #enable the ones in container_registry.catalog_sources.defaults
+        local size=$(yq '.container_registry.catalog_sources.defaults|length' $config_file)
+        for ((k=0; k<$size; k++)); do
+          local name=$(yq ".container_registry.catalog_sources.defaults[$k]" $config_file)
+          jinja2 $templates/day1/catalogsource/$name.yaml.j2 > $cluster_workspace/openshift/$name.yaml
+        done
+      else
+        #by default redhat-operators and certified-operators shall be enabled
+        jinja2 $templates/day1/catalogsource/redhat-operators.yaml.j2 > $cluster_workspace/openshift/redhat-operators.yaml
+        jinja2 $templates/day1/catalogsource/certified-operators.yaml.j2 > $cluster_workspace/openshift/certified-operators.yaml
+      fi
+
     fi
 
     if [ $(yq '.container_registry.catalog_sources.customs' $config_file) != "null" ]; then
