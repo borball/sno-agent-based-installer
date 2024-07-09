@@ -76,8 +76,6 @@ day1:
   sync_time_once: true
   #whether enable cgroup v1; 4.14-4.15: will enable cgv1 by default, 4.16+ will enable cgv2 by default
   cgv1: true
-  #whether disable the marketplace operator, default: false
-  disable_marketplace: true
   container_storage:
     enabled: false
     device: /dev/nvme0n1
@@ -214,12 +212,19 @@ additional_trust_bundle: /root/registry/ca-bundle.crt
 #set it in a disconnected env, mirror/mirror-operators.sh can be used to generate the file
 container_registry:
   image_source: /root/registry/local-mirror.yaml
-  prega: false
-  disable_catalogsources:
-    - redhat-marketplace
-    - community-operators
-    #- certified-operators
-    #- redhat-operators
+  catalog_sources:
+    defaults:
+      #- redhat-marketplace
+      #- community-operators
+      - certified-operators
+      - redhat-operators
+    customs:
+      - name: prega
+        display: Red Hat Operators 4.16 PreGA
+        image: quay.io/prega/redhat-operator-index:v4.16
+        publisher: Red Hat
+  icsp:
+    - templates/day1/icsp/prega-4.16.yaml
 
 bmc:
   address: 192.168.13.148

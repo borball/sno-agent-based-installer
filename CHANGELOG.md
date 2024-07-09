@@ -1,3 +1,8 @@
+## 2024-07-09
+- PTP dual nic boundary clock refactoring(config change)
+- Disable marketplace operator(4.16 only) in cluster capabilities
+- catalog source management(config change)
+
 ## 2024-06-28
 - add LCA(Lifecycle Agent) support
 - fix container storage partitioning template path
