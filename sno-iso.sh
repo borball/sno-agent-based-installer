@@ -213,17 +213,7 @@ day1_config(){
       else
         info "default cgv2, enable cgroup v1:" "false"
       fi
-
-      if [ "true" = "$(yq '.day1.disable_marketplace' $config_file)" ]; then
-        info "disable marketplace operator:" "true"
-        cp $templates/day1/marketplace/*.yaml $cluster_workspace/openshift/
-      else
-        warn "disable marketplace operator:" "false"
-      fi
-
     fi
-
-
   fi
 
   if [ "true" = "$(yq '.day1.container_storage.enabled' $config_file)" ]; then
@@ -306,12 +296,36 @@ apply_extra_manifests(){
 
 operator_catalog_sources(){
   if [[ $(yq '.container_registry' $config_file) != "null" ]]; then
-    if [ "true" = "$(yq '.container_registry.prega' $config_file)" ]; then
-      info "PreGA catalog sources" "enabled"
-      cp $templates/day1/prega/*.yaml $cluster_workspace/openshift/
+    if [ "4.12" = $ocp_y_release ] || [ "4.13" = $ocp_y_release ] || [ "4.14" = $ocp_y_release ] || [ "4.15" = $ocp_y_release ]; then
+      jinja2 $templates/day1/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
+    else
+      #4.16+, disable marketplace operator
+      cp $templates/day1/operatorhub.yaml $cluster_workspace/openshift/
+      cp $templates/day1/marketplace/09-openshift-marketplace-ns.yaml $cluster_workspace/openshift/
+
+      #enable the ones in container_registry.catalog_sources.defaults
+      local size=$(yq '.container_registry.catalog_sources.defaults|length' $config_file)
+      for ((k=0; k<$size; k++)); do
+        local name=$(yq ".container_registry.catalog_sources.defaults[$k]" $config_file)
+        jinja2 $templates/day1/catalogsource/$name.yaml.j2 > $cluster_workspace/openshift/$name.yaml
+      done
     fi
 
-    jinja2 $templates/day1/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
+    if [ $(yq '.container_registry.catalog_sources.customs' $config_file) != "null" ]; then
+      local size=$(yq '.container_registry.catalog_sources.customs|length' $config_file)
+      for ((k=0; k<$size; k++)); do
+        yq ".container_registry.catalog_sources.customs[$k]" $config_file |jinja2 $templates/day1/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
+      done
+    fi
+
+    if [ $(yq '.container_registry.icsp' $config_file) != "null" ]; then
+      local size=$(yq '.container_registry.icsp|length' $config_file)
+      for ((k=0; k<$size; k++)); do
+        local name=$(yq ".container_registry.icsp[$k]" $config_file)
+        cp $basedir/$name $cluster_workspace/openshift/
+      done
+    fi
+
   fi
 }
 
