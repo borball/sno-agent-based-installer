@@ -301,7 +301,6 @@ operator_catalog_sources(){
     fi
   else
     #4.16+, disable marketplace operator
-    cp $templates/day1/operatorhub.yaml $cluster_workspace/openshift/
     cp $templates/day1/marketplace/09-openshift-marketplace-ns.yaml $cluster_workspace/openshift/
 
     if [[ $(yq '.container_registry.catalog_sources.defaults' $config_file) != "null" ]]; then
