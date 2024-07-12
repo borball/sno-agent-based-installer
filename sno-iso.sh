@@ -56,12 +56,12 @@ basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
 operators=$basedir/operators
 
-config_file=$1; shift
+config_file_input=$1; shift
 ocp_release=$1; shift
 
-if [ -z "$config_file" ]
+if [ -z "$config_file_input" ]
 then
-  config_file=config.yaml
+  config_file_input=config.yaml
 fi
 
 if [ -z "$ocp_release" ]
@@ -77,6 +77,16 @@ if [ -z $ocp_release_version ]; then
 fi
 
 export ocp_y_release=$(echo $ocp_release_version |cut -d. -f1-2)
+
+absolute_path_input=$(realpath $config_file_input)
+
+if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
+  absolute_path_resolved=${absolute_path_input//".yaml"/"-resolved.yaml"}
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/;s/OCP_Z_RELEASE/$ocp_release_version/" $absolute_path_input > $absolute_path_resolved
+  config_file=$absolute_path_resolved
+else
+  config_file=$absolute_path_input
+fi
 
 echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version}"
 
