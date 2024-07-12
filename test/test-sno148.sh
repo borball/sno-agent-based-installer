@@ -1,3 +1,3 @@
 # used for my own test
 
-./test.sh sno148 4.12.33
+./test.sh sno148 4.12.56
