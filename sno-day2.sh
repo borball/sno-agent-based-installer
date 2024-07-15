@@ -23,12 +23,6 @@ usage(){
   echo "Example: $0 config-sno130.yaml"
 }
 
-if [ $# -lt 1 ]
-then
-  usage
-  exit
-fi
-
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
 then 
   usage

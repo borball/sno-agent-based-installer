@@ -24,12 +24,6 @@ usage(){
   echo "Example : $0 sno130"
 }
 
-if [ $# -lt 1 ]
-then
-  usage
-  exit
-fi
-
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
 then 
   usage
