@@ -1,7 +1,10 @@
 #!/bin/bash
 # 
 # Helper script to validate if the SNO node contains all the necessary tunings
-# usage: ./sno-ready.sh config.yaml
+# usage: ./sno-ready.sh
+# usage: ./sno-ready.sh <cluster-name>
+# The script will validate the cluster configurations towards the latest cluster created by sno-install.sh if <cluster-name> is not present
+# If cluster-name presents it will validate the cluster configurations towards the cluster with config file: instance/<cluster-name>/config-resolved.yaml
 #
 
 if ! type "yq" > /dev/null; then
@@ -35,10 +38,21 @@ fi
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-config_file=$1;
+cluster_name=$1; shift
 
-cluster_name=$(yq '.cluster.name' $config_file)
+if [ -z "$cluster_name" ]; then
+  cluster_name=$(ls -t $basedir/instances |head -1)
+fi
+
 cluster_workspace=$basedir/instances/$cluster_name
+
+config_file=$cluster_workspace/config-resolved.yaml
+if [ -f "$config_file" ]; then
+  echo "Will run day2 config towards the cluster $cluster_name with config: $config_file"
+else
+  "Config file $config_file not exist, please check."
+  exit -1
+fi
 
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 

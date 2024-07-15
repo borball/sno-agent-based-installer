@@ -64,6 +64,18 @@ then
   config_file_input=config.yaml
 fi
 
+cluster_name=$(yq '.cluster.name' $config_file_input)
+cluster_workspace=$basedir/instances/$cluster_name
+
+if [[ -d "${cluster_workspace}" ]]; then
+  echo "${cluster_workspace} already exists, please delete the folder ${cluster_workspace} and re-run the script."
+  exit -1
+fi
+
+echo "Creating workspace: ${cluster_workspace}."
+mkdir -p $cluster_workspace
+mkdir -p $cluster_workspace/openshift
+
 if [ -z "$ocp_release" ]
 then
   ocp_release='stable-4.12'
@@ -78,15 +90,15 @@ fi
 
 export ocp_y_release=$(echo $ocp_release_version |cut -d. -f1-2)
 
-absolute_path_input=$(realpath $config_file_input)
+config_file="$cluster_workspace/config-resolved.yaml"
 
 if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  absolute_path_resolved=${absolute_path_input//".yaml"/"-resolved.yaml"}
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/;s/OCP_Z_RELEASE/$ocp_release_version/" $absolute_path_input > $absolute_path_resolved
-  config_file=$absolute_path_resolved
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/;s/OCP_Z_RELEASE/$ocp_release_version/" $config_file_input > $config_file
 else
-  config_file=$absolute_path_input
+  cp $config_file_input $config_file
 fi
+
+echo "Will use $config_file as the configuration in other sno-* scripts."
 
 echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version}"
 
@@ -112,16 +124,6 @@ else
   tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
 fi
 
-cluster_name=$(yq '.cluster.name' $config_file)
-cluster_workspace=$basedir/instances/$cluster_name
-
-if [[ -d "${cluster_workspace}" ]]; then
-  echo "${cluster_workspace} already exists, please delete the folder ${cluster_workspace} and re-run the script."
-  exit -1
-fi
-
-mkdir -p $cluster_workspace
-mkdir -p $cluster_workspace/openshift
 
 day1_config(){
   if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then

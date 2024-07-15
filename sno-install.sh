@@ -1,6 +1,10 @@
 #!/bin/bash
 # Helper script to boot the node via redfish API from the ISO image
-# usage: ./sno-install.sh config.yaml
+# usage: ./sno-install.sh
+# usage: ./sno-install.sh <cluster-name>
+#
+# The script will install the latest cluster created by sno-iso.sh if <cluster-name> is not present
+# If cluster-name presents it will install the cluster with config file: instance/<cluster-name>/config-resolved.yaml
 #
 
 if ! type "yq" > /dev/null; then
@@ -15,8 +19,9 @@ fi
 
 
 usage(){
-  echo "Usage : $0 config-file"
-  echo "Example : $0 config-sno130.yaml"
+  echo "Usage : $0"
+  echo "Usage : $0 <cluster_name>"
+  echo "Example : $0 sno130"
 }
 
 if [ $# -lt 1 ]
@@ -32,10 +37,23 @@ then
 fi
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+cluster_name=$1; shift
 
-config_file=$1; shift
+if [ -z "$cluster_name" ]; then
+  cluster_name=$(ls -t $basedir/instances |head -1)
+fi
+
+cluster_workspace=$basedir/instances/$cluster_name
+
+config_file=$cluster_workspace/config-resolved.yaml
+if [ -f "$config_file" ]; then
+  echo "Will install cluster $cluster_name with config: $config_file"
+else
+  "Config file $config_file not exist, please check."
+  exit -1
+fi
+
 domain_name=$(yq '.cluster.domain' $config_file)
-cluster_name=$(yq '.cluster.name' $config_file)
 api_fqdn="api."$cluster_name"."$domain_name
 
 bmc_address=$(yq '.bmc.address' $config_file)
@@ -43,9 +61,6 @@ bmc_user="$(yq '.bmc.username' $config_file)"
 bmc_password="$(yq '.bmc.password' $config_file)"
 password_var=$(echo "$bmc_password" |sed -n 's;^ENV{\(.*\)}$;\1;gp')
 
-cluster_name=$(yq '.cluster.name' $config_file)
-cluster_workspace=$basedir/instances/$cluster_name
-operators=$basedir/operators
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 if [[ -n "${password_var}" ]]; then

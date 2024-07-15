@@ -1,7 +1,11 @@
 #!/bin/bash
 # 
 # Helper script to apply the day2 operations on SNO node
-# Usage: ./sno-day2.sh config.yaml
+# Usage: ./sno-day2.sh
+# Usage: ./sno-day2.sh <cluster-name>
+#
+# The script will run day2 config towards the latest cluster created by sno-iso.sh if <cluster-name> is not present
+# If cluster-name presents it will run day2 config towards the cluster with config file: instance/<cluster-name>/config-resolved.yaml
 #
 
 if ! type "yq" > /dev/null; then
@@ -42,10 +46,22 @@ warn(){
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 templates=$basedir/templates
 
-config_file=$1;
+cluster_name=$1; shift
 
-cluster_name=$(yq '.cluster.name' $config_file)
+if [ -z "$cluster_name" ]; then
+  cluster_name=$(ls -t $basedir/instances |head -1)
+fi
+
 cluster_workspace=$basedir/instances/$cluster_name
+
+config_file=$cluster_workspace/config-resolved.yaml
+if [ -f "$config_file" ]; then
+  echo "Will run day2 config towards the cluster $cluster_name with config: $config_file"
+else
+  "Config file $config_file not exist, please check."
+  exit -1
+fi
+
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 cluster_info(){
