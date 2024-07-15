@@ -93,7 +93,7 @@ export ocp_y_release=$(echo $ocp_release_version |cut -d. -f1-2)
 config_file="$cluster_workspace/config-resolved.yaml"
 
 if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/;s/OCP_Z_RELEASE/$ocp_release_version/" $config_file_input > $config_file
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input > $config_file
 else
   cp $config_file_input $config_file
 fi
