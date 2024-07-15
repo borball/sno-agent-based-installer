@@ -1,3 +1,11 @@
+## 2024-07-15
+- Support OCP_Y_RELEASE and OCP_Z_RELEASE substitutions in config.yaml
+- sno-* will use instances/<cluster-name>/config-resolved.yaml as the config file
+  - sno-iso.sh config.yaml
+  - sno-install.sh <cluster-name>
+  - sno-day2.sh <cluster-name>
+  - sno-ready.sh <cluster-name>
+
 ## 2024-07-09
 - PTP dual nic boundary clock refactoring(config change)
 - Disable marketplace operator(4.16 only) in cluster capabilities
