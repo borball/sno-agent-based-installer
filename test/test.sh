@@ -1,7 +1,7 @@
 #!/bin/bash
 
 usage(){
-	echo "Usage: $0 node [version] [memory] [cpu] [disks]"
+  echo "Usage: $0 node [version] [memory] [cpu] [disks]"
   echo "Examples:"
   echo " test.sh sno130"
   echo " test.sh sno148 4.14.3"
@@ -53,7 +53,7 @@ install_ocp(){
   $iso $config $version
   cp $sno_workspace/agent.x86_64.iso /var/www/html/iso/$node.iso
   cp $sno_workspace/auth/kubeconfig /root/workload-enablement/kubeconfigs/kubeconfig-$node.yaml
-  $install $config
+  $install
 }
 
 if [ -f  "$config" ]; then
