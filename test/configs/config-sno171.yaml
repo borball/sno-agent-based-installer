@@ -20,6 +20,19 @@ cpu:
   isolated: 1-31,33-63
   reserved: 0,32
 
+day2:
+  performance_profile:
+    enabled: true
+    #in case you want to specify the performance profile name
+    name: sno-perfprofile
+    #optional, present if want to set user_level_networking as true
+    net:
+      user_level_networking: true
+    #optional for hardware tuning, OCP 4.16
+    hardwareTuning:
+      isolatedCpuFreq: 2500000
+      reservedCpuFreq: 2800000
+
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
 
