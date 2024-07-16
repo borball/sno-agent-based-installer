@@ -132,15 +132,16 @@ check_mc(){
     fi
   fi
 
-  if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
-    if [ $(oc get mc |grep 05-kdump-config-master | wc -l) -eq 1 ]; then
-      info "mc 05-kdump-config-master" "exists"
-    else
-      warn "mc 05-kdump-config-master" "not exist"
-    fi
-  else
-    warn "kdump blacklist_ice is not enabled in $config_file"
-  fi
+  #no need this anymore after 4.12.45 and 4.14.9
+#  if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
+#    if [ $(oc get mc |grep 05-kdump-config-master | wc -l) -eq 1 ]; then
+#      info "mc 05-kdump-config-master" "exists"
+#    else
+#      warn "mc 05-kdump-config-master" "not exist"
+#    fi
+#  else
+#    warn "kdump blacklist_ice is not enabled in $config_file"
+#  fi
 
   if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
     warn "boot_accelerate is not enabled in $config_file"
@@ -366,10 +367,14 @@ check_capabilities(){
 
   #only check when capabilities are not specified in the config file
   #for others we assume it is not vDU case, and will skip the check
+  check_co_enabled "node-tuning"
+  check_co_disabled "console"
   if [ -z "$(yq '.cluster.capabilities // ""' $config_file)" ]; then
-    check_co_enabled "marketplace"
-    check_co_enabled "node-tuning"
-    check_co_disabled "console"
+    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ] || [ "4.14" = "$ocp_y_version" ] || [ "4.15" = "$ocp_y_version" ]; then
+      check_co_enabled "marketplace"
+    else
+      check_co_disabled "marketplace"
+    fi
   fi
 }
 
