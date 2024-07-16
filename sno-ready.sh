@@ -48,7 +48,7 @@ cluster_workspace=$basedir/instances/$cluster_name
 
 config_file=$cluster_workspace/config-resolved.yaml
 if [ -f "$config_file" ]; then
-  echo "Will run day2 config towards the cluster $cluster_name with config: $config_file"
+  echo "Will run cluster config validation towards the cluster $cluster_name with config: $config_file"
 else
   "Config file $config_file not exist, please check."
   exit -1
