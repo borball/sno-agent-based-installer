@@ -234,3 +234,6 @@ bmc:
   
 iso:
   address: http://192.168.58.15/iso/sno148.iso
+  #optional, when mounting the virtual media, some hardware or redfish version may not support TransferProtocolType
+  #in the API request, in that case set it as 'skip'
+  #protocol: skip

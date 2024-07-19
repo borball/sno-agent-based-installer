@@ -25,7 +25,7 @@ usage(){
 }
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
-then 
+then
   usage
   exit
 fi
@@ -74,6 +74,7 @@ if [[ "true"=="${bmc_noproxy}" ]]; then
 fi
 
 iso_image=$(yq '.iso.address' $config_file)
+iso_protocol=$(yq -r '.iso.protocol|select( . != null )' $config_file)
 kvm_uuid=$(yq '.bmc.kvm_uuid // "" ' $config_file)
 
 set -euoE pipefail
@@ -108,7 +109,7 @@ server_secureboot_delete_keys() {
     $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
     -d '{"ResetKeysType":"DeleteAllKeys"}' \
-    -X POST  $system_path/SecureBoot/Actions/SecureBoot.ResetKeys 
+    -X POST  $system_path/SecureBoot/Actions/SecureBoot.ResetKeys
 }
 
 server_get_bios_config(){
@@ -160,14 +161,25 @@ virtual_media_status(){
 virtual_media_insert(){
     # Insert Media from http server and iso file
     echo "Insert Virtual Media: $iso_image"
-    local protocol="HTTP"
-    if [[ $iso_image == https* ]]; then
-      protocol="HTTPS"
+    local protocol="${iso_protocol}"
+    if [[ -z "$protocol" ]]; then
+      if [[ $iso_image == https* ]]; then
+        protocol="HTTPS"
+      else
+        protocol="HTTPS"
+      fi
     fi
-    $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
-    -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
+    if [[ "${protocol}" == "skip" ]]; then
+      $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
+      -H "Content-Type: application/json" -H "Accept: application/json" \
+      -d "{\"Image\": \"${iso_image}\"}" \
+      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
+    else
+      $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
+      -H "Content-Type: application/json" -H "Accept: application/json" \
+      -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
+      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
+    fi
 }
 
 server_set_boot_once_from_cd() {
@@ -226,7 +238,7 @@ server_power_on
 echo
 echo "-------------------------------"
 echo "Node is booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
-echo 
+echo
 echo
 echo -n "Node booting."
 
