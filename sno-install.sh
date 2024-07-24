@@ -166,7 +166,7 @@ virtual_media_insert(){
       if [[ $iso_image == https* ]]; then
         protocol="HTTPS"
       else
-        protocol="HTTPS"
+        protocol="HTTP"
       fi
     fi
     if [[ "${protocol}" == "skip" ]]; then
