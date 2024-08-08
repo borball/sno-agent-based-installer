@@ -26,8 +26,8 @@ warn(){
 usage(){
   info "Usage: $0 [config file] [ocp version]"
   info "config file and ocp version are optional, examples:"
-  info "- $0 sno130.yaml" " equals: $0 sno130.yaml stable-4.12"
-  info "- $0 sno130.yaml 4.12.10"
+  info "- $0 sno130.yaml" " equals: $0 sno130.yaml stable-4.14"
+  info "- $0 sno130.yaml 4.14.33"
   echo
   info "Prepare a configuration file by following the example in config.yaml.sample"
   echo "-----------------------------------"
@@ -78,7 +78,7 @@ mkdir -p $cluster_workspace/openshift
 
 if [ -z "$ocp_release" ]
 then
-  ocp_release='stable-4.12'
+  ocp_release='stable-4.14'
 fi
 
 ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')

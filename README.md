@@ -113,14 +113,14 @@ Get other sample [configurations](samples/usage.md#usages).
 
 ## Generate ISO image
 
-You can run sno-iso.sh [config file] to generate a bootable ISO image so that you can boot from BMC console to install SNO. By default stable-4.12 will be downloaded and installed if not specified.
+You can run sno-iso.sh [config file] to generate a bootable ISO image so that you can boot from BMC console to install SNO. By default stable-4.14 will be downloaded and installed if not specified.
 
 ```
 # ./sno-iso.sh -h
 Usage: ./sno-iso.sh [config file] [ocp version]
 config file and ocp version are optional, examples:
-- ./sno-iso.sh sno130.yaml              equals: ./sno-iso.sh sno130.yaml stable-4.12
-- ./sno-iso.sh sno130.yaml 4.12.10
+- ./sno-iso.sh sno130.yaml              equals: ./sno-iso.sh sno130.yaml stable-4.14
+- ./sno-iso.sh sno130.yaml 4.14.33
 
 Prepare a configuration file by following the example in config.yaml.sample           
 -----------------------------------

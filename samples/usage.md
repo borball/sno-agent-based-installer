@@ -92,6 +92,8 @@ day2:
     enabled: true
     #in case you want to specify the performance profile name
     name: sno-perfprofile
+    #optional, default value: true
+    real_time: false
     #optional, present if want to set user_level_networking as true
     net:
       user_level_networking: true
@@ -99,6 +101,14 @@ day2:
     hardwareTuning:
       isolatedCpuFreq: 2500000
       reservedCpuFreq: 2800000
+    #optional
+    hugepage:
+      default: 2M
+      pages:
+        - size: 2M
+          count: 32768
+          #node: 1
+          
   tuned_profile:
     enabled: true
     #for wrong bios settings, if passive mode is used, set intel_pstate=active
@@ -150,6 +160,14 @@ day2:
   sriov:
     enable_injector: false
     enable_webhook: false
+
+  lvm:
+    device_classes:
+      - name: "sno"
+        thin_pool_name: "sno-sdb-pool"
+        selector:
+          paths:
+            - "/dev/sdb"
 ```
 
 ## Other usages

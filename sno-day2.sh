@@ -158,6 +158,27 @@ sriov_configs(){
   fi
 }
 
+nmstate_config(){
+  if [ "true" = "$(yq '.day1.operators.nmstate.enabled' $config_file)" ]; then
+    info "nmstate operator configuration"
+    oc apply -f $templates/day2/nmstate-nmstate.yaml
+  fi
+}
+
+metallb_config(){
+  if [ "true" = "$(yq '.day1.operators.metallb.enabled' $config_file)" ]; then
+    info "metallb-metallb operator configuration"
+    oc apply -f $templates/day2/metallb-metallb.yaml
+  fi
+}
+
+lvm_config(){
+  if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
+    info "lvm operator configuration"
+    jinja2 $templates/day2/lvmcluster-singlenode.yaml $config_file | oc apply -f -
+  fi
+}
+
 olm_pprof(){
   # 4.14+ specific
   if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
@@ -219,6 +240,12 @@ echo
 ptp_configs
 echo
 sriov_configs
+echo
+nmstate_config
+echo
+metallb_config
+echo
+lvm_config
 echo
 olm_pprof
 echo

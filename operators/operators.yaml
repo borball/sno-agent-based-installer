@@ -47,3 +47,11 @@ operators:
     name: lifecycle-agent
     desc: OpenShift Lifecycle Agent Operator
     enabled: false
+  metallb:
+    name: metallb-operator
+    desc: MetalLB Operator
+    enabled: false
+  nmstate:
+    name: kubernetes-nmstate-operator
+    desc: NMState Operator
+    enabled: false

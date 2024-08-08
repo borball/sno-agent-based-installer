@@ -5,15 +5,25 @@ metadata:
  name: {{ (day2 and day2.performance_profile and day2.performance_profile.name)  or 'openshift-node-performance-profile' }}
 spec:
  realTimeKernel:
-   enabled: true
+   enabled: {{ day2.performance_profile.real_time| default(true) | lower }}
  cpu:
    isolated: "{{ cpu.isolated }}"
    reserved: "{{ cpu.reserved }}"
  hugepages:
-   defaultHugepagesSize: 1G
+   defaultHugepagesSize: {{ (day2 and day2.performance_profile and day2.performance_profile.hugepage and day2.performance_profile.hugepage.default) or '1G' }}
    pages:
+     {% if (day2 and day2.performance_profile and day2.performance_profile.hugepage and day2.performance_profile.hugepage and day2.performance_profile.hugepage.pages) -%}
+     {%- for page in day2.performance_profile.hugepage.pages -%}
+     - size: {{ page.size }}
+       count: {{ page.count }}
+       {%- if page.node is defined %}
+       node: {{ page.node }}
+       {% endif -%}
+     {% endfor -%}
+     {% else -%}
      - count: 32
        size: 1G
+     {%- endif %}
  additionalKernelArgs:
   - "rcupdate.rcu_normal_after_boot=0"
   - "efi=runtime"
@@ -35,7 +45,7 @@ spec:
    # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
    # for detailed descriptions of each item.
    # The configuration below is set for a low latency, performance mode.
-   realTime: true
+   realTime: {{ day2.performance_profile.real_time| default(true) | lower }}
    highPowerConsumption: false
    perPodPowerManagement: false
  {% if day2 and day2.performance_profile and day2.performance_profile.hardwareTuning -%}

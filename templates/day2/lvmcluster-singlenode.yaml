@@ -1,0 +1,30 @@
+apiVersion: lvm.topolvm.io/v1alpha1
+kind: LVMCluster
+metadata:
+  name: singlenode
+  namespace: openshift-storage
+spec:
+  storage:
+    deviceClasses:
+      {% if day2.lvm and day2.lvm.device_classes -%}
+      {%- for dc in day2.lvm.device_classes -%}
+      - name: {{ dc.name }}
+        {%- if dc.selector and dc.selector.paths %}
+        deviceSelector:
+          paths:
+            {%- for path in dc.selector.paths %}
+            - {{ path }}
+            {%- endfor %}
+        {%- endif %}
+        thinPoolConfig:
+          name: {{ dc.thin_pool_name }}
+          sizePercent: 90
+          overprovisionRatio: 10
+      {% endfor -%}
+      {% else -%}
+      - name: vg1
+        thinPoolConfig:
+          name: thin-pool-1
+          sizePercent: 90
+          overprovisionRatio: 10
+      {%- endif %}
