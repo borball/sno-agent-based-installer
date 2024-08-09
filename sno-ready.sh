@@ -1,5 +1,5 @@
 #!/bin/bash
-# 
+#
 # Helper script to validate if the SNO node contains all the necessary tunings
 # usage: ./sno-ready.sh
 # usage: ./sno-ready.sh <cluster-name>
@@ -25,7 +25,7 @@ usage(){
 }
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
-then 
+then
   usage
   exit
 fi
@@ -73,7 +73,7 @@ check_node(){
 }
 
 export_address(){
-  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}')
+  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}'|awk '{print $1;}')
 }
 
 check_pods(){
@@ -102,7 +102,7 @@ check_co(){
 
 check_mc(){
   echo -e "\n${NC}Checking required machine configs:"
-  
+
   if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
     warn "workload_partition is not enabled in $config_file"
   else
@@ -227,7 +227,7 @@ check_pp(){
     warn "performance profile:" "disabled"
   else
     pp=$(yq '.day2.performance_profile.name //"openshift-node-performance-profile"' $config_file)
-    
+
     if [ $(oc get performanceprofiles |grep $pp | wc -l) -eq 1 ]; then
       info "PerformanceProfile $pp exists."
       check_pp_detail
@@ -256,7 +256,7 @@ check_tuned(){
 
   if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
     warn "Tuned performance patch:" "disabled"
-  else   
+  else
     if [ $(oc get tuned -n  openshift-cluster-node-tuning-operator performance-patch|grep performance-patch | wc -l) -eq 1 ]; then
       info "Tuned performance-patch" "exists"
     else
@@ -279,7 +279,7 @@ check_sriov(){
 
   if [ "false" = "$(yq '.day1.operators.sriov' $config_file)" ]; then
     warn "SR-IOV operator" "disabled"
-  else   
+  else
     if [ $(oc get sriovnetworknodestate -n openshift-sriov-network-operator -o jsonpath={..syncStatus}) = "Succeeded" ]; then
       info "sriovnetworknodestate sync status" "succeeded"
     else
@@ -290,9 +290,9 @@ check_sriov(){
 
 check_ptp(){
   echo -e "\n${NC}Checking PTP operator status:"
-  if [ "false" = "$(yq '.day1.operators.ptp' $config_file)" ]; then
+  if [ "false" = "$(yq '.day1.operators.ptp.enabled' $config_file)" ]; then
     warn "PTP operator" "disabled"
-  else   
+  else
     if [ $(oc get daemonset -n openshift-ptp linuxptp-daemon -o jsonpath={.status.numberReady}) -eq 1 ]; then
       info "Ptp linuxptp-daemon" "ready"
       check_ptpconfig
@@ -404,7 +404,7 @@ check_network_diagnostics(){
   echo -e "\n${NC}Checking network diagnostics:"
   if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
     warn "disable_network_diagnostics is not enabled in $config_file"
-  else  
+  else
     if [ $(oc get network.operator.openshift.io cluster -o jsonpath={..disableNetworkDiagnostics}) = "true" ]; then
       info "Network diagnostics" "disabled"
     else
@@ -417,7 +417,7 @@ check_operator_hub(){
   echo -e "\n${NC}Checking Operator hub:"
   if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
     warn "operator_hub_tuning is not enabled in $config_file"
-  else  
+  else
     if [ $(oc get catalogsource -n openshift-marketplace |grep community-operators|wc -l) -eq "0" ]; then
       info "Catalog community-operators" "disabled"
     else
@@ -428,7 +428,7 @@ check_operator_hub(){
     else
       warn "Catalog redhat-marketplace" "not disabled"
     fi
-  fi  
+  fi
 }
 
 check_cmdline(){
@@ -568,7 +568,7 @@ check_kdump(){
     else
       warn "kdump service" "not enabled"
     fi
-  fi  
+  fi
 }
 
 check_chronyd(){
