@@ -19,8 +19,10 @@ if ! type "jinja2" > /dev/null; then
 fi
 
 usage(){
-	echo "Usage: $0 [config.yaml]"
-  echo "Example: $0 config-sno130.yaml"
+	echo "Usage: $0 <cluster-name>"
+	echo "If <cluster-name> is not present, it will run day2 ops towards the newest cluster installed by sno-install"
+  echo "Example: $0"
+  echo "Example: $0 sno130"
 }
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]

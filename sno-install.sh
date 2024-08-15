@@ -19,9 +19,10 @@ fi
 
 
 usage(){
-  echo "Usage : $0"
-  echo "Usage : $0 <cluster_name>"
-  echo "Example : $0 sno130"
+	echo "Usage: $0 <cluster-name>"
+	echo "If <cluster-name> is not present, it will install the newest cluster created by sno-iso"
+  echo "Example: $0"
+  echo "Example: $0 sno130"
 }
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
