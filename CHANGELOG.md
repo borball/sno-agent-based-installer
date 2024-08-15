@@ -1,3 +1,9 @@
+## 2024-08-15
+- metallb, nmstate operator support
+- scaling_max_freq support in tuned
+- hardwareTuning support in performance profile
+- performance profile more configurable attributes
+
 ## 2024-07-15
 - Support OCP_Y_RELEASE and OCP_Z_RELEASE substitutions in config.yaml
 - sno-* will use instances/<cluster-name>/config-resolved.yaml as the config file
