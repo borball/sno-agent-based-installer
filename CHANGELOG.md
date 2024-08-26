@@ -1,3 +1,7 @@
+## 2024-08-26
+- tuned patch, 4.16 update
+- 
+
 ## 2024-08-15
 - metallb, nmstate operator support
 - scaling_max_freq support in tuned

@@ -96,7 +96,12 @@ tuned_profile(){
     warn "tuned performance patch:" "disabled"
   else
     info "tuned performance patch:" "enabled"
-    jinja2 $templates/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
+    if [ "4.12" = $ocp_y_version ] || [ "4.13" = $ocp_y_version ] || [ "4.14" = $ocp_y_version ] || [ "4.15" = $ocp_y_version ] ; then
+      jinja2 $templates/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
+    else
+      #4.16+
+      jinja2 $templates/day2/performance-patch-tuned-4.16.yaml.j2 $config_file | oc apply -f -
+    fi
   fi
 }
 
