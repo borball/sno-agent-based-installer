@@ -191,7 +191,7 @@ check_mc(){
     if [ "false" = "$(yq '.day1.sriov_kernel.enabled' $config_file)" ]; then
       warn "sriov_kernel is not enabled in day1 of $config_file"
     else
-      if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+      if [ $(oc get mc |grep 07-sriov-related-kernel-args-master | wc -l) -eq 1 ]; then
         info "mc 07-sriov-related-kernel-args-master" "exists"
       else
         warn "mc 07-sriov-related-kernel-args-master" "not exist"
@@ -201,7 +201,7 @@ check_mc(){
     if [ "false" = "$(yq '.day1.sync_time_once.enabled' $config_file)" ]; then
       warn "sync_time_once is not enabled in day1 of $config_file"
     else
-      if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+      if [ $(oc get mc |grep 99-sync-time-once-master | wc -l) -eq 1 ]; then
         info "mc 99-sync-time-once-master" "exists"
       else
         warn "mc 99-sync-time-once-master" "not exist"
@@ -694,32 +694,27 @@ oc get node
 echo
 oc get operator
 
+check_node
+check_co
+export_address
+check_pods
+check_mc
+check_mcp
+check_pp
+check_tuned
+check_sriov
+check_ptp
+check_chronyd
+check_monitoring
+check_capabilities
+check_network_diagnostics
+check_operator_hub
+check_cmdline
+check_kernel
+check_kdump
+check_olm_pprof
+check_ip
+check_container_runtime
+check_cgv1
 
-if [ $? -eq 0 ]; then
-  check_node
-  check_co
-  export_address
-  check_pods
-  check_mc
-  check_mcp
-  check_pp
-  check_tuned
-  check_sriov
-  check_ptp
-  check_chronyd
-  check_monitoring
-  check_capabilities
-  check_network_diagnostics
-  check_operator_hub
-  check_cmdline
-  check_kernel
-  check_kdump
-  check_olm_pprof
-  check_ip
-  check_container_runtime
-  check_cgv1
-
-  echo -e "\n${NC}Completed the checking."
-else
-  echo -e "\n${NC}Please export the KUBECONFIG environment variable before running the check."
-fi
+echo -e "\n${NC}Completed the checking."

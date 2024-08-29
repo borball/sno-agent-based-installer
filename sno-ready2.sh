@@ -44,7 +44,7 @@ check_node(){
 }
 
 export_address(){
-  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}')
+  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}'|awk '{print $1;}')
 }
 
 check_pods(){
@@ -93,11 +93,12 @@ check_mc(){
     warn "mc 06-kdump-enable-master" "not exist"
   fi
 
-  if [ $(oc get mc |grep 05-kdump-config-master | wc -l) -eq 1 ]; then
-    info "mc 05-kdump-config-master" "exists"
-  else
-    warn "mc 05-kdump-config-master" "not exist"
-  fi
+#no need this anymore after 4.12.45 and 4.14.9
+#  if [ $(oc get mc |grep 05-kdump-config-master | wc -l) -eq 1 ]; then
+#    info "mc 05-kdump-config-master" "exists"
+#  else
+#    warn "mc 05-kdump-config-master" "not exist"
+#  fi
 
   if [ $(oc get mc |grep container-mount-namespace-and-kubelet-conf-master | wc -l) -eq 1 ]; then
     info "mc container-mount-namespace-and-kubelet-conf-master" "exists"
@@ -134,13 +135,13 @@ check_mc(){
       warn "mc 08-set-rcu-normal-master" "not exist"
     fi
 
-    if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+    if [ $(oc get mc |grep 07-sriov-related-kernel-args-master | wc -l) -eq 1 ]; then
       info "mc 07-sriov-related-kernel-args-master" "exists"
     else
       warn "mc 07-sriov-related-kernel-args-master" "not exist"
     fi
 
-    if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
+    if [ $(oc get mc |grep 99-sync-time-once-master | wc -l) -eq 1 ]; then
       info "mc 99-sync-time-once-master" "exists"
     else
       warn "mc 99-sync-time-once-master" "not exist"
@@ -156,7 +157,6 @@ check_mcp(){
   if [ $updated = "True" -a $updating = "False" -a $degraded = "False" ]; then
     info "mcp master" "updated and not degraded"
   else
-    warn "mcp master" "updating or degraded"
     warn "mcp master" "updating or degraded"
   fi
 }
@@ -280,9 +280,14 @@ check_capabilities(){
     #only check when capabilities are not specified in the config file
     #for others we assume it is not vDU case, and will skip the check
     if [ -z "$(yq '.cluster.capabilities // ""' $config_file)" ]; then
-      check_co_enabled "marketplace"
       check_co_enabled "node-tuning"
       check_co_disabled "console"
+
+      if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ] || [ "4.14" = "$ocp_y_version" ] || [ "4.15" = "$ocp_y_version" ]; then
+        check_co_enabled "marketplace"
+      else
+        check_co_disabled "marketplace"
+      fi
     fi
   fi
 }
@@ -587,8 +592,8 @@ check_ptp
 check_chronyd
 check_monitoring
 check_console
-check_network_diagnostics
 check_capabilities
+check_network_diagnostics
 check_operator_hub
 check_cmdline
 check_kernel
