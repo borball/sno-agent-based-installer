@@ -5,7 +5,7 @@ metadata:
  name: {{ (day2 and day2.performance_profile and day2.performance_profile.name)  or 'openshift-node-performance-profile' }}
 spec:
  realTimeKernel:
-   enabled: {{ day2 and day2.performance_profile day2.performance_profile.real_time| default(true) | lower }}
+   enabled: {{ day2 and day2.performance_profile and day2.performance_profile.real_time| default(true) | lower }}
  cpu:
    isolated: "{{ cpu.isolated }}"
    reserved: "{{ cpu.reserved }}"
