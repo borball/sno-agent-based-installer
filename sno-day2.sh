@@ -145,7 +145,6 @@ ptp_configs(){
   if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
     info "ptpconfig ordinary clock:" "enabled"
     jinja2 $templates/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
-
   fi
   if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
     info "ptpconfig boundary clock:" "enabled"
@@ -159,7 +158,9 @@ ptp_configs(){
 }
 
 sriov_configs(){
-  if [ "true" = "$(yq '.day1.operators.sriov.enabled' $config_file)" ]; then
+  if [ "false" = "$(yq '.day1.operators.sriov.enabled' $config_file)" ]; then
+    warn "sriov operator not enabled"
+  else
     info "sriov operator configuration"
     jinja2 $templates/day2/sriov-operator-config-default.yaml.j2 $config_file | oc apply -f -
   fi
@@ -243,15 +244,11 @@ echo
 cluster_monitoring
 echo
 network_diagnostics
-echo
 ptp_configs
 echo
 sriov_configs
-echo
 nmstate_config
-echo
 metallb_config
-echo
 lvm_config
 echo
 olm_pprof
