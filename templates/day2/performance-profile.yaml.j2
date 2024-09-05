@@ -5,7 +5,7 @@ metadata:
  name: {{ (day2 and day2.performance_profile and day2.performance_profile.name)  or 'openshift-node-performance-profile' }}
 spec:
  realTimeKernel:
-   enabled: {{ day2.performance_profile.real_time| default(true) | lower }}
+   enabled: {{ day2 and day2.performance_profile day2.performance_profile.real_time| default(true) | lower }}
  cpu:
    isolated: "{{ cpu.isolated }}"
    reserved: "{{ cpu.reserved }}"
@@ -45,7 +45,7 @@ spec:
    # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
    # for detailed descriptions of each item.
    # The configuration below is set for a low latency, performance mode.
-   realTime: {{ day2.performance_profile.real_time| default(true) | lower }}
+   realTime: {{ day2 and day2.performance_profile and day2.performance_profile.real_time| default(true) | lower }}
    highPowerConsumption: false
    perPodPowerManagement: false
  {% if day2 and day2.performance_profile and day2.performance_profile.hardwareTuning -%}
