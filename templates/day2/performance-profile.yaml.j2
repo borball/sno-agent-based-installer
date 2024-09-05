@@ -1,18 +1,19 @@
+{% if day2 and day2.performance_profile -%}
 ---
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
- name: {{ (day2 and day2.performance_profile and day2.performance_profile.name)  or 'openshift-node-performance-profile' }}
+ name: {{ day2.performance_profile.name or 'openshift-node-performance-profile' }}
 spec:
  realTimeKernel:
-   enabled: {{ (day2 and day2.performance_profile and day2.performance_profile.real_time) or 'true' | lower }}
+   enabled: {{ day2.performance_profile.real_time |default(true) | lower }}
  cpu:
    isolated: "{{ cpu.isolated }}"
    reserved: "{{ cpu.reserved }}"
  hugepages:
-   defaultHugepagesSize: {{ (day2 and day2.performance_profile and day2.performance_profile.hugepage and day2.performance_profile.hugepage.default) or '1G' }}
+   defaultHugepagesSize: {{ (day2.performance_profile.hugepage and day2.performance_profile.hugepage.default) or '1G' }}
    pages:
-     {% if (day2 and day2.performance_profile and day2.performance_profile.hugepage and day2.performance_profile.hugepage and day2.performance_profile.hugepage.pages) -%}
+     {% if (day2.performance_profile.hugepage and day2.performance_profile.hugepage.pages) -%}
      {%- for page in day2.performance_profile.hugepage.pages -%}
      - size: {{ page.size }}
        count: {{ page.count }}
@@ -36,7 +37,7 @@ spec:
    node-role.kubernetes.io/master: ""
  numa:
    topologyPolicy: single-numa-node
- {% if day2 and day2.performance_profile and day2.performance_profile.net and day2.performance_profile.net.user_level_networking -%}
+ {% if day2.performance_profile.net and day2.performance_profile.net.user_level_networking -%}
  net:
    userLevelNetworking: {{ day2.performance_profile.net.user_level_networking | lower }}
  {% endif -%}
@@ -45,11 +46,52 @@ spec:
    # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
    # for detailed descriptions of each item.
    # The configuration below is set for a low latency, performance mode.
-   realTime: {{  (day2 and day2.performance_profile and day2.performance_profile.real_time) or 'true' | lower }}
+   realTime: {{ day2.performance_profile.real_time| default(true) | lower }}
    highPowerConsumption: false
    perPodPowerManagement: false
- {% if day2 and day2.performance_profile and day2.performance_profile.hardwareTuning -%}
+ {% if day2.performance_profile.hardwareTuning -%}
  hardwareTuning:
    isolatedCpuFreq: {{ day2.performance_profile.hardwareTuning.isolatedCpuFreq }}
    reservedCpuFreq: {{ day2.performance_profile.hardwareTuning.reservedCpuFreq }}
  {% endif -%}
+{% else -%}
+---
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+ name: openshift-node-performance-profile
+spec:
+ realTimeKernel:
+   enabled: true
+ cpu:
+   isolated: "{{ cpu.isolated }}"
+   reserved: "{{ cpu.reserved }}"
+ hugepages:
+   defaultHugepagesSize: 1G
+   pages:
+     - count: 32
+       size: 1G
+ additionalKernelArgs:
+  - "rcupdate.rcu_normal_after_boot=0"
+  - "efi=runtime"
+  - "vfio_pci.enable_sriov=1"
+  - "vfio_pci.disable_idle_d3=1"
+  - "module_blacklist=irdma"
+ machineConfigPoolSelector:
+   pools.operator.machineconfiguration.openshift.io/master: ""
+ nodeSelector:
+   node-role.kubernetes.io/master: ""
+ numa:
+   topologyPolicy: single-numa-node
+ net:
+   userLevelNetworking: true
+ workloadHints:
+   # WorkloadHints defines the set of upper level flags for different type of workloads.
+   # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
+   # for detailed descriptions of each item.
+   # The configuration below is set for a low latency, performance mode.
+   realTime: true
+   highPowerConsumption: false
+   perPodPowerManagement: false
+{% endif -%}
+
