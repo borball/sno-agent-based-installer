@@ -147,6 +147,12 @@ spec:
    ptp4lOpts: ""
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
+   {% if day2.ptp.clock_threshold_tuning -%}
+   ptpClockThreshold:
+     holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
+     maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
+     minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
+   {% endif -%}
    ptpSettings:
      haProfiles: "{{ day2.ptp.boundary_clock.profiles[0].name }},{{ day2.ptp.boundary_clock.profiles[1].name }}"
      {% if day2.ptp.log_reduce -%}
