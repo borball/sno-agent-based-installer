@@ -30,9 +30,9 @@ capabilities:
   - NodeTuning
   {%- else -%}
   #4.16+
-  - Ingress
   - NodeTuning
   - OperatorLifecycleManager
+  - Ingress
   {% endif -%}
 {% endif %}
 {% if environ('ocp_y_release') != '4.12' and environ('ocp_y_release') != '4.13' -%}
