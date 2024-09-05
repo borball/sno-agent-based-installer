@@ -13,7 +13,7 @@ spec:
    phc2sysOpts: ""
    {%else %}
    {% if loop.index == 1 -%}
-   phc2sysOpts: -a -r -n 24
+   phc2sysOpts: -a -r -m -n 24{% if day2.ptp.enable_ptp_event %} -N 8 -R 16{% endif %}
    {% endif -%}
    {% endif -%}
    {% if day2.ptp.log_reduce -%}
@@ -132,12 +132,18 @@ spec:
      userDescription ;
      timeSource 0xA0
    ptp4lOpts: "-2"
+   {% if day2.ptp.clock_threshold_tuning -%}
+   ptpClockThreshold:
+     holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
+     maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
+     minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
+   {% endif -%}
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
  {% endfor -%}
  {% if day2.ptp.boundary_clock.ha_enabled -%}
  - name: boundary-ha
-   phc2sysOpts: -a -r -n 24
+   phc2sysOpts: -a -r -m -n 24{% if day2.ptp.enable_ptp_event %} -N 8 -R 16{% endif %}
    ptp4lOpts: ""
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10

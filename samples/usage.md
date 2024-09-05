@@ -122,6 +122,10 @@ day2:
     #ptpconfig type: choose any of them: disabled|ordinary|boundary
     #chronyd service will be disabled if ordinary or boundary being selected
     ptpconfig: disabled
+    clock_threshold_tuning:
+      hold_over_timeout: 5
+      max_offset: 500
+      min_offset: -500
     ordinary_clock:
       #name: crdu-ptp-ordinary-clock
       interface: ens1f0
