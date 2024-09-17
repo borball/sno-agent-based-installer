@@ -83,10 +83,10 @@ performance_profile(){
   else
     info "performance profile:" "enabled"
     if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
-      jinja2 $templates/day2/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
+      jinja2 $templates/day2/performance-profile/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
     else
       #4.14+
-      jinja2 $templates/day2/performance-profile.yaml.j2 $config_file | oc apply -f -
+      jinja2 $templates/day2/performance-profile/performance-profile.yaml.j2 $config_file | oc apply -f -
     fi
   fi
 }
@@ -97,10 +97,10 @@ tuned_profile(){
   else
     info "tuned performance patch:" "enabled"
     if [ "4.12" = $ocp_y_version ] || [ "4.13" = $ocp_y_version ] || [ "4.14" = $ocp_y_version ] || [ "4.15" = $ocp_y_version ] ; then
-      jinja2 $templates/day2/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
+      jinja2 $templates/day2/tuned/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
     else
       #4.16+
-      jinja2 $templates/day2/performance-patch-tuned-4.16.yaml.j2 $config_file | oc apply -f -
+      jinja2 $templates/day2/tuned/performance-patch-tuned-4.16.yaml.j2 $config_file | oc apply -f -
     fi
   fi
 }
@@ -108,7 +108,7 @@ tuned_profile(){
 kdump_for_lab_only(){
   if [ "true" = "$(yq '.day2.tuned_profile.kdump' $config_file)" ]; then
     info "tuned kdump settings:" "enabled"
-    oc apply -f $templates/day2/performance-patch-kdump-setting.yaml
+    oc apply -f $templates/day2/tuned/performance-patch-kdump-setting.yaml
   else
     warn "tuned kdump settings:" "disabled"
   fi
@@ -120,11 +120,11 @@ cluster_monitoring(){
   else
     info "cluster monitor tuning:" "enabled"
     if [ "4.12" = "$ocp_y_version" ]; then
-      oc apply -f $templates/day2/cluster-monitoring-cm-4.12.yaml
+      oc apply -f $templates/day2/cluster-tunings/cluster-monitoring-cm-4.12.yaml
     elif [ "4.13" = "$ocp_y_version" ]; then
-      oc apply -f $templates/day2/cluster-monitoring-cm-4.13.yaml
+      oc apply -f $templates/day2/cluster-tunings/cluster-monitoring-cm-4.13.yaml
     else
-      oc apply -f $templates/day2/cluster-monitoring-cm.yaml
+      oc apply -f $templates/day2/cluster-tunings/cluster-monitoring-cm.yaml
     fi
   fi
 }
@@ -144,16 +144,16 @@ ptp_configs(){
   fi
   if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
     info "ptpconfig ordinary clock:" "enabled"
-    jinja2 $templates/day2/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+    jinja2 $templates/day2/ptp/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
   fi
   if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
     info "ptpconfig boundary clock:" "enabled"
-    jinja2 $templates/day2/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+    jinja2 $templates/day2/ptp/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
   fi
 
   if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
     info "ptp event notification:" "enabled"
-    oc apply -f $templates/day2/ptp-operator-config-for-event.yaml
+    oc apply -f $templates/day2/ptp/ptp-operator-config-for-event.yaml
   fi
 }
 
@@ -162,28 +162,28 @@ sriov_configs(){
     warn "sriov operator not enabled"
   else
     info "sriov operator configuration"
-    jinja2 $templates/day2/sriov-operator-config-default.yaml.j2 $config_file | oc apply -f -
+    jinja2 $templates/day2/sriov/sriov-operator-config-default.yaml.j2 $config_file | oc apply -f -
   fi
 }
 
 nmstate_config(){
   if [ "true" = "$(yq '.day1.operators.nmstate.enabled' $config_file)" ]; then
     info "nmstate operator configuration"
-    oc apply -f $templates/day2/nmstate-nmstate.yaml
+    oc apply -f $templates/day2/nmstate/nmstate-nmstate.yaml
   fi
 }
 
 metallb_config(){
   if [ "true" = "$(yq '.day1.operators.metallb.enabled' $config_file)" ]; then
     info "metallb-metallb operator configuration"
-    oc apply -f $templates/day2/metallb-metallb.yaml
+    oc apply -f $templates/day2/metallb/metallb-metallb.yaml
   fi
 }
 
 lvm_config(){
   if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
     info "lvm operator configuration"
-    jinja2 $templates/day2/lvmcluster-singlenode.yaml $config_file | oc apply -f -
+    jinja2 $templates/day2/lvm/lvmcluster-singlenode.yaml $config_file | oc apply -f -
   fi
 }
 
@@ -196,7 +196,7 @@ olm_pprof(){
       warn "disable olm pprof:" "false"
     else
       info "disable olm pprof:" "true"
-      oc apply -f $templates/day2/disable-olm-pprof.yaml
+      oc apply -f $templates/day2/cluster-tunings/disable-olm-pprof.yaml
     fi
   fi
 }

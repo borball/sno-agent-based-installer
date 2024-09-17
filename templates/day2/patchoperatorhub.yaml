@@ -1,7 +1,0 @@
-- op: add
-  path: /spec/sources
-  value:
-    - disabled: true
-      name: redhat-marketplace
-    - disabled: true
-      name: community-operators

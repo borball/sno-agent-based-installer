@@ -216,6 +216,7 @@ day2:
         selector:
           paths:
             - "/dev/sdb"
+  local-storage:
 
 cpu:
   isolated: 2-31,34-63
