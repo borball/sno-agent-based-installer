@@ -1,0 +1,31 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 60-create-lvs
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    storage:
+      files:
+      - contents:
+          source: data:;base64,{{ environ('CREATE_LVS_FOR_SNO') }}
+        mode: 493
+        overwrite: true
+        path: /usr/local/bin/create_lvs_for_lso.sh
+    systemd:
+      units:
+      - contents: |
+          [Unit]
+          Description=Create LVs Required for LSO
+          After=local-fs.target
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/create_lvs_for_lso.sh '{{ day2.local_storage.id_by_path }}' '{{ day2.local_storage.lvs |default('10x1g 10x2g 5x4g 5x5g 2x10g 1x15g 1x30g') }}'
+          RemainAfterExit=yes
+          [Install]
+          WantedBy=multi-user.target
+        enabled: true
+        name: create-lvs-for-lso.service

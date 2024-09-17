@@ -1,3 +1,7 @@
+## 2024-09-17
+- Add day2.local_storage to create lvs
+- Fix minor issues, day2 file structure refactoring 
+
 ## 2024-08-26
 - tuned patch, 4.16 update
 - 

@@ -172,6 +172,9 @@ day2:
         selector:
           paths:
             - "/dev/sdb"
+  local_storage:
+    id_by_path: pci-0000:c3:00.0-nvme-1
+    lvs: 10x1g 10x2g 5x4g 5x5g 2x10g 1x15g 1x30g
 ```
 
 ## Other usages
