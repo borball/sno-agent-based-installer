@@ -281,6 +281,7 @@ install_operators(){
 }
 
 config_operators(){
+  echo "Configuring operators"
   #right now only local storage operator
   if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
     sleep 1
@@ -377,7 +378,6 @@ echo
 echo "Enabling operators..."
 operator_catalog_sources
 install_operators
-echo
 config_operators
 echo
 setup_ztp_hub
