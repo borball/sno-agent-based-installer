@@ -21,6 +21,11 @@ cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
 
+day2:
+  local_storage:
+    id_by_path: pci-0000:c4:00.0-nvme-1
+    lvs: 10x1g 10x2g 5x4g 5x5g 2x10g 1x15g 1x30g
+
 proxy:
   enabled: true
   http: http://[2600:52:7:58::15]:3128
