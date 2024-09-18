@@ -229,7 +229,9 @@ operator_auto_upgrade(){
 }
 
 local_storage_config(){
-  if [ "true" = "$(yq '.day1.operators.local-storage.enabled' $config_file)" ]; then
+  if [ "false" = "$(yq '.day1.operators.local-storage.enabled' $config_file)" ]; then
+    sleep 1
+  else
     if [ "$(yq '.day2.local_storage' $config_file)" != "null" ]; then
       info "local-storage operator configuration"
       export CREATE_LVS_FOR_SNO=$(cat $templates/day2/local-storage/create_lvs_for_lso.sh |base64 -w0)
