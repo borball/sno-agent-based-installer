@@ -23,7 +23,7 @@ spec:
           After=local-fs.target
           [Service]
           Type=oneshot
-          ExecStart=/usr/local/bin/create_lvs_for_lso.sh '{{ day1.local_storage.id_by_path }}' '{{ environ('LVS') }}'
+          ExecStart=/usr/local/bin/create_lvs_for_lso.sh '{{ day1.operators.local-storage.provision.id_by_path }}' '{{ environ('LVS') }}'
           RemainAfterExit=yes
           [Install]
           WantedBy=multi-user.target
