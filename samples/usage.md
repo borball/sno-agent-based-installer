@@ -50,6 +50,18 @@ day1:
       enabled: true
       #if you want to stay on a particular version local-storage-operator.v4.12.0-202403082008
       #version: local-storage-operator.v4.12.0-202403082008
+      #preparation work for local storage
+      provision:
+        #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
+        disk_by_path: pci-0000:c3:00.0-nvme-1
+        lvs:
+          1g: 10
+          2g: 10
+          4g: 5
+          5g: 5
+          10g: 2
+          15g: 1
+          30g: 1
     gitops:
       enabled: false
     rhacm:
@@ -172,9 +184,7 @@ day2:
         selector:
           paths:
             - "/dev/sdb"
-  local_storage:
-    id_by_path: pci-0000:c3:00.0-nvme-1
-    lvs: 10x1g 10x2g 5x4g 5x5g 2x10g 1x15g 1x30g
+
 ```
 
 ## Other usages

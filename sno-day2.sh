@@ -228,18 +228,6 @@ operator_auto_upgrade(){
   esac
 }
 
-local_storage_config(){
-  if [ "false" = "$(yq '.day1.operators.local-storage.enabled' $config_file)" ]; then
-    sleep 1
-  else
-    if [ "$(yq '.day2.local_storage' $config_file)" != "null" ]; then
-      info "local-storage operator configuration"
-      export CREATE_LVS_FOR_SNO=$(cat $templates/day2/local-storage/create_lvs_for_lso.sh |base64 -w0)
-      jinja2 $templates/day2/local-storage/60-create-lvs-mc.yaml.j2 $config_file | oc apply -f -
-    fi
-  fi
-}
-
 echo "------------------------------------------------"
 cluster_info
 echo
@@ -264,8 +252,6 @@ metallb_config
 lvm_config
 echo
 olm_pprof
-echo
-local_storage_config
 echo
 operator_auto_upgrade
 echo

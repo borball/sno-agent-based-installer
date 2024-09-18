@@ -234,6 +234,7 @@ day1_config(){
   else
     warn "Container storage partition:" "disabled"
   fi
+
 }
 
 install_operator(){
@@ -277,6 +278,24 @@ install_operators(){
     fi
   done
   echo
+}
+
+config_operators(){
+  #right now only local storage operator
+  if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
+    sleep 1
+  else
+    # enabled
+    if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
+      sleep 1
+    else
+      info "local-storage operator: provision storage"
+      export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
+
+      export LVS=$(yq '.day1.local_storage.lvs|to_entries|map(.value + "x" + .key)|join(" ")' $config_file)
+      jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
+    fi
+  fi
 }
 
 setup_ztp_hub(){
@@ -359,7 +378,8 @@ echo "Enabling operators..."
 operator_catalog_sources
 install_operators
 echo
-
+config_operators
+echo
 setup_ztp_hub
 apply_extra_manifests
 
