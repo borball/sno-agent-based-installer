@@ -92,6 +92,11 @@ day1:
       #channel: stable
       #set the version
       #version: v4.16.0-89
+
+  extra_manifests:
+    - ${HOME}/1
+    - ${HOME}/2
+    - $OCP_Y_VERSION
 ```
 
 ## Day2
@@ -191,6 +196,11 @@ day2:
     local_volume:
       name: local-disks
       storageClassName: general
+
+  extra_manifests:
+    - ${HOME}/1
+    - ${HOME}/2
+    - $OCP_Y_VERSION
 ```
 
 ## Other usages

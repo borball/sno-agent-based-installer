@@ -188,7 +188,7 @@ local_storage_config(){
     if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
       sleep 1
     else
-      info "local-storage operator: create LocalVolume"
+      info "local-storage operator" "create LocalVolume"
       export TOTAL_LVS=$(yq ".day1.operators.local-storage.provision.lvs|to_entries|map(.value)" $config_file |yq '.[] as $item ireduce (0; . + $item)')
       jinja2 $templates/day2/local-storage/local-volume.yaml.j2 $config_file |oc apply -f -
       storage_class_name=$(yq ".day2.local_storage.local_volume.storageClassName" $config_file)
@@ -249,6 +249,27 @@ operator_auto_upgrade(){
   esac
 }
 
+apply_extra_manifests(){
+  extra_manifests=$(yq '.day2.extra_manifests' $config_file)
+  if [ "$extra_manifests" == "null" ]; then
+    sleep 1
+  else
+    all_paths_config=$(yq '.day2.extra_manifests|join(" ")' $config_file)
+    all_paths=$(eval echo $all_paths_config)
+    for d in $all_paths; do
+      if [ -d $d ]; then
+        for file in $d/*.yaml; do
+          oc apply -f $file
+        done
+
+        for file in $d/*.yaml.j2; do
+          jinja2 $file $config_file | oc apply -f -
+        done
+      fi
+    done
+  fi
+}
+
 echo "------------------------------------------------"
 cluster_info
 echo
@@ -277,5 +298,5 @@ olm_pprof
 echo
 operator_auto_upgrade
 echo
-
+apply_extra_manifests
 echo "Done."

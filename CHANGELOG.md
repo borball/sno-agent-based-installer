@@ -1,3 +1,6 @@
+## 2024-09-19
+- Add day1.extra-manifests and day2.manifests
+
 ## 2024-09-17
 - Add day1.operators.local-storage.provision to create lvs
 - Fix minor issues, day2 file structure refactoring 

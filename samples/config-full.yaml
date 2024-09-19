@@ -144,6 +144,10 @@ day1:
       enabled: false
     nmstate:
       enabled: false
+  extra_manifests:
+    - ${HOME}/1
+    - ${HOME}/2
+    - $OCP_Y_VERSION
 
 day2:
   performance_profile:
@@ -238,6 +242,11 @@ day2:
       name: local-disks
       storageClassName: general
 
+  extra_manifests:
+    - ${HOME}/1
+    - ${HOME}/2
+    - $OCP_Y_VERSION
+
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
@@ -250,7 +259,6 @@ proxy:
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
-extra_manifests: /root/sno-vdu/sno148-extra-manifests
 
 #set it in a disconnected env
 additional_trust_bundle: /root/registry/ca-bundle.crt

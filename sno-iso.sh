@@ -89,6 +89,8 @@ if [ -z $ocp_release_version ]; then
 fi
 
 export ocp_y_release=$(echo $ocp_release_version |cut -d. -f1-2)
+export OCP_Y_VERSION=$ocp_y_release
+export OCP_Z_VERSION=$ocp_release_version
 
 config_file="$cluster_workspace/config-resolved.yaml"
 
@@ -314,15 +316,29 @@ setup_ztp_hub(){
   fi
 }
 
-apply_extra_manifests(){
-  extra_manifests=$(yq '.extra_manifests' $config_file)
-  if [ -n "$extra_manifests" ]; then
-    if [ -d "$extra_manifests" ]; then
-      echo "Copy customized CRs from extra-manifests folder if present"
-      ls -l "$extra_manifests"
-      cp "$extra_manifests"/*.yaml "$cluster_workspace"/openshift/ 2>/dev/null
-      echo
-    fi
+copy_extra_manifests(){
+  extra_manifests=$(yq '.day1.extra_manifests' $config_file)
+  if [ "$extra_manifests" == "null" ]; then
+    sleep 1
+  else
+    all_paths_config=$(yq '.day1.extra_manifests|join(" ")' $config_file)
+    all_paths=$(eval echo $all_paths_config)
+
+    for d in $all_paths; do
+      if [ -d $d ]; then
+        for file in $d/*.yaml; do
+          info "copy file $file to $cluster_workspace/openshift/"
+          cp "$file" "$cluster_workspace"/openshift/ 2>/dev/null
+        done
+
+        for file in $d/*.yaml.j2; do
+          tname=$(basename $file)
+          fname=${tname//.j2/}
+          info "render file $file to $cluster_workspace/openshift/$fname"
+          jinja2 $file $config_file > "$cluster_workspace"/openshift/$fname
+        done
+      fi
+    done
   fi
 }
 
@@ -381,7 +397,7 @@ install_operators
 config_operators
 echo
 setup_ztp_hub
-apply_extra_manifests
+copy_extra_manifests
 
 
 pull_secret=$(yq '.pull_secret' $config_file)
