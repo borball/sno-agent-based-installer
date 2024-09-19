@@ -259,10 +259,12 @@ apply_extra_manifests(){
     for d in $all_paths; do
       if [ -d $d ]; then
         for file in $d/*.yaml; do
+          info "Apply file $file"
           oc apply -f $file
         done
 
         for file in $d/*.yaml.j2; do
+          info "Render file $file and apply"
           jinja2 $file $config_file | oc apply -f -
         done
       fi

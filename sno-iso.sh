@@ -283,7 +283,7 @@ install_operators(){
 }
 
 config_operators(){
-  echo "Configuring operators"
+  echo "Configuring operators..."
   #right now only local storage operator
   if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
     sleep 1
@@ -321,6 +321,7 @@ copy_extra_manifests(){
   if [ "$extra_manifests" == "null" ]; then
     sleep 1
   else
+    echo "Process extra-manifest files"
     all_paths_config=$(yq '.day1.extra_manifests|join(" ")' $config_file)
     all_paths=$(eval echo $all_paths_config)
 
