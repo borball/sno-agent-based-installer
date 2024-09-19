@@ -191,9 +191,12 @@ local_storage_config(){
       info "local-storage operator: create LocalVolume"
       export TOTAL_LVS=$(yq ".day1.operators.local-storage.provision.lvs|to_entries|map(.value)" $config_file |yq '.[] as $item ireduce (0; . + $item)')
       jinja2 $templates/day2/local-storage/local-volume.yaml.j2 $config_file |oc apply -f -
-
-      oc wait --for=jsonpath='{.volumeBindingMode}'=WaitForFirstConsumer storageclass general --timeout=30s
-      oc patch storageclass general -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+      storage_class_name=$(yq "day2.local_storage.local_volume.storageClassName" $config_file)
+      if [ "$storage_class_name" == "null" ]; then
+        storage_class_name="general"
+      fi
+      oc wait --for=jsonpath='{.volumeBindingMode}'=WaitForFirstConsumer storageclass $storage_class_name --timeout=30s
+      oc patch storageclass $storage_class_name -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
     fi
   fi
 }
