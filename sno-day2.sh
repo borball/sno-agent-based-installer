@@ -180,6 +180,21 @@ metallb_config(){
   fi
 }
 
+local_storage_config(){
+  if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
+    sleep 1
+  else
+    # enabled
+    if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
+      sleep 1
+    else
+      info "local-storage operator: create LocalVolume"
+      export TOTAL_LVS=$(yq ".day1.operators.local-storage.provision.lvs|to_entries|map(.value)" $config_file |yq '.[] as $item ireduce (0; . + $item)')
+      jinja2 $templates/day2/local-storage/local-volume.yaml.j2 $config_file |oc apply -f -
+    fi
+  fi
+}
+
 lvm_config(){
   if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
     info "lvm operator configuration"
@@ -249,6 +264,7 @@ echo
 sriov_configs
 nmstate_config
 metallb_config
+local_storage_config
 lvm_config
 echo
 olm_pprof

@@ -1,5 +1,5 @@
 ## 2024-09-17
-- Add day2.local_storage to create lvs
+- Add day1.operators.local-storage.provision to create lvs
 - Fix minor issues, day2 file structure refactoring 
 
 ## 2024-08-26

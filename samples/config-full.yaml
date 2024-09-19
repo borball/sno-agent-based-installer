@@ -230,7 +230,13 @@ day2:
         selector:
           paths:
             - "/dev/sdb"
-
+  #LocalVolume settings for local storage operator,
+  #if not present, and if day1.operators.local-storage.provision.lvs is present, will use default name 'local-disks'
+  # and storageClassName 'general'
+  local_storage:
+    local_volume:
+      name: local-disks
+      storageClassName: general
 
 cpu:
   isolated: 2-31,34-63
