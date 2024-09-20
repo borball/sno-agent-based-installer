@@ -202,6 +202,11 @@ approve_pending_install_plans(){
       oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
     done < <(oc get sub -A -o json |jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) )|.status.installPlanRef|"-n \(.namespace) ip \(.name)"')
 
+    if [[ 0 ==  $(oc get sub -A -o json|jq '[.items[]|select(.status.installedCSV==null)]|length') ]]; then
+      echo
+      break
+    fi
+
     sleep 30
     echo
   done
