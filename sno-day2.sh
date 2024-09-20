@@ -257,16 +257,43 @@ apply_extra_manifests(){
     all_paths_config=$(yq '.day2.extra_manifests|join(" ")' $config_file)
     all_paths=$(eval echo $all_paths_config)
     for d in $all_paths; do
-      if [ -d $d ]; then
-        for file in $d/*.yaml; do
-          info "Apply file $file"
-          oc apply -f $file
-        done
-
-        for file in $d/*.yaml.j2; do
-          info "Render file $file and apply"
-          jinja2 $file $config_file | oc apply -f -
-        done
+      if [[ -d "$d" ]]; then
+        readarray -t csr_files < <(find ${d} -type f \( -name "*.yaml" -o -name "*.yaml.j2" -o -name "*.sh" \) |sort)
+        for ((i=0; i<${#csr_files[@]}; i++)); do
+          file="${csr_files[$i]}"
+          case "$file" in
+            *.yaml)
+              output=$(oc apply -f $file)
+              if [[ $? -ne 0 ]]; then
+                warn $file "Failed"
+              else
+                info $file "Successful"
+              fi
+              echo "$output"
+              ;;
+	          *.yaml.j2)
+              output=$(jinja2 $file $config_file | oc apply -f -)
+              if [[ $? -ne 0 ]]; then
+                warn $file "Failed"
+              else
+                info $file "Successful"
+              fi
+              echo "$output"
+	            ;;
+            *.sh)
+              output=$(. $file)
+              if [[ $? -ne 0 ]]; then
+                warn $file "Failed"
+              else
+                info $file "Successful"
+              fi
+              echo "$output"
+              ;;
+            *)
+              warn $file "Skipped: unknown type"
+              ;;
+          esac
+         done
       fi
     done
   fi
