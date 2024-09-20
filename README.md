@@ -108,11 +108,21 @@ By default, following tunings or operators will be enabled during day1(installat
 - PTP Operator
 - SR-IOV Network Operator
 
-You can turn on/off the day1 operations and specify the desired versions in the config file under section [day1](samples/usage.md#day1).
+You can turn on/off the day1 operations and specify the desired versions in the config file under section 
+[day1](samples/usage.md#day1).
 
-In some case you may want to include more customizations for the cluster during day1, you can put those CRs
-(Custom Resources) in any folder and set the path in extra_manifests in the config.yaml, the sno-iso script will copy 
-and include those inside the ISO image. 
+In some case you may want to include more custom resources during the installation, you can put those custom resources 
+in any folder and set the path in day1.extra_manifests in the config.yaml, the sno-iso script will copy 
+and include those inside the ISO image. The paths of the day1.extra_manifests can support environment variables like 
+${HOME}, ${OCP_Y_VERSION}, ${OCP_Z_VERSION} etc, an example:
+
+```yaml
+day1:
+  extra_manifests:
+    - ${HOME}/1
+    - ${HOME}/2
+    - $OCP_Y_VERSION
+```
 
 Get other sample [configurations](samples/usage.md).
 

@@ -130,6 +130,8 @@ day1:
       enabled: false
     nmstate:
       enabled: false
+  extra_manifests:
+    - /root/sno-vdu/sno148-extra-manifests
 
 day2:
   performance_profile:
@@ -229,7 +231,6 @@ proxy:
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
-extra_manifests: /root/sno-vdu/sno148-extra-manifests
 
 #set it in a disconnected env
 additional_trust_bundle: /root/registry/ca-bundle.crt

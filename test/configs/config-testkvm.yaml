@@ -47,6 +47,8 @@ day1:
       enabled: false
     cluster-logging:
       enabled: false
+  extra_manifests:
+    - /root/sno-4.14/test/configs/testkvm-extra-manifests
 
 day2:
   performance_profile:
@@ -89,7 +91,6 @@ proxy:
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
-extra_manifests: /root/sno-4.14/test/configs/testkvm-extra-manifests
 
 bmc:
   address: 192.168.58.15:8080
