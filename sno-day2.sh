@@ -76,6 +76,8 @@ cluster_info(){
 
 ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
+export OCP_Y_VERSION=$ocp_y_release
+export OCP_Z_VERSION=$ocp_release
 
 performance_profile(){
   if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
