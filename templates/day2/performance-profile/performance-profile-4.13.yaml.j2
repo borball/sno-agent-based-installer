@@ -1,3 +1,47 @@
+{% if day2 and day2.performance_profile -%}
+---
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+ name: {{ day2.performance_profile.name or 'openshift-node-performance-profile' }}
+spec:
+ realTimeKernel:
+   enabled: {{ day2.performance_profile.real_time |default(true) | lower }}
+ cpu:
+   isolated: "{{ cpu.isolated }}"
+   reserved: "{{ cpu.reserved }}"
+ hugepages:
+   defaultHugepagesSize: {{ (day2.performance_profile.hugepage and day2.performance_profile.hugepage.default) or '1G' }}
+   pages:
+     {% if (day2.performance_profile.hugepage and day2.performance_profile.hugepage.pages) -%}
+     {% for page in day2.performance_profile.hugepage.pages %}
+     - size: {{ page.size }}
+       count: {{ page.count }}
+       {%- if page.node is defined %}
+       node: {{ page.node }}
+       {% endif -%}
+     {% endfor -%}
+     {% else -%}
+     - count: 32
+       size: 1G
+     {%- endif %}
+ additionalKernelArgs:
+  - "rcupdate.rcu_normal_after_boot=0"
+  - "efi=runtime"
+  - "vfio_pci.enable_sriov=1"
+  - "vfio_pci.disable_idle_d3=1"
+  - "module_blacklist=irdma"
+ machineConfigPoolSelector:
+   pools.operator.machineconfiguration.openshift.io/master: ""
+ nodeSelector:
+   node-role.kubernetes.io/master: ""
+ numa:
+   topologyPolicy: single-numa-node
+ {% if day2.performance_profile.net and day2.performance_profile.net.user_level_networking -%}
+ net:
+   userLevelNetworking: {{ day2.performance_profile.net.user_level_networking | lower }}
+ {% endif -%}
+{% else -%}
 ---
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
@@ -30,3 +74,4 @@ spec:
  net:
    userLevelNetworking: {{ day2.performance_profile.net.user_level_networking | lower }}
  {% endif -%}
+{% endif -%}
