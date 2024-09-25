@@ -327,17 +327,25 @@ copy_extra_manifests(){
 
     for d in $all_paths; do
       if [ -d $d ]; then
-        for file in $d/*.yaml; do
-          info "copy file $file to $cluster_workspace/openshift/"
-          cp "$file" "$cluster_workspace"/openshift/ 2>/dev/null
-        done
-
-        for file in $d/*.yaml.j2; do
-          tname=$(basename $file)
-          fname=${tname//.j2/}
-          info "render file $file to $cluster_workspace/openshift/$fname"
-          jinja2 $file $config_file > "$cluster_workspace"/openshift/$fname
-        done
+        readarray -t csr_files < <(find ${d} -type f \( -name "*.yaml" -o -name "*.yaml.j2" \) |sort)
+        for ((i=0; i<${#csr_files[@]}; i++)); do
+          file="${csr_files[$i]}"
+          case "$file" in
+            *.yaml)
+              info "$file" "copy to $cluster_workspace/openshift/$file"
+              cp "$file" "$cluster_workspace"/openshift/ 2>/dev/null
+              ;;
+	          *.yaml.j2)
+              tname=$(basename $file)
+              fname=${tname//.j2/}
+              info "$file" "render to $cluster_workspace/openshift/$fname"
+              jinja2 $file $config_file > "$cluster_workspace"/openshift/$fname
+	            ;;
+            *)
+              warn $file "skipped: unknown type"
+              ;;
+          esac
+         done
       fi
     done
   fi
