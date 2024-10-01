@@ -277,7 +277,7 @@ container_registry:
         image: quay.io/prega/redhat-operator-index:v4.16
         publisher: Red Hat
   icsp:
-    - templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
+    - /root/sno-4.14/templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
 
 bmc:
   address: 192.168.13.148
