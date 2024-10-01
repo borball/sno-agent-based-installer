@@ -389,7 +389,12 @@ operator_catalog_sources(){
     local size=$(yq '.container_registry.icsp|length' $config_file)
     for ((k=0; k<$size; k++)); do
       local name=$(yq ".container_registry.icsp[$k]" $config_file)
-      cp $basedir/$name $cluster_workspace/openshift/
+      if [ -f "$name" ]; then
+        info "$name" "copy to $cluster_workspace/openshift/"
+        cp $name $cluster_workspace/openshift/
+      else
+        warn "$name" "not a file or not exist"
+      fi
     done
   fi
 
