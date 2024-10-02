@@ -80,31 +80,43 @@ kvm_uuid=$(yq '.bmc.kvm_uuid // "" ' $config_file)
 
 set -euoE pipefail
 
-if [ ! -z $kvm_uuid ]; then
-  system=/redfish/v1/Systems/$kvm_uuid
-  manager=/redfish/v1/Managers/$kvm_uuid
-else
-  system=$($CURL -sku ${username_password}  https://$bmc_address/redfish/v1/Systems | jq '.Members[0]."@odata.id"' )
-  manager=$($CURL -sku ${username_password}  https://$bmc_address/redfish/v1/Managers | jq '.Members[0]."@odata.id"' )
-fi
-
-system=$(sed -e 's/^"//' -e 's/"$//' <<<$system)
-manager=$(sed -e 's/^"//' -e 's/"$//' <<<$manager)
-
-system_path=https://$bmc_address$system
-manager_path=https://$bmc_address$manager
-virtual_media_root=$manager_path/VirtualMedia
-virtual_media_path=""
-
-virtual_medias=$($CURL -sku ${username_password} $virtual_media_root | jq '.Members[]."@odata.id"' )
-for vm in $virtual_medias; do
-  vm=$(sed -e 's/^"//' -e 's/"$//' <<<$vm)
-  if [ $($CURL -sku ${username_password} https://$bmc_address$vm | jq '.MediaTypes[]' |grep -ciE 'CD|DVD') -gt 0 ]; then
-    virtual_media_path=$vm
-    break
+redfish_init(){
+  if [ ! -z $kvm_uuid ] && [ ! $kvm_uuid == "null" ]; then
+    system=/redfish/v1/Systems/$kvm_uuid
+    manager=/redfish/v1/Managers/$kvm_uuid
+  else
+    system=$($CURL -sku ${username_password}  https://$bmc_address/redfish/v1/Systems | jq '.Members[0]."@odata.id"' )
+    manager=$($CURL -sku ${username_password}  https://$bmc_address/redfish/v1/Managers | jq '.Members[0]."@odata.id"' )
   fi
-done
-virtual_media_path=https://$bmc_address$virtual_media_path
+
+  if [ $manager == "null" ] || [ $system == "null" ]; then
+    echo "FATAL: either redfish system or manager is 'null', please check!"
+    exit -1
+  fi
+
+  system=$(sed -e 's/^"//' -e 's/"$//' <<<$system)
+  manager=$(sed -e 's/^"//' -e 's/"$//' <<<$manager)
+  system_path=https://$bmc_address$system
+  manager_path=https://$bmc_address$manager
+  virtual_media_root=$manager_path/VirtualMedia
+  virtual_media_path=""
+
+  virtual_medias=$($CURL -sku ${username_password} $virtual_media_root | jq '.Members[]."@odata.id"' )
+  for vm in $virtual_medias; do
+    vm=$(sed -e 's/^"//' -e 's/"$//' <<<$vm)
+    if [ $($CURL -sku ${username_password} https://$bmc_address$vm | jq '.MediaTypes[]' |grep -ciE 'CD|DVD') -gt 0 ]; then
+      virtual_media_path=$vm
+      break
+    fi
+  done
+
+  if [ $virtual_media_path == "null" ] || [ -z $virtual_media_path ]; then
+    echo "FATAL: redfish virtual media path is empty, cannot start the deployment, please check!"
+    exit -1
+  else
+    virtual_media_path=https://$bmc_address$virtual_media_path
+  fi
+}
 
 server_secureboot_delete_keys() {
     $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
@@ -216,6 +228,7 @@ approve_pending_install_plans(){
 }
 
 echo "-------------------------------"
+redfish_init
 
 echo "Starting SNO deployment..."
 echo
