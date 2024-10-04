@@ -263,7 +263,7 @@ wait_for_stable_cluster(){
   set -e
   if [[ ! -z "$skipped" ]]; then
     echo
-    echo $line
+    echo $skipped
   fi
 }
 
