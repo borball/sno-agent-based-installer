@@ -19,8 +19,8 @@ fi
 
 
 usage(){
-	echo "Usage: $0 <cluster-name>"
-	echo "If <cluster-name> is not present, it will install the newest cluster created by sno-iso"
+  echo "Usage: $0 <cluster-name>"
+  echo "If <cluster-name> is not present, it will install the newest cluster created by sno-iso"
   echo "Example: $0"
   echo "Example: $0 sno130"
 }
@@ -75,6 +75,7 @@ if [[ "true"=="${bmc_noproxy}" ]]; then
 fi
 
 iso_image=$(yq '.iso.address' $config_file)
+deploy_cmd=$(eval echo $(yq '.iso.deploy // ""' $config_file))
 iso_protocol=$(yq -r '.iso.protocol|select( . != null )' $config_file)
 kvm_uuid=$(yq '.bmc.kvm_uuid // "" ' $config_file)
 
@@ -171,6 +172,18 @@ virtual_media_status(){
     $virtual_media_path| jq
 }
 
+deploy_iso(){
+  [[ -z "$deploy_cmd" ]] && return
+  [[ ! -x $(realpath $deploy_cmd) ]] && echo "Failed to deploy ISO, command not executable: $deploy_cmd" && exit
+  echo "Deploy ISO: $deploy_cmd $cluster_workspace/agent.x86_64.iso $iso_image"
+  $deploy_cmd $cluster_workspace/agent.x86_64.iso $iso_image
+  local result=$?
+  if [[ $result -ne 0 ]]; then
+    echo "Failed: $result"
+    exit
+  fi
+}
+
 virtual_media_insert(){
     # Insert Media from http server and iso file
     echo "Insert Virtual Media: $iso_image"
@@ -228,6 +241,7 @@ approve_pending_install_plans(){
 }
 
 echo "-------------------------------"
+deploy_iso
 redfish_init
 
 echo "Starting SNO deployment..."

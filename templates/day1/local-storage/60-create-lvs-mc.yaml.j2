@@ -9,6 +9,9 @@ spec:
     ignition:
       version: 3.2.0
     storage:
+      disks:
+        - device: /dev/disk/by-path/{{ environ('DISK') }}
+          wipeTable: true
       files:
       - contents:
           source: data:;base64,{{ environ('CREATE_LVS_FOR_SNO') }}
