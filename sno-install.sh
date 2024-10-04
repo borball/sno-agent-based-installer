@@ -240,6 +240,33 @@ approve_pending_install_plans(){
   oc get csv -A -o custom-columns="0AME:.metadata.name,DISPLAY:.spec.displayName,VERSION:.spec.version" |sort -f|uniq|sed 's/0AME/NAME/'
 }
 
+wait_for_stable_cluster(){
+  local interval=${1:-60}
+  local next_run=0
+  local skipped=""
+  set +e
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local current=$(date +%s --date="now")
+    if [[ $current -gt $next_run ]]; then
+      if [[ ! -z "$skipped" ]]; then
+	echo
+	skipped=""
+      fi
+      echo $line
+      let next_run=$current+$interval
+     else
+       echo -n .
+       skipped="$line"
+     fi
+  done < <(oc adm wait-for-stable-cluster --minimum-stable-period=1m  2>&1)
+  set -e
+  if [[ ! -z "$skipped" ]]; then
+    echo
+    echo $line
+  fi
+}
+
 echo "-------------------------------"
 deploy_iso
 redfish_init
@@ -329,8 +356,8 @@ echo "Will eject the ISO now..."
 virtual_media_eject
 echo
 echo "Waiting for the cluster to be ready..."
-sleep 180
-oc adm wait-for-stable-cluster
+sleep 60
+wait_for_stable_cluster 60
 
 approve_pending_install_plans
 echo
