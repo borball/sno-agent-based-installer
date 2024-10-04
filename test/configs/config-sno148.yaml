@@ -36,9 +36,16 @@ day1:
           10g: 2
           15g: 1
           30g: 1
-
   extra_manifests:
-    - /root/sno-4.14/sno148-extra-manifests
+    - ${HOME}/sno-4.14/manifests/day1/1
+    - ${HOME}/sno-4.14/manifests/day1/2
+    - ${HOME}/sno-4.14/manifests/day1/$OCP_Y_VERSION
+
+day2:
+  extra_manifests:
+    - ${HOME}/sno-4.14/manifests/day2/1
+    - ${HOME}/sno-4.14/manifests/day2/2
+    - ${HOME}/sno-4.14/manifests/day2/$OCP_Y_VERSION
 
 cpu:
   isolated: 2-31,34-63
@@ -52,6 +59,7 @@ proxy:
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
+extra_manifests: /root/sno-4.14/sno148-extra-manifests
 
 bmc:
   address: 192.168.13.148
