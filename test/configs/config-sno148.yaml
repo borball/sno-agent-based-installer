@@ -15,19 +15,19 @@ host:
     gateway: 2600:52:7:58::1
     prefix: 64
     machine_network_cidr: 2600:52:7:58::/64
-  disk: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+  disk: /dev/disk/by-path/pci-0000:c4:00.0-nvme-1
 
 day1:
   container_storage:
     enabled: false
-    device: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+    device: /dev/disk/by-path/pci-0000:c4:00.0-nvme-1
     startMiB: 250000
     sizeMiB: 0
   operators:
     local-storage:
       provision:
         #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
-        disk_by_path: pci-0000:c4:00.0-nvme-1
+        disk_by_path: pci-0000:c3:00.0-nvme-1
         lvs:
           1g: 10
           2g: 10
@@ -36,16 +36,6 @@ day1:
           10g: 2
           15g: 1
           30g: 1
-  extra_manifests:
-    - ${HOME}/sno-4.14/manifests/day1/1
-    - ${HOME}/sno-4.14/manifests/day1/2
-    - ${HOME}/sno-4.14/manifests/day1/$OCP_Y_VERSION
-
-day2:
-  extra_manifests:
-    - ${HOME}/sno-4.14/manifests/day2/1
-    - ${HOME}/sno-4.14/manifests/day2/2
-    - ${HOME}/sno-4.14/manifests/day2/$OCP_Y_VERSION
 
 cpu:
   isolated: 2-31,34-63
@@ -57,9 +47,9 @@ proxy:
   https: http://[2600:52:7:58::15]:3128
   noproxy: 2600:52:7:58::/64,localhost,127.0.0.1
 
-pull_secret: /root/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
-extra_manifests: /root/sno-4.14/sno148-extra-manifests
+pull_secret: ${HOME}/pull-secret.json
+ssh_key: ${HOME}/.ssh/id_rsa.pub
 
 bmc:
   address: 192.168.13.148
