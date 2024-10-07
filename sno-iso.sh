@@ -414,8 +414,10 @@ setup_ztp_hub
 copy_extra_manifests
 
 
-pull_secret=$(yq '.pull_secret' $config_file)
-export pull_secret=$(cat $pull_secret)
+pull_secret_input=$(yq '.pull_secret' $config_file)
+pull_secret_path=$(eval echo $pull_secret_input)
+export pull_secret=$(cat $pull_secret_path)
+
 ssh_key_input=$(yq '.ssh_key' $config_file)
 ssh_key_path=$(eval echo $ssh_key_input)
 export ssh_key=$(cat $ssh_key_path)
