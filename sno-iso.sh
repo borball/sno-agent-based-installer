@@ -416,8 +416,9 @@ copy_extra_manifests
 
 pull_secret=$(yq '.pull_secret' $config_file)
 export pull_secret=$(cat $pull_secret)
-ssh_key=$(yq '.ssh_key' $config_file)
-export ssh_key=$(cat $ssh_key)
+ssh_key_input=$(yq '.ssh_key' $config_file)
+ssh_key_path=$(eval echo $ssh_key_input)
+export ssh_key=$(cat $ssh_key_path)
 
 bundle_file=$(yq '.additional_trust_bundle' $config_file)
 if [[ "null" != "$bundle_file" ]]; then
