@@ -4,7 +4,7 @@ metadata:
   name: cluster-logging
   namespace: openshift-logging
 spec:
-  channel: "stable"
+  channel: {{ channel | default('stable') }}
   name: cluster-logging
   source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace

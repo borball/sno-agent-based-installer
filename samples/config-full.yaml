@@ -126,6 +126,8 @@ day1:
       #version: sriov-fec.v2.7.2
     cluster-logging:
       enabled: false
+      #set the channel
+      #channel: stable
       #if you want to stay on a particular version
       #version: cluster-logging.v5.8.3
     adp:
