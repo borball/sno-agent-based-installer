@@ -72,6 +72,14 @@ cluster_info(){
   oc get subs -A
   echo
   oc get csv -A -o name|sort |uniq
+
+  missing_csv=$(oc get sub -A -o json | jq -cMr '.items[]|select(.status.installedCSV == null) |.metadata|{namespace: .namespace, name: .name}')
+  if [[ -n "${missing_csv}" ]]; then
+    echo ""
+    echo "The following Subscription(s) are not installed properly, please address it before proceed"
+    echo "${missing_csv}"
+    exit
+  fi
 }
 
 ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
