@@ -241,7 +241,7 @@ day1_config(){
 
 install_operator(){
   op_name=$1
-  cp $operators/$op_name/*.yaml $cluster_workspace/openshift/
+  cp $operators/$op_name/*.yaml $cluster_workspace/openshift/ 2>/dev/null
 
   #render j2 files
   j2files=$(ls $operators/$op_name/*.j2 2>/dev/null)
