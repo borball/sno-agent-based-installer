@@ -1,10 +1,10 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: multicluster-engine
-  namespace: multicluster-engine
+  name: multicluster-global-hub
+  namespace: multicluster-global-hub
 spec:
   installPlanApproval: Automatic
-  name: multicluster-engine
+  name: multicluster-global-hub-operator-rh
   source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace

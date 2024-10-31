@@ -25,11 +25,15 @@ operators:
     enabled: true
   lvm:
     name: lvms-operator
-    desc: Logical volume manager storage Operator
+    desc: Logical Volume Manager Storage Operator
     enabled: false
   mce:
     name: multicluster-engine
-    desc: Multicluster engine for Kubernetes
+    desc: Multicluster Engine for Kubernetes
+    enabled: false
+  mcgh:
+    name: multicluster-global-hub-operator-rh
+    desc: Multicluster Global Hub Operator
     enabled: false
   cluster-logging:
     name: cluster-logging
