@@ -1,0 +1,106 @@
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: sno147
+
+host:
+  interface: ens1f0
+  hostname: sno147.outbound.vz.bos2.lab
+  mac: b4:96:91:b6:12:a8
+  ipv4:
+    enabled: true
+    dhcp: false
+    ip: 192.168.58.47
+    dns:
+      - 192.168.58.15
+    gateway: 192.168.58.1
+    prefix: 25
+    machine_network_cidr: 192.168.58.0/25
+  disk: /dev/nvme0n1
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+
+pull_secret: /root/pull-secret.json
+ssh_key: /root/.ssh/id_rsa.pub
+
+bmc:
+  address: 192.168.13.147
+  username: Administrator
+  password: superuser
+
+iso:
+  address: http://192.168.58.15/iso/sno147.iso
+
+day1:
+  workload_partition: true
+  kdump:
+    enabled: false
+    #set blacklist_ice as true on HPE servers
+    blacklist_ice: false
+    #secure boot, will have additional kernel argument efi=runtime
+    secure_boot: false
+  boot_accelerate: false
+  #4.13+ only, whether enable crun as default container runtime
+  crun: true
+  #4.14, https://issues.redhat.com/browse/OCPBUGS-17660
+  rcu_normal: false
+  #4.14, reduce a node boot and fix a race condition issue in sriov operator
+  sriov_kernel: false
+  #4.14, sync the node time from ntp when node reboot and ptp got involved
+  sync_time_once: false
+  #whether enable cgroup v1; 4.14-4.15: will enable cgv1 by default, 4.16+ will enable cgv2 by default
+  cgv1: false
+  # partitions for container storage
+  container_storage:
+    enabled: false
+    device: /dev/nvme0n1
+    startMiB: 250000
+    sizeMiB: 0
+
+  ztp_hub: false
+  operators:
+    ptp:
+      enabled: false
+    sriov:
+      enabled: false
+    local-storage:
+      enabled: false
+    gitops:
+      enabled: false
+    rhacm:
+      enabled: false
+    talm:
+      enabled: false
+    mce:
+      enabled: false
+    mcgh:
+      enabled: false
+    lvm:
+      enabled: false
+    fec:
+      enabled: false
+    cluster-logging:
+      enabled: false
+    adp:
+      enabled: false
+    lca:
+      enabled: false
+    metallb:
+      enabled: false
+    nmstate:
+      enabled: false
+
+day2:
+  performance_profile:
+    enabled: true
+    real_time: true
+    net:
+      user_level_networking: true
+
+
+
+

@@ -70,6 +70,8 @@ day1:
       enabled: false
     mce:
       enabled: false
+    mcgh:
+      enabled: false
     lvm:
       enabled: false
     fec:
