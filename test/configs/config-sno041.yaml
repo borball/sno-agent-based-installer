@@ -1,0 +1,28 @@
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: sno041
+
+host:
+  interface: ens1f0
+  hostname: sno041.outbound.vz.bos2.lab
+  mac: de:ad:be:ff:10:41
+  ipv4:
+    enabled: true
+    dhcp: false
+    ip: 192.168.58.41
+    dns:
+      - 192.168.58.15
+    gateway: 192.168.58.1
+    prefix: 25
+    machine_network_cidr: 192.168.58.0/25
+    disk: /dev/rootdisk
+
+cpu:
+  isolated: 2-7
+  reserved: 0-1
+
+proxy:
+  enabled: false
+
+ssh_key: ${HOME}/.ssh/id_rsa.pub
+pull_secret: ${HOME}/pull-secret.json
