@@ -1,6 +1,9 @@
 cluster:
   domain: outbound.vz.bos2.lab
   name: sno147
+  capabilities:
+    #None|vCurrent|v4.12|v4.14 ...
+    baselineCapabilitySet: v4.16
 
 host:
   interface: ens1f0
@@ -16,6 +19,7 @@ host:
     prefix: 25
     machine_network_cidr: 192.168.58.0/25
   disk: /dev/nvme0n1
+
 
 cpu:
   isolated: 2-31,34-63
