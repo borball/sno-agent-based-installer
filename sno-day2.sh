@@ -218,6 +218,13 @@ lvm_config(){
   fi
 }
 
+hyperconverged_config(){
+  if [ "true" = "$(yq '.day1.operators.kubevirt-hyperconverged.enabled' $config_file)" ]; then
+    info "kubevirt-hyperconverged operator configuration"
+    oc apply -f $templates/day2/kubevirt-hyperconverged/hyperconverged.yaml
+  fi
+}
+
 olm_pprof(){
   # 4.14+ specific
   if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
@@ -332,6 +339,8 @@ nmstate_config
 metallb_config
 local_storage_config
 lvm_config
+echo
+hyperconverged_config
 echo
 olm_pprof
 echo

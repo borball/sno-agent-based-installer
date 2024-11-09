@@ -102,3 +102,10 @@ day2:
     real_time: true
     net:
       user_level_networking: true
+  lvm:
+    device_classes:
+      - name: "sno"
+        thin_pool_name: "sno-nvme1n1-pool"
+        selector:
+          paths:
+            - "/dev/nvme1n1"
