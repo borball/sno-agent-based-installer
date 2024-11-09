@@ -1,6 +1,9 @@
 cluster:
   domain: outbound.vz.bos2.lab
   name: sno130
+  capabilities:
+    #None|vCurrent|v4.12|v4.14 ...
+    baselineCapabilitySet: v4.16
 
 host:
   interface: ens1f0
@@ -35,85 +38,67 @@ iso:
 day1:
   workload_partition: true
   kdump:
-    enabled: true
+    enabled: false
     #set blacklist_ice as true on HPE servers
-    blacklist_ice: true
+    blacklist_ice: false
     #secure boot, will have additional kernel argument efi=runtime
     secure_boot: false
-  boot_accelerate: true
+  boot_accelerate: false
   #4.13+ only, whether enable crun as default container runtime
   crun: true
-  #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
+  #4.14, https://issues.redhat.com/browse/OCPBUGS-17660
+  rcu_normal: false
+  #4.14, reduce a node boot and fix a race condition issue in sriov operator
+  sriov_kernel: false
+  #4.14, sync the node time from ntp when node reboot and ptp got involved
+  sync_time_once: false
+  #whether enable cgroup v1; 4.14-4.15: will enable cgv1 by default, 4.16+ will enable cgv2 by default
+  cgv1: false
+  # partitions for container storage
+  container_storage:
+    enabled: false
+    device: /dev/nvme0n1
+    startMiB: 250000
+    sizeMiB: 0
+
   ztp_hub: false
   operators:
     ptp:
-      enabled: true
-      #if you want to stay on a particular version ptp-operator.4.12.0-202402081808
-      #version: ptp-operator.4.12.0-202402081808
+      enabled: false
     sriov:
       enabled: true
-      #if you want to stay on a particular version sriov-network-operator.v4.12.0-202402081808
-      #version: sriov-network-operator.v4.12.0-202402081808
     local-storage:
+      enabled: false
+    gitops:
+      enabled: false
+    rhacm:
+      enabled: false
+    talm:
+      enabled: false
+    mce:
+      enabled: false
+    mcgh:
+      enabled: false
+    lvm:
       enabled: true
-      #if you want to stay on a particular version local-storage-operator.v4.12.0-202403082008
-      #version: local-storage-operator.v4.12.0-202403082008
     fec:
-      enabled: true
-      #if you want to stay on a particular version sriov-fec.v2.7.2
-      version: sriov-fec.v2.7.2
+      enabled: false
     cluster-logging:
+      enabled: false
+    adp:
+      enabled: false
+    lca:
+      enabled: false
+    metallb:
+      enabled: false
+    nmstate:
+      enabled: false
+    kubevirt-hyperconverged:
       enabled: true
-      #if you want to stay on a particular version
-      #version: cluster-logging.v5.8.3
 
 day2:
   performance_profile:
     enabled: true
-    #in case you want to specify the performance profile name
-    name: sno-perfprofile
-  tuned_profile:
-    enabled: true
-    #for wrong bios settings, if passive mode is used, set intel_pstate=active
-    cmdline_pstate: intel_pstate=active
-    #in case you want to generate kdump for some special scenarios (used in lab)
-    kdump: false
-
-  ptp:
-    #ptpconfig type: choose any of them: disabled|ordinary|boundary
-    #chronyd service will be disable if ordinary or boundary being selected
-    ptpconfig: boundary
-    boundary_clock:
-      - slave: ens1f0
-        masters:
-          - ens1f1
-          - ens1f2
-          - ens1f3
-        #name (default): crdu-boundary-clock-ptp-config
-        name: crdu-boundary-clock-ptp-config-nic1
-        #profile (default): bc-profile
-        profile: bc-profile-nic1
-        #phc2sys_enabled (default): true
-        phc2sys_enabled: true
-      # configure dual NIC bondary clock (optional)
-      # must
-      #  - use different name, profile
-      #  - set phc2sys_enabled to false
-      - name: crdu-boundary-clock-ptp-config-nic2
-        profile: bc-profile-nic2
-        slave: ens2f0
-        masters:
-          - ens2f1
-          - ens2f2
-          - ens2f3
-        phc2sys_enabled: false
-
-  #enable the cluster monitoring tuning
-  cluster_monitor_tuning: true
-  #enable the operator hub tuning: disable unused catalog sources
-  operator_hub_tuning: true
-  #disable the ocp console operator
-  disable_ocp_console: true
-  #disable the network diagnostics
-  disable_network_diagnostics: true
-  disable_operator_auto_upgrade: true
+    real_time: true
+    net:
+      user_level_networking: true

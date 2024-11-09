@@ -59,3 +59,7 @@ operators:
     name: kubernetes-nmstate-operator
     desc: NMState Operator
     enabled: false
+  kubevirt-hyperconverged:
+    name: kubevirt-hyperconverged
+    desc: OpenShift Virtualization
+    enabled: false

@@ -94,7 +94,12 @@ day1:
       #channel: stable
       #set the version
       #version: v4.16.0-89
-
+    kubevirt-hyperconverged:
+      enabled: false
+      #channel: stable
+      #set the version
+      #version: v4.16.3
+  
   extra_manifests:
     - ${HOME}/1
     - ${HOME}/2
