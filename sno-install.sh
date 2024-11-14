@@ -17,6 +17,13 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
+show_info(){
+  printf  $(tput setaf 2)"%-54s %-10s"$(tput sgr0)"\n" "$@"
+}
+
+show_warn(){
+  printf  $(tput setaf 3)"%-54s %-10s"$(tput sgr0)"\n" "$@"
+}
 
 usage(){
   echo "Usage: $0 <cluster-name>"
@@ -69,7 +76,9 @@ else
 fi
 bmc_noproxy=$(yq ".bmc.bypass_proxy" $config_file)
 
-CURL=curl
+rest_response=$(mktemp)
+
+CURL="curl -s"
 if [[ "true"=="${bmc_noproxy}" ]]; then
   CURL+=" --noproxy ${bmc_address}"
 fi
@@ -126,6 +135,20 @@ server_secureboot_delete_keys() {
     -X POST  $system_path/SecureBoot/Actions/SecureBoot.ResetKeys
 }
 
+check_rest_result() {
+    local action=$1
+    local rest_result=$2
+    local rest_response=$3
+
+    if [[ -n "$rest_result" ]] && [[ $rest_result -lt 300 ]]; then
+      show_info "$action" "$rest_result"
+    else
+      show_warn "$action" "$rest_result"
+      echo $(cat $rest_response)
+    fi
+    rm -f $rest_response
+}
+
 server_get_bios_config(){
     # Retrieve BIOS config over Redfish
     $CURL -sku ${username_password}  $system_path/Bios |jq
@@ -142,26 +165,29 @@ server_restart() {
 
 server_power_off() {
     # Power off
-    echo "Power off server."
-    $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
+    local action="Power off Server"
+    rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{"ResetType": "ForceOff"}' -X POST $system_path/Actions/ComputerSystem.Reset
+    -o "$rest_response" -d '{"ResetType": "ForceOff"}' -X POST $system_path/Actions/ComputerSystem.Reset)
+    check_rest_result "$action" "$rest_result" "$rest_response"
 }
 
 server_power_on() {
     # Power on
-    echo "Power on server."
-    $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{"ResetType": "On"}' -X POST $system_path/Actions/ComputerSystem.Reset
+    local action="Power on Server"
+    rest_result=$($CURL --globoff  -L -w "%{http_code}" -ku ${username_password} \
+      -H "Content-Type: application/json" -H "Accept: application/json" -d '{"ResetType": "On"}' \
+      -o "$rest_response" -X POST $system_path/Actions/ComputerSystem.Reset)
+    check_rest_result "$action" "$rest_result" "$rest_response"
 }
 
 virtual_media_eject() {
     # Eject Media
-    echo "Eject Virtual Media."
-    $CURL --globoff -L -w "%{http_code} %{url_effective}\\n"  -ku ${username_password} \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{}'  -X POST $virtual_media_path/Actions/VirtualMedia.EjectMedia
+    local action="Eject Virtual Media"
+    rest_result=$($CURL --globoff -L -w "%{http_code}"  -ku ${username_password} \
+      -H "Content-Type: application/json" -H "Accept: application/json" -d '{}' \
+      -o "$rest_response" -X POST $virtual_media_path/Actions/VirtualMedia.EjectMedia)
+    check_rest_result "$action" "$rest_result" "$rest_response"
 }
 
 virtual_media_status(){
@@ -186,7 +212,7 @@ deploy_iso(){
 
 virtual_media_insert(){
     # Insert Media from http server and iso file
-    echo "Insert Virtual Media: $iso_image"
+    local action="Insert Virtual Media"
     local protocol="${iso_protocol}"
     if [[ -z "$protocol" ]]; then
       if [[ $iso_image == https* ]]; then
@@ -196,25 +222,27 @@ virtual_media_insert(){
       fi
     fi
     if [[ "${protocol}" == "skip" ]]; then
-      $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
+      rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
       -H "Content-Type: application/json" -H "Accept: application/json" \
       -d "{\"Image\": \"${iso_image}\"}" \
-      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
+      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia)
     else
-      $CURL --globoff -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
+      rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
       -H "Content-Type: application/json" -H "Accept: application/json" \
       -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
-      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia
+      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia)
     fi
+    check_rest_result "$action" "$rest_result" "$rest_response"
 }
 
 server_set_boot_once_from_cd() {
     # Set boot
-    echo "Boot node from Virtual Media Once"
-    $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n"  -ku ${username_password}  \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
-    -X PATCH $system_path
+    local action="Boot node from Virtual Media Once"
+    rest_result=$($CURL --globoff  -L -w "%{http_code}"  -ku ${username_password}  \
+      -H "Content-Type: application/json" -H "Accept: application/json" \
+      -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
+      -o "$rest_response" -X PATCH $system_path)
+    check_rest_result "$action" "$rest_result" "$rest_response"
 }
 
 approve_pending_install_plans(){
@@ -270,30 +298,19 @@ wait_for_stable_cluster(){
 
 echo "-------------------------------"
 deploy_iso
+echo ""
+echo "-------------------------------"
 redfish_init
 
 echo "Starting SNO deployment..."
 echo
 server_power_off
-
 sleep 15
-
-echo "-------------------------------"
-echo
 virtual_media_eject
-echo "-------------------------------"
-echo
 virtual_media_insert
-echo "-------------------------------"
-echo
-virtual_media_status
-echo "-------------------------------"
-echo
+#virtual_media_status
 server_set_boot_once_from_cd
-echo "-------------------------------"
-
 sleep 10
-echo
 server_power_on
 #server_restart
 echo
