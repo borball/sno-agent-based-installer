@@ -87,6 +87,25 @@ ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 export OCP_Y_VERSION=$ocp_y_release
 export OCP_Z_VERSION=$ocp_release
 
+delay_mcp_update=$(yq '.day2.delay_mcp_update // 0' $config_file)
+
+pause_mcp_update(){
+  echo "Pause update for master machine config pool"
+  trap resume_mcp_update SIGINT SIGABRT SIGKILL
+  oc patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
+}
+
+resume_mcp_update(){
+  local delay=${1:-0}
+  if [[ ${delay} -gt 0 ]]; then
+    echo "Delay ${delay} second(s) before resume master machine config pool update"
+    sleep ${delay}
+  else
+    echo "Resume master machine config pool update"
+  fi
+  oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
+}
+
 performance_profile(){
   if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
     warn "performance profile:" "disabled"
@@ -322,7 +341,8 @@ echo
 echo "------------------------------------------------"
 echo "Applying day2 operations...."
 echo
-
+pause_mcp_update
+echo
 performance_profile
 echo
 tuned_profile
@@ -347,4 +367,6 @@ echo
 operator_auto_upgrade
 echo
 apply_extra_manifests
+echo
+resume_mcp_update $delay_mcp_update
 echo "Done."
