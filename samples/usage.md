@@ -112,6 +112,8 @@ You can turn on/off day2 configuration in day2 section.
 
 ```yaml
 day2:
+  # pause the MCP for a certain period and unpause it in order to reduce the number of node reboot.
+  delay_mcp_update: 60
   performance_profile:
     enabled: true
     #in case you want to specify the performance profile name
