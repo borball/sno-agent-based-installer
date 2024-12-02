@@ -9,3 +9,6 @@ spec:
   image: {{ image }}
   publisher: {{ publisher | default("Red Hat") }}
   sourceType: grpc
+  updateStrategy:
+    registryPoll:
+      interval: 24h
