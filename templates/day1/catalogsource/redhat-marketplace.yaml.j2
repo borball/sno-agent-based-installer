@@ -4,6 +4,8 @@ kind: CatalogSource
 metadata:
   name: redhat-marketplace
   namespace: openshift-marketplace
+  annotations:
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
 spec:
   displayName: Red Hat Marketplace
   image: registry.redhat.io/redhat/redhat-marketplace-index:v{{ environ('ocp_y_release') }}
