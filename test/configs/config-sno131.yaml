@@ -38,8 +38,6 @@ day1:
     enabled: true
     #set blacklist_ice as true on HPE servers
     blacklist_ice: true
-    #secure boot, will have additional kernel argument efi=runtime
-    secure_boot: false
   boot_accelerate: true
   #4.13+ only, whether enable crun as default container runtime
   crun: true

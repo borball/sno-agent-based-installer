@@ -17,8 +17,6 @@ day1:
     enabled: true
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
-    #secure boot, will have additional kernel argument efi=runtime
-    secure_boot: false
   boot_accelerate: true
   #ztp_hub=true will enable rhacm/lvm/gitops/talm on the cluster
   ztp_hub: false
