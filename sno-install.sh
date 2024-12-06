@@ -224,11 +224,13 @@ virtual_media_insert(){
     if [[ "${protocol}" == "skip" ]]; then
       rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
       -H "Content-Type: application/json" -H "Accept: application/json" \
+      -o "$rest_response" \
       -d "{\"Image\": \"${iso_image}\"}" \
       -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia)
     else
       rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
       -H "Content-Type: application/json" -H "Accept: application/json" \
+      -o "$rest_response" \
       -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
       -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia)
     fi
