@@ -80,6 +80,20 @@ cluster_info(){
     echo "${missing_csv}"
     exit
   fi
+
+  i=1
+  while [[ ! -z "$(oc get csv --no-headers -A |grep -v 'Succeeded')" ]]; do
+    echo "The following csv are not installed yet:"
+    oc get csv -A |grep -v "Succeeded"
+    if [[ $i -le 5 ]]; then
+      echo "Waiting [$i/5] for another 30 seconds"
+      sleep 30
+    else
+      echo "Please address the issue before proceed."
+      exit
+    fi
+    ((i=i+1))
+  done
 }
 
 ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
