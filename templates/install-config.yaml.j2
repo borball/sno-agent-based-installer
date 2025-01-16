@@ -3,7 +3,9 @@ baseDomain: {{ cluster.domain }}
 compute:
 - name: worker
   replicas: 0
+  architecture: {{ cluster.cpu_arch |default('amd64') }}
 controlPlane:
+  architecture: {{ cluster.cpu_arch |default('amd64') }}
   name: master
   replicas: 1
 metadata:

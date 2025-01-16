@@ -1,6 +1,8 @@
 cluster:
   domain: outbound.vz.bos2.lab
   name: sno148
+  #amd64, arm64, ppc64le, s390x
+  cpu_arch: amd64
   ntps:
     - 0.rhel.pool.ntp.org
     - 1.rhel.pool.ntp.org
