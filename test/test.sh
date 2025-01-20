@@ -32,6 +32,7 @@ iso="$root_path"/sno-iso.sh
 sno_workspace="$root_path"/instances/"$node"
 install="$root_path"/sno-install.sh
 config="$basedir"/configs/config-"$node".yaml
+day2="$root_path"/sno-day2.sh
 
 delete_kvm(){
   ssh 192.168.58.14 kcli stop vm $node
@@ -65,6 +66,6 @@ if [ -f  "$config" ]; then
   fi
 
   install_ocp
-
+  $day2
 fi
 
