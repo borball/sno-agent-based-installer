@@ -49,7 +49,6 @@ proxy:
 
 ssh_key: ${HOME}/.ssh/id_rsa.pub
 pull_secret: ${HOME}/pull-secret.json
-ssh_key: ${HOME}/.ssh/id_rsa.pub
 
 bmc:
   address: 192.168.13.148

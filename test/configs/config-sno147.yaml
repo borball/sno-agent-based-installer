@@ -18,7 +18,7 @@ host:
     gateway: 192.168.58.1
     prefix: 25
     machine_network_cidr: 192.168.58.0/25
-  disk: /dev/nvme0n1
+  disk: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
 
 
 cpu:
@@ -28,8 +28,8 @@ cpu:
 proxy:
   enabled: false
 
-pull_secret: /root/pull-secret.json
-ssh_key: /root/.ssh/id_rsa.pub
+ssh_key: ${HOME}/.ssh/id_rsa.pub
+pull_secret: ${HOME}/pull-secret.json
 
 bmc:
   address: 192.168.13.147
@@ -40,68 +40,24 @@ iso:
   address: http://192.168.58.15/iso/sno147.iso
 
 day1:
-  workload_partition: true
-  kdump:
-    enabled: false
-    #set blacklist_ice as true on HPE servers
-    blacklist_ice: false
-  boot_accelerate: false
-  #4.13+ only, whether enable crun as default container runtime
-  crun: true
-  #4.14, https://issues.redhat.com/browse/OCPBUGS-17660
-  rcu_normal: false
-  #4.14, reduce a node boot and fix a race condition issue in sriov operator
-  sriov_kernel: false
-  #4.14, sync the node time from ntp when node reboot and ptp got involved
-  sync_time_once: false
-  #whether enable cgroup v1; 4.14-4.15: will enable cgv1 by default, 4.16+ will enable cgv2 by default
-  cgv1: false
-  # partitions for container storage
   container_storage:
     enabled: false
-    device: /dev/nvme0n1
+    device: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
     startMiB: 250000
     sizeMiB: 0
-
-  ztp_hub: false
   operators:
-    ptp:
-      enabled: false
-    sriov:
-      enabled: false
     local-storage:
-      enabled: false
-    gitops:
-      enabled: false
-    rhacm:
-      enabled: false
-    talm:
-      enabled: false
-    mce:
-      enabled: false
-    mcgh:
-      enabled: false
-    lvm:
-      enabled: false
-    fec:
-      enabled: false
-    cluster-logging:
-      enabled: false
-    adp:
-      enabled: false
-    lca:
-      enabled: false
-    metallb:
-      enabled: false
-    nmstate:
-      enabled: false
-
-day2:
-  performance_profile:
-    enabled: true
-    real_time: true
-    net:
-      user_level_networking: true
+      provision:
+        #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
+        disk_by_path: pci-0000:c4:00.0-nvme-1
+        lvs:
+          1g: 10
+          2g: 10
+          4g: 5
+          5g: 5
+          10g: 2
+          15g: 1
+          30g: 1
 
 
 
