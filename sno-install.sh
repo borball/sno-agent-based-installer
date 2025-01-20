@@ -57,6 +57,7 @@ fi
 
 domain_name=$(yq '.cluster.domain' $config_file)
 api_fqdn="api."$cluster_name"."$domain_name
+api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
 
 bmc_address=$(yq '.bmc.address' $config_file)
 bmc_user="$(yq '.bmc.username' $config_file)"
@@ -334,6 +335,9 @@ echo -n "Node booting."
 assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
 
 REMOTE_CURL="ssh -q -oStrictHostKeyChecking=no core@$api_fqdn curl -s"
+if [[ ! -z "${api_token}" ]]; then
+  REMOTE_CURL+=" -H 'Authorization: ${api_token}'"
+fi
 while [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
   echo -n "."
   sleep 10;
