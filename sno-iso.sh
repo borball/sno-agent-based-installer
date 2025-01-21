@@ -64,6 +64,7 @@ then
   config_file_input=config.yaml
 fi
 
+arch=$(yq '.cluster.arch // x86_64' $config_file_input)
 cluster_name=$(yq '.cluster.name' $config_file_input)
 cluster_workspace=$basedir/instances/$cluster_name
 
@@ -78,12 +79,12 @@ mkdir -p $cluster_workspace/openshift
 
 if [ -z "$ocp_release" ]
 then
-  ocp_release='stable-4.14'
+  ocp_release='stable-4.16'
 fi
 
-ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
+ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/${arch}/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
 
-#if release not available on mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
+#if release not available on mirror.openshift.com/pub/openshift-v4/${arch}/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
 if [ -z $ocp_release_version ]; then
   ocp_release_version=$ocp_release
 fi
@@ -105,9 +106,9 @@ echo "Will use $config_file as the configuration in other sno-* scripts."
 echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version}"
 
 if [ ! -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz ]; then
-  status_code=$(curl -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/$ocp_release_version/)
+  status_code=$(curl -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/${arch}/clients/ocp/$ocp_release_version/)
   if [ $status_code = "200" ]; then
-    curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.$ocp_release_version.tar.gz
+    curl -L https://mirror.openshift.com/pub/openshift-v4/${arch}/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.$ocp_release_version.tar.gz
     if [[ $? -eq 0 ]]; then
       tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
     else
