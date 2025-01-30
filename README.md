@@ -267,7 +267,7 @@ Checking machine config pool:
 
 Checking required performance profile:
 [+]PerformanceProfile sno-perfprofile exists.
-[+]topologyPolicy is single-numa-node
+[+]topologyPolicy is restricted
 [+]realTimeKernel is enabled
 
 Checking required tuned:

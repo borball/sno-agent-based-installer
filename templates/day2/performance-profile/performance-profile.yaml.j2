@@ -36,7 +36,7 @@ spec:
  nodeSelector:
    node-role.kubernetes.io/master: ""
  numa:
-   topologyPolicy: single-numa-node
+   topologyPolicy: restricted
  {% if day2.performance_profile.net and day2.performance_profile.net.user_level_networking -%}
  net:
    userLevelNetworking: {{ day2.performance_profile.net.user_level_networking | lower }}
@@ -82,7 +82,7 @@ spec:
  nodeSelector:
    node-role.kubernetes.io/master: ""
  numa:
-   topologyPolicy: single-numa-node
+   topologyPolicy: restricted
  net:
    userLevelNetworking: true
  workloadHints:

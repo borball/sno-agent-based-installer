@@ -62,7 +62,7 @@
 [64.333691, "o", "\u001b[0;31m [-]MachineConfig disable-chronyd is not existing.\r\n\r\n\u001b[0mChecking machine config pool:\r\n"]
 [64.501126, "o", "\u001b[0;32m [+]mcp master is updated and not degraded.\r\n\r\n\u001b[0mChecking required performance profile:\r\n"]
 [64.556161, "o", "\u001b[0;32m [+]PerformanceProfile openshift-node-performance-profile exits.\r\n"]
-[64.60828, "o", "\u001b[0;32m [+]topologyPolicy is single-numa-node\r\n"]
+[64.60828, "o", "\u001b[0;32m [+]topologyPolicy is restricted\r\n"]
 [64.676719, "o", "\u001b[0;32m [+]realTimeKernel is enabled\r\n\r\n\u001b[0mChecking required tuned:\r\n"]
 [64.728663, "o", "\u001b[0;32m [+]Tuned openshift-node-performance-openshift-node-performance-profile exits.\r\n\r\n\u001b[0mChecking SRIOV operator status:\r\n"]
 [64.783453, "o", "\u001b[0;32m [+]sriovnetworknodestate sync status is 'Succeeded'.\r\n\r\n\u001b[0mChecking PTP operator status:\r\n"]

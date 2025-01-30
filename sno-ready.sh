@@ -240,10 +240,10 @@ check_pp(){
 }
 
 check_pp_detail(){
-  if [ $(oc get performanceprofile -o jsonpath={..topologyPolicy}) = "single-numa-node" ]; then
-    info "topologyPolicy is single-numa-node"
+  if [ $(oc get performanceprofile -o jsonpath={..topologyPolicy}) = "restricted" ]; then
+    info "topologyPolicy is restricted"
   else
-    warn "topologyPolicy is not single-numa-node"
+    warn "topologyPolicy is not restricted"
   fi
   if [ $(oc get performanceprofile -o jsonpath={..realTimeKernel.enabled}) = "true" ]; then
     info "realTimeKernel is enabled"
