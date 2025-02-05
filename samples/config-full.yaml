@@ -176,6 +176,7 @@ day2:
       reservedCpuFreq: 2800000
     #optional
     hugepage:
+      enabled: true
       default: 2M
       pages:
         - size: 2M

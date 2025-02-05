@@ -10,6 +10,7 @@ spec:
  cpu:
    isolated: "{{ cpu.isolated }}"
    reserved: "{{ cpu.reserved }}"
+ {% if (day2.performance_profile.hugepage is defined and day2.performance_profile.hugepage.enabled) -%}
  hugepages:
    defaultHugepagesSize: {{ (day2.performance_profile.hugepage and day2.performance_profile.hugepage.default) or '1G' }}
    pages:
@@ -25,6 +26,7 @@ spec:
      - count: 32
        size: 1G
      {%- endif %}
+ {%- endif %}
  additionalKernelArgs:
   - "rcupdate.rcu_normal_after_boot=0"
   - "efi=runtime"
