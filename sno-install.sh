@@ -57,7 +57,10 @@ fi
 
 domain_name=$(yq '.cluster.domain' $config_file)
 api_fqdn="api."$cluster_name"."$domain_name
-api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+api_token=$(jq -r '.["*gencrypto.AuthConfig"].UserAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+if [[ -z "${api_token}" ]]; then
+  api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+fi
 
 bmc_address=$(yq '.bmc.address' $config_file)
 bmc_user="$(yq '.bmc.username' $config_file)"
@@ -86,6 +89,7 @@ fi
 
 iso_image=$(yq '.iso.address' $config_file)
 deploy_cmd=$(eval echo $(yq '.iso.deploy // ""' $config_file))
+ocp_arch=$(uname -m)
 iso_protocol=$(yq -r '.iso.protocol|select( . != null )' $config_file)
 kvm_uuid=$(yq '.bmc.kvm_uuid // "" ' $config_file)
 
@@ -202,8 +206,9 @@ virtual_media_status(){
 deploy_iso(){
   [[ -z "$deploy_cmd" ]] && return
   [[ ! -x $(realpath $deploy_cmd) ]] && echo "Failed to deploy ISO, command not executable: $deploy_cmd" && exit
-  echo "Deploy ISO: $deploy_cmd $cluster_workspace/agent.x86_64.iso $iso_image"
-  $deploy_cmd $cluster_workspace/agent.x86_64.iso $iso_image
+  iso_file=$(find "$cluster_workspace" -name 'agent.*.iso')
+  echo "Deploy ISO: $deploy_cmd $iso_file $iso_image"
+  $deploy_cmd $iso_file $iso_image
   local result=$?
   if [[ $result -ne 0 ]]; then
     echo "Failed: $result"
@@ -334,7 +339,14 @@ echo -n "Node booting."
 
 assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
 
-REMOTE_CURL="ssh -q -oStrictHostKeyChecking=no core@$api_fqdn curl -s"
+SSH_CMD="ssh -q -oStrictHostKeyChecking=no"
+ssh_priv_key_input=$(yq -r '.ssh_priv_key' $config_file)
+if [[ ! -z "${ssh_priv_key_input}" ]]; then
+  ssh_key_path=$(eval echo $ssh_priv_key_input)
+  SSH_CMD+=" -i ${ssh_key_path}"
+fi
+
+REMOTE_CURL="$SSH_CMD core@$api_fqdn curl -s"
 if [[ ! -z "${api_token}" ]]; then
   REMOTE_CURL+=" -H 'Authorization: ${api_token}'"
 fi

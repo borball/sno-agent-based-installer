@@ -270,6 +270,7 @@ proxy:
 
 pull_secret: /root/pull-secret.json
 ssh_key: /root/.ssh/id_rsa.pub
+ssh_priv_key: /root/.ssh/id_ed25519
 
 #set it in a disconnected env
 additional_trust_bundle: /root/registry/ca-bundle.crt
@@ -284,8 +285,8 @@ container_registry:
       - redhat-operators
     customs:
       - name: prega
-        display: Red Hat Operators 4.16 PreGA
-        image: quay.io/prega/redhat-operator-index:v4.16
+        display: Red Hat Operators 4.18 PreGA
+        image: quay.io/prega/prega-operator-index:v4.18
         publisher: Red Hat
   icsp:
     - /root/sno-4.14/templates/day1/icsp/prega-OCP_Y_RELEASE.yaml

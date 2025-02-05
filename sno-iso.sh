@@ -1,8 +1,8 @@
 #!/bin/bash
-# 
+#
 # Helper script to generate bootable ISO with OpenShift agent based installer
 # usage: ./sno-iso.sh -h
-# 
+#
 
 if ! type "yq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
@@ -81,9 +81,10 @@ then
   ocp_release='stable-4.14'
 fi
 
-ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
+ocp_arch=$(uname -m)
+ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
 
-#if release not available on mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
+#if release not available on mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
 if [ -z $ocp_release_version ]; then
   ocp_release_version=$ocp_release
 fi
@@ -105,9 +106,9 @@ echo "Will use $config_file as the configuration in other sno-* scripts."
 echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version}"
 
 if [ ! -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz ]; then
-  status_code=$(curl -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/$ocp_release_version/)
+  status_code=$(curl -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/$ocp_release_version/)
   if [ $status_code = "200" ]; then
-    curl -L https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.$ocp_release_version.tar.gz
+    curl -L https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.$ocp_release_version.tar.gz
     if [[ $? -eq 0 ]]; then
       tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
     else
@@ -119,7 +120,7 @@ if [ ! -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz ]; then
     if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
       oc adm release extract --command=openshift-install registry.ci.openshift.org/ocp/release:$ocp_release_version --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
     else
-      oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64 --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
+      oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${ocp_arch} --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
     fi
   fi
 else
@@ -243,7 +244,7 @@ install_operator(){
     tname=$(basename $f)
     fname=${tname//.j2/}
     yq ".day1.operators.$key" $config_file| jinja2 $f > $cluster_workspace/openshift/$fname
-  done  
+  done
 }
 
 install_operators(){
@@ -444,6 +445,6 @@ echo "kubeadmin password: $cluster_workspace/auth/kubeadmin-password."
 echo "------------------------------------------------"
 
 echo
-echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.x86_64.iso."
+echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.${ocp_arch}.iso."
 echo "You can also run ./sno-install.sh to boot the node from the image automatically if you have a HTTP server serves the image."
 echo "Enjoy!"
