@@ -25,6 +25,7 @@ day1:
     sizeMiB: 0
   operators:
     local-storage:
+      source: prega
       provision:
         #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
         disk_by_path: pci-0000:c3:00.0-nvme-1
@@ -36,10 +37,27 @@ day1:
           10g: 2
           15g: 1
           30g: 1
+    ptp:
+      source: prega
+    sriov:
+      source: prega
 
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
+
+container_registry:
+  catalog_sources:
+    defaults:
+      #- redhat-marketplace
+      #- community-operators
+      #- certified-operators
+      #- redhat-operators
+    customs:
+      - name: prega
+        display: Red Hat Operators 4.18 PreGA
+        image: quay.io/prega/prega-operator-index:v4.18
+        publisher: Red Hat
 
 proxy:
   enabled: true

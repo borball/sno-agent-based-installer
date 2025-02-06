@@ -88,14 +88,17 @@ day1:
   operators:
     ptp:
       enabled: true
+      #source: prega
       #if you want to stay on a particular version ptp-operator.4.12.0-202402081808
       #version: ptp-operator.4.12.0-202402081808
     sriov:
       enabled: true
+      #source: prega
       #if you want to stay on a particular version sriov-network-operator.v4.12.0-202402081808
       #version: sriov-network-operator.v4.12.0-202402081808
     local-storage:
       enabled: true
+      #source: prega
       #if you want to stay on a particular version local-storage-operator.v4.12.0-202403082008
       #version: local-storage-operator.v4.12.0-202403082008
       #preparation work for local storage
@@ -111,44 +114,57 @@ day1:
           15g: 1
           30g: 1
     gitops:
+      #source: prega
       enabled: false
     rhacm:
+      #source: prega
       enabled: false
     talm:
+      #source: prega
       enabled: false
     mce:
+      #source: prega
       enabled: false
     mcgh:
+      #source: prega
       enabled: false
     lvm:
+      #source: prega
       enabled: false
     fec:
+      #source: prega
       enabled: false
       #if you want to stay on a particular version sriov-fec.v2.7.2
       #version: sriov-fec.v2.7.2
     cluster-logging:
+      #source: prega
       enabled: false
       #set the channel
       #channel: stable
       #if you want to stay on a particular version
       #version: cluster-logging.v5.8.3
     adp:
+      #source: prega
       enabled: false
       #set the channel
       #channel: stable-1.3
       #set the version
       #version: 1.3.1
     lca:
+      #source: prega
       enabled: false
       #set the channel
       #channel: stable
       #set the version
       #version: v4.16.0-89
     metallb:
+      #source: prega
       enabled: false
     nmstate:
+      #source: prega
       enabled: false
     kubevirt-hyperconverged:
+      #source: prega
       enabled: false
       #channel: stable
       #set the version
