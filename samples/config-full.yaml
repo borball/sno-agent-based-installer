@@ -242,6 +242,7 @@ day2:
   lvm:
     device_classes:
       - name: "sno"
+        default: true
         thin_pool_name: "sno-sdb-pool"
         selector:
           paths:

@@ -9,6 +9,7 @@ spec:
       {% if day2.lvm and day2.lvm.device_classes -%}
       {%- for dc in day2.lvm.device_classes -%}
       - name: {{ dc.name }}
+        default: {{ dc.default |default('false')|lower }}
         {%- if dc.selector and dc.selector.paths %}
         deviceSelector:
           paths:
