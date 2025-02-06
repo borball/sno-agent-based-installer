@@ -340,7 +340,7 @@ echo -n "Node booting."
 assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
 
 SSH_CMD="ssh -q -oStrictHostKeyChecking=no"
-ssh_priv_key_input=$(yq -r '.ssh_priv_key' $config_file)
+ssh_priv_key_input=$(yq -r '.ssh_priv_key //""' $config_file)
 if [[ ! -z "${ssh_priv_key_input}" ]]; then
   ssh_key_path=$(eval echo $ssh_priv_key_input)
   SSH_CMD+=" -i ${ssh_key_path}"
