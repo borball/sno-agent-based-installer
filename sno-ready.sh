@@ -621,9 +621,9 @@ check_ip(){
 
 check_container_runtime(){
   echo -e "\n${NC}Checking container runtime:"
-  local search=$($SSH core@$address grep -rv "^#" /etc/crio |grep 'default_runtime = "crun"'|wc -l)
+  local search=$($SSH core@$address grep -rv "^#" /etc/crio/crio.conf.d |grep 'default_runtime = "crun"'|wc -l)
   local container_runtime="runc"
-  if [ $search = 1 ]; then
+  if [ $search -ge 1 ]; then
     container_runtime="crun"
   fi
 

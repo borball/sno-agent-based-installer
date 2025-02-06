@@ -66,7 +66,7 @@ day1:
     #set blacklist_ice as true on HPE servers
     blacklist_ice: false
   boot_accelerate: true
-  #4.13+ only, whether enable crun as default container runtime
+  #4.13+ only, whether enable crun as default container runtime, 4.18+ will be enabled by default
   crun: true
   #4.14, https://issues.redhat.com/browse/OCPBUGS-17660
   rcu_normal: true
