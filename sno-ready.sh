@@ -55,6 +55,12 @@ export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 
+ssh_priv_key_input=$(yq -r '.ssh_priv_key' $config_file)
+if [[ ! -z "${ssh_priv_key_input}" ]]; then
+  ssh_key_path=$(eval echo $ssh_priv_key_input)
+  SSH+=" -i ${ssh_key_path}"
+fi
+
 NC='\033[0m' # No Color
 
 info(){
