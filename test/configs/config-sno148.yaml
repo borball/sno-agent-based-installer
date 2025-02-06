@@ -58,6 +58,8 @@ container_registry:
         display: Red Hat Operators 4.18 PreGA
         image: quay.io/prega/prega-operator-index:v4.18
         publisher: Red Hat
+  icsp:
+    - /root/sno-4.14/templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
 
 proxy:
   enabled: true
