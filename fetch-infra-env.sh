@@ -47,7 +47,10 @@ fi
 
 domain_name=$(yq '.cluster.domain' $config_file)
 api_fqdn="api."$cluster_name"."$domain_name
-api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+api_token=$(jq -r '.["*gencrypto.AuthConfig"].UserAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+if [[ -z "${api_token}" ]]; then
+  api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+fi
 
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
@@ -64,8 +67,15 @@ echo "Waiting for Assisted Installer..."
 
 assisted_rest=http://$api_fqdn:8090
 
+SSH_CMD="ssh -q -oStrictHostKeyChecking=no"
+ssh_priv_key_input=$(yq -r '.ssh_priv_key //""' $config_file)
+if [[ ! -z "${ssh_priv_key_input}" ]]; then
+  ssh_key_path=$(eval echo $ssh_priv_key_input)
+  SSH_CMD+=" -i ${ssh_key_path}"
+fi
+
 # first wait for 200 response code
-REMOTE_CURL="ssh -q -oStrictHostKeyChecking=no core@$api_fqdn curl -s"
+REMOTE_CURL="$SSH_CMD core@$api_fqdn curl -s"
 if [[ ! -z "${api_token}" ]]; then
   REMOTE_CURL+=" -H 'Authorization: ${api_token}'"
 fi
