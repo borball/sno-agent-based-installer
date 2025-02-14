@@ -122,7 +122,7 @@ spec:
      delay_filter_length 10
      egressLatency 0
      ingressLatency 0
-     boundary_clock_jbod 0
+     boundary_clock_jbod {{ (p.ptp4lConf and p.ptp4lConf.boundary_clock_jbod) or 0 }}
      #
      # Clock description
      #
