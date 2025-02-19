@@ -314,16 +314,20 @@ check_ptpconfig(){
   if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
     if [ $(oc get ptpconfig -n openshift-ptp |grep -v NAME |wc -l) -eq 1 ]; then
       info "PtpConfig" "exists"
-      if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPolicy}) = "SCHED_FIFO" ]; then
-        info "PtpConfig SchedulingPolicy" "SCHED_FIFO"
-      else
-        warn "PtpConfig SchedulingPolicy" "not SCHED_FIFO"
-      fi
-      if [ $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPriority}) = "10" ]; then
-        info "PtpConfig ptpSchedulingPriority" "10"
-      else
-        warn "PtpConfig SchedulingPolicy" "not 10"
-      fi
+      for policy in $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPolicy}); do
+        if [ "$policy" = "SCHED_FIFO" ]; then
+          info "PtpConfig SchedulingPolicy" "SCHED_FIFO"
+        else
+          warn "PtpConfig SchedulingPolicy" "not SCHED_FIFO"
+        fi
+      done
+      for priority in $(oc get ptpconfig -n openshift-ptp -o jsonpath={..ptpSchedulingPriority}); do
+        if [ "$priority" = "10" ]; then
+          info "PtpConfig ptpSchedulingPriority" "10"
+        else
+          warn "PtpConfig SchedulingPolicy" "not 10"
+        fi
+      done
     else
       warn "PtpConfig" "not exist"
     fi
