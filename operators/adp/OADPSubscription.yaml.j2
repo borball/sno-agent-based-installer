@@ -4,7 +4,7 @@ metadata:
   name: oadp-operator-subscription
   namespace: openshift-adp
 spec:
-  channel: {{ channel | default('stable-1.3') }}
+  channel: {{ channel | default('stable-1.4') }}
   name: redhat-oadp-operator
   source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace
