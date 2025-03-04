@@ -243,6 +243,11 @@ day2:
 
     #enable the ptp event, if true, will set summary_interval as -4, otherwise it will stay at 0
     enable_ptp_event: true
+    #event_api_version: "1.0" or "2.0"; to avoid issues, 4.12-4.15, should not set event_api_version
+    #4.16-4.17, if event_api_version not present, "1.0" will be the default
+    #4.18, if event_api_version not present, "2.0" will be the default
+    #4.19+, "1.0" will be deleted
+    #event_api_version: "1.0"
     #enable log_reduce, when setting as true it will reduce(filter all) the ptp logs
     log_reduce: true
 

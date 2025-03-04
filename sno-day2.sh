@@ -196,7 +196,7 @@ ptp_configs(){
 
   if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
     info "ptp event notification:" "enabled"
-    oc apply -f $templates/day2/ptp/ptp-operator-config-for-event.yaml
+    jinja2 $templates/day2/ptp/ptp-operator-config-for-event.yaml.j2 $config_file | oc apply -f -
   fi
 }
 

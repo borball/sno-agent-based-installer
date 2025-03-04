@@ -155,7 +155,7 @@ day2:
       interface: ens1f0
     boundary_clock:
       # only supported for 4.16+, when not enabled, the profiles[0] is used for system clock, 4.15 or earlier versions must set it as false
-      ha_enabled: true
+      ha_enabled: false
       #name (default): crdu-boundary-clock-ptp-config
       #name: crdu-boundary-clock-ptp-config
       profiles:
@@ -165,13 +165,26 @@ day2:
             - ens1f1
             - ens1f2
             - ens1f3
-
+          ptp4lConf:
+            boundary_clock_jbod: 0
         - name: bc-profile-nic2
           slave: ens2f0
           masters:
             - ens2f1
             - ens2f2
             - ens2f3
+          ptp4lConf:
+            boundary_clock_jbod: 0
+
+    #enable the ptp event, if true, will set summary_interval as -4, otherwise it will stay at 0
+    enable_ptp_event: true
+    #event_api_version: "1.0" or "2.0"; to avoid issues, 4.12-4.15, should not set event_api_version
+    #4.16-4.17, if event_api_version not present, "1.0" will be the default
+    #4.18, if event_api_version not present, "2.0" will be the default
+    #4.19+, "1.0" will be deleted
+    #event_api_version: "1.0"
+    #enable log_reduce, when setting as true it will reduce(filter all) the ptp logs
+    log_reduce: true
     
   #enable the cluster monitoring tuning
   cluster_monitor_tuning: true
