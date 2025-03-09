@@ -63,3 +63,7 @@ operators:
     name: kubevirt-hyperconverged
     desc: OpenShift Virtualization
     enabled: false
+  nfd:
+    name: nfd
+    desc: Node Feature Discovery Operator
+    enabled: false
