@@ -30,9 +30,17 @@ spec:
  additionalKernelArgs:
   - "rcupdate.rcu_normal_after_boot=0"
   - "efi=runtime"
+  {% if (day1.operators.fec and day1.operators.fec.enabled) -%}
   - "vfio_pci.enable_sriov=1"
   - "vfio_pci.disable_idle_d3=1"
+  {%- endif %}
+  {% if (day2.performance_profile.additional_kernel_args) -%}
+  {% for arg in day2.performance_profile.additional_kernel_args -%}
+  - "{{ arg }}"
+  {% endfor -%}
+  {% else -%}
   - "module_blacklist=irdma"
+  {%- endif %}
  machineConfigPoolSelector:
    pools.operator.machineconfiguration.openshift.io/master: ""
  nodeSelector:

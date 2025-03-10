@@ -28,8 +28,15 @@ spec:
      {%- endif %}
  {%- endif %}
  additionalKernelArgs:
-   - rcupdate.rcu_normal_after_boot=0
-   - module_blacklist=irdma
+  - "rcupdate.rcu_normal_after_boot=0"
+  - "efi=runtime"
+  {% if (day2.performance_profile.additional_kernel_args) -%}
+  {% for arg in day2.performance_profile.additional_kernel_args -%}
+  - "{{ arg }}"
+  {% endfor -%}
+  {% else -%}
+  - "module_blacklist=irdma"
+  {%- endif %}
  machineConfigPoolSelector:
    pools.operator.machineconfiguration.openshift.io/master: ""
  nodeSelector:

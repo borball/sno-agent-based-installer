@@ -189,6 +189,10 @@ day2:
     name: sno-perfprofile
     #optional, default value: true
     real_time: false
+    #additional_kernel_args. optional
+    #additional_kernel_args:
+    #- 1
+    #- 2
     #optional, present if want to set user_level_networking as true
     net:
       user_level_networking: true
