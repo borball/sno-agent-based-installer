@@ -258,6 +258,13 @@ hyperconverged_config(){
   fi
 }
 
+nfd_config(){
+  if [ "true" = "$(yq '.day1.operators.nfd.enabled' $config_file)" ]; then
+    info "nfd operator configuration"
+    oc apply -f $templates/day2/nfd/NodeFeatureDiscovery.yaml
+  fi
+}
+
 olm_pprof(){
   # 4.14+ specific
   if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
@@ -375,6 +382,8 @@ local_storage_config
 lvm_config
 echo
 hyperconverged_config
+echo
+nfd_config
 echo
 olm_pprof
 echo
