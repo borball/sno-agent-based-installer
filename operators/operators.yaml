@@ -67,3 +67,7 @@ operators:
     name: nfd
     desc: Node Feature Discovery Operator
     enabled: false
+  gpu:
+    name: gpu
+    desc: NVIDIA GPU Operator
+    enabled: false

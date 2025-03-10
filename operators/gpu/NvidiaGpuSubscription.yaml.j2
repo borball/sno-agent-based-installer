@@ -1,0 +1,17 @@
+# https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: gpu-operator-certified
+  namespace: nvidia-gpu-operator
+spec:
+  name: gpu-operator-certified
+  channel: {{ channel | default('v24.9') }}
+  source: {{ source | default('certified-operators') }}
+  sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
+  installPlanApproval: Automatic
+  {%- endif %}

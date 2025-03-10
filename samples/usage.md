@@ -103,7 +103,11 @@ day1:
       #channel: stable
       #set the version
       #version: 
-      
+    gpu:
+      enabled: false
+      #source: certified-operators
+      #channel: v24.9
+      #version: gpu-operator-certified.v24.9.2     
   extra_manifests:
     - ${HOME}/1
     - ${HOME}/2
