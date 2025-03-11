@@ -117,7 +117,18 @@ resume_mcp_update(){
   else
     echo "Resume master machine config pool update"
   fi
-  oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
+  for i in {1..20}; do
+    oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
+    if [[ $? -eq 0 ]]; then
+      return
+    fi
+    echo "Failed, retry ($i/20) in 15 seconds..."
+    sleep 15
+  done
+  cat <<EOF
+Failed to resume master machine config pool, please manually resume using following command:
+oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
+EOF
 }
 
 performance_profile(){
