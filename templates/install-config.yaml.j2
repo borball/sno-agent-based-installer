@@ -1,11 +1,13 @@
 apiVersion: v1
 baseDomain: {{ cluster.domain }}
+{%- set platform_arch= cluster.platform | default('intel') %}
+{%- set cpu_arch={'intel': 'amd64', 'amd': 'amd64', 'arm': 'arm64'}.get( platform_arch ) %}
 compute:
 - name: worker
   replicas: 0
-  architecture: {{ cluster.cpu_arch |default('amd64') }}
+  architecture: {{ cpu_arch }}
 controlPlane:
-  architecture: {{ cluster.cpu_arch |default('amd64') }}
+  architecture: {{ cpu_arch }}
   name: master
   replicas: 1
 metadata:

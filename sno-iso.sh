@@ -127,6 +127,7 @@ else
   tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
 fi
 
+platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
 
 day1_config(){
   if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
@@ -190,10 +191,10 @@ day1_config(){
     sleep 1
   else
     if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
-      warn "SR-IOV kernel(intel_iommu):" "disabled"
+      warn "SR-IOV kernel(${platform_arch} iommu):" "disabled"
     else
-      info "SR-IOV kernel(intel_iommu):" "enabled"
-      cp $templates/day1/sriov-kernel/*.yaml $cluster_workspace/openshift/
+      info "SR-IOV kernel(${platform_arch} iommu):" "enabled"
+      copy_platform_config $templates/day1/sriov-kernel/ $cluster_workspace/openshift/
     fi
 
     if [ "false" = "$(yq '.day1.rcu_normal' $config_file)" ]; then
@@ -313,6 +314,23 @@ setup_ztp_hub(){
 
     echo
   fi
+}
+
+# copy platform related configuration from source destination
+#   will copy file fits following patterns
+#     <file_name>.yaml
+#     <file_name>.<arch>.yaml
+copy_platform_config(){
+  local _src=$1
+  local _dest=$2
+
+  while read -r _file; do
+    local _filename=$(basename $_file)
+    if [[ $(echo "$_filename"|cut -f 2 -d .) == "${platform_arch}" ]] || [[ -z $(echo "$_filename"|cut -f 3 -d .) ]]; then
+      info "- $_filename" "added"
+      cp $_file ${_dest}
+    fi
+  done < <(find ${_src} -type f -name '*.yaml')
 }
 
 copy_extra_manifests(){
