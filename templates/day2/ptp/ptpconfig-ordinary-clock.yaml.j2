@@ -122,7 +122,8 @@ spec:
      holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
      maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
      minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
-   {% endif -%}
+   {% endif %}
+
  recommend:
  - match:
    - nodeLabel: node-role.kubernetes.io/master
