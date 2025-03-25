@@ -6,8 +6,8 @@ metadata:
 spec:
  profile:
  - interface: {{ day2.ptp.ordinary_clock.interface }}
-   name: oc-profile
-   phc2sysOpts: -a -r -n 24
+   name: ordinary-clock
+   phc2sysOpts: "-a -r -m -n 24 -N 8 -R 16"
    {% if day2.ptp.log_reduce -%}
    ptpSettings:
      logReduce: "true"
@@ -18,10 +18,11 @@ spec:
      # Default Data Set
      #
      twoStepFlag 1
-
+     slaveOnly 1
      priority1 128
      priority2 128
      domainNumber 24
+     #utc_offset 37
      clockClass 255
      clockAccuracy 0xFE
      offsetScaledLogVariance 0xFFFF
@@ -113,12 +114,18 @@ spec:
      manufacturerIdentity 00:00:00
      userDescription ;
      timeSource 0xA0
-   ptp4lOpts: -s -2
+   ptp4lOpts: "-2 -s --summary_interval -4"
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
+   {% if day2.ptp.clock_threshold_tuning -%}
+   ptpClockThreshold:
+     holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
+     maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
+     minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
+   {% endif -%}
  recommend:
  - match:
    - nodeLabel: node-role.kubernetes.io/master
      nodeName: {{ host.hostname }}
    priority: 4
-   profile: oc-profile
+   profile: ordinary-clock
