@@ -162,7 +162,7 @@ else
   tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
 fi
 
-if [[ ! -x openshift-install ]]; then
+if [[ ! -x $basedir/openshift-install ]]; then
   echo "Failed to obtain openshift-install, for disconnected install, populate local_release_info.txt with missing"
   echo "<release>=<image>"
   exit -1
