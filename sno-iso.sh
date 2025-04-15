@@ -144,8 +144,8 @@ EOF
       OC_OPTION+=" --certificate-authority=${local_ca_file}"
     fi
 
-    if [[ -f "local_release_info.txt" ]]; then
-       release_image=$(grep "^$ocp_release=" local_release_info.txt|cut -f 2 -d =)
+    if [[ -f "$basedir/local_release_info.txt" ]]; then
+       release_image=$(grep "^$ocp_release=" $basedir/local_release_info.txt|cut -f 2 -d =)
     fi
     if [[ -z "$release_image" ]]; then
       if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
