@@ -82,7 +82,12 @@ then
 fi
 
 ocp_arch=$(uname -m)
-ocp_release_version=$(curl -s https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
+
+case ${ocp_release} in
+  fast-* | lastest-* | stable-* | candidate-*)
+    ocp_release_version=$(curl --connect-timeout 10 -s https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
+    ;;
+esac
 
 #if release not available on mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
 if [ -z $ocp_release_version ]; then
@@ -106,7 +111,7 @@ echo "Will use $config_file as the configuration in other sno-* scripts."
 echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version}"
 
 if [ ! -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz ]; then
-  status_code=$(curl -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/$ocp_release_version/)
+  status_code=$(curl --connect-timeout 10 -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/$ocp_release_version/)
   if [ $status_code = "200" ]; then
     curl -L https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.$ocp_release_version.tar.gz
     if [[ $? -eq 0 ]]; then
@@ -117,14 +122,50 @@ if [ ! -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz ]; then
     fi
   else
     #fetch from image
-    if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
-      oc adm release extract --command=openshift-install registry.ci.openshift.org/ocp/release:$ocp_release_version --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
-    else
-      oc adm release extract --command=openshift-install quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${ocp_arch} --registry-config=$(yq '.pull_secret' $config_file) --to="$basedir"
+    OC_OPTION="--registry-config=$(yq '.pull_secret' $config_file)"
+    local_mirror=$(yq '.container_registry.image_source' $config_file)
+    if [[ "${local_mirror}" != "null" ]]; then
+      idms_file=${cluster_workspace}/idms-release-0.yaml
+      echo "Using local mirror ${local_mirror}"
+cat << EOF > ${idms_file}
+apiVersion: config.openshift.io/v1
+kind: ImageDigestMirrorSet
+metadata:
+  name: idms-release-0
+spec:
+  imageDigestMirrors:
+EOF
+      yq '.imageContentSources' ${local_mirror} |pr -T -o 4 >> ${idms_file}
+      OC_OPTION+=" --idms-file=${idms_file}"
     fi
+    local_ca_file=$(yq '.additional_trust_bundle' $config_file)
+    if [[ "${local_ca_file}" != "null" ]]; then
+      echo "Using CA ${local_ca_file}"
+      OC_OPTION+=" --certificate-authority=${local_ca_file}"
+    fi
+
+    if [[ -f "local_release_info.txt" ]]; then
+       release_image=$(grep "^$ocp_release=" local_release_info.txt|cut -f 2 -d =)
+    fi
+    if [[ -z "$release_image" ]]; then
+      if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
+        release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
+      else
+        release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${ocp_arch}"
+      fi
+    fi
+
+    echo "Extracting openshift-install from release image: $release_image"
+    oc adm release extract --command=openshift-install $release_image --to="$basedir" ${OC_OPTION}
   fi
 else
   tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
+fi
+
+if [[ ! -x openshift-install ]]; then
+  echo "Failed to obtain openshift-install, for disconnected install, populate local_release_info.txt with missing"
+  echo "<release>=<image>"
+  exit -1
 fi
 
 platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
