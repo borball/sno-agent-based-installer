@@ -4,8 +4,6 @@
 # usage: ./sno-iso.sh -h
 #
 
-set -x
-
 if ! type "yq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
