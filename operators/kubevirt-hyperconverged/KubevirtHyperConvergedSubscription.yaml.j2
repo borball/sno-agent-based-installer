@@ -6,6 +6,7 @@ metadata:
 spec:
   name: kubevirt-hyperconverged
   source: {{ source | default('redhat-operators') }}
+  channel: {{ source | default('channel') }}
   sourceNamespace: openshift-marketplace
   {% if version is defined -%}
   startingCSV: {{ version }}

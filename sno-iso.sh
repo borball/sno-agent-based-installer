@@ -4,6 +4,8 @@
 # usage: ./sno-iso.sh -h
 #
 
+set -x
+
 if ! type "yq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
 fi
@@ -78,7 +80,7 @@ mkdir -p $cluster_workspace/openshift
 
 if [ -z "$ocp_release" ]
 then
-  ocp_release='stable-4.14'
+  ocp_release='stable-4.18'
 fi
 
 ocp_arch=$(uname -m)
@@ -156,7 +158,10 @@ EOF
     fi
 
     echo "Extracting openshift-install from release image: $release_image"
-    oc adm release extract --command=openshift-install $release_image --to="$basedir" ${OC_OPTION}
+    oc adm release extract --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
+      echo "Error: adm release extract failed: oc adm release extract --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} "
+      exit 1
+    }
   fi
 else
   tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
