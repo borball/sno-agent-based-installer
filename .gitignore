@@ -20,3 +20,4 @@ extra-manifests/day2/*/*.yaml.j2
 
 ./config.yaml
 *.iso
+.idea
