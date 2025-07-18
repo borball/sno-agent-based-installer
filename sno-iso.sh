@@ -81,7 +81,29 @@ then
   ocp_release='stable-4.18'
 fi
 
-ocp_arch=$(uname -m)
+fetch_archs(){
+  client_arch=$(uname -m)
+  if [ "$client_arch" == "aarch64" ]; then
+    client_arch="arm64"
+  fi
+  if [ "$client_arch" == "x86_64" ]; then
+    client_arch="amd64"
+  fi
+
+  ocp_arch=$(yq '.cluster.platform' $config_file_input)
+  if [ "$ocp_arch" == "arm" ]; then
+    ocp_arch="arm64"
+  fi
+  if [ "$ocp_arch" == "amd" ] || [ "$ocp_arch" == "intel" ]; then
+    ocp_arch="amd64"
+  fi
+
+  if [ -z "$ocp_arch" ] || [ "$ocp_arch" == "null" ]; then
+    ocp_arch=$client_arch
+  fi
+}
+
+fetch_archs
 
 case ${ocp_release} in
   fast-* | lastest-* | stable-* | candidate-*)
@@ -106,28 +128,52 @@ else
   cp $config_file_input $config_file
 fi
 
+is_gzipped(){
+  if [ $(file $1 -- |grep -E 'gzip|bzip2|xz' |wc -l) -gt 0 ]; then
+    echo "1"
+  else
+    echo "0"
+  fi
+}
+
 echo "Will use $config_file as the configuration in other sno-* scripts."
 
-echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version}"
+download_openshift_installer(){
+  openshift_install_tar_file=openshift-install-client-${client_arch}-target-${ocp_arch}.$ocp_release_version.tar.gz
+  openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}
 
-if [ ! -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz ]; then
-  status_code=$(curl --connect-timeout 10 -s -o /dev/null -w "%{http_code}" https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/$ocp_release_version/)
-  if [ $status_code = "200" ]; then
-    curl -L https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}/openshift-install-linux.tar.gz -o $basedir/openshift-install-linux.$ocp_release_version.tar.gz
-    if [[ $? -eq 0 ]]; then
-      tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
+  if [ ! -f $basedir/$openshift_install_tar_file ]; then
+    echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version} on ${client_arch} platform, target cluster platform is ${ocp_arch}"
+
+    status_code=$(curl --connect-timeout 10 -s -o /dev/null -w "%{http_code}" $openshift_mirror_path/)
+    if [ $status_code = "200" ]; then
+      #try to download the file with the client arch first
+      curl -L ${openshift_mirror_path}/openshift-install-linux-${client_arch}.tar.gz -o $basedir/$openshift_install_tar_file
+      
+      if [[ $(is_gzipped $basedir/$openshift_install_tar_file) -eq 1 ]]; then
+        echo "Downloaded openshift-install tar file from ${openshift_mirror_path}/openshift-install-linux-${client_arch}.tar.gz "
+      else
+        rm -f $basedir/$openshift_install_tar_file
+        #if not found, try to download the default linux file
+        curl -L ${openshift_mirror_path}/openshift-install-linux.tar.gz -o $basedir/$openshift_install_tar_file
+        if [[ $(is_gzipped $basedir/$openshift_install_tar_file) -eq 1 ]]; then
+          echo "Downloaded openshift-install tar file from ${openshift_mirror_path}/openshift-install-linux.tar.gz "
+        else
+          rm -f $basedir/$openshift_install_tar_file
+          echo "Error: download failed: could not download openshift-install-linux-${client_arch}.tar.gz or openshift-install-linux.tar.gz from ${openshift_mirror_path}"
+          exit -1
+        fi
+      fi
+
+      tar zxf $basedir/$openshift_install_tar_file -C $basedir openshift-install
     else
-      rm -f $basedir/openshift-install-linux.$ocp_release_version.tar.gz
-      exit -1
-    fi
-  else
-    #fetch from image
-    OC_OPTION="--registry-config=$(yq '.pull_secret' $config_file)"
-    local_mirror=$(yq '.container_registry.image_source' $config_file)
-    if [[ "${local_mirror}" != "null" ]]; then
-      idms_file=${cluster_workspace}/idms-release-0.yaml
-      echo "Using local mirror ${local_mirror}"
-cat << EOF > ${idms_file}
+      #fetch from image
+      OC_OPTION="--registry-config=$(yq '.pull_secret' $config_file)"
+      local_mirror=$(yq '.container_registry.image_source' $config_file)
+      if [[ "${local_mirror}" != "null" ]]; then
+        idms_file=${cluster_workspace}/idms-release-0.yaml
+        echo "Using local mirror ${local_mirror}"
+        cat << EOF > ${idms_file}
 apiVersion: config.openshift.io/v1
 kind: ImageDigestMirrorSet
 metadata:
@@ -135,41 +181,54 @@ metadata:
 spec:
   imageDigestMirrors:
 EOF
-      yq '.imageContentSources' ${local_mirror} |pr -T -o 4 >> ${idms_file}
-      OC_OPTION+=" --idms-file=${idms_file}"
-    fi
-    local_ca_file=$(yq '.additional_trust_bundle' $config_file)
-    if [[ "${local_ca_file}" != "null" ]]; then
-      echo "Using CA ${local_ca_file}"
-      OC_OPTION+=" --certificate-authority=${local_ca_file}"
-    fi
-
-    if [[ -f "$basedir/local_release_info.txt" ]]; then
-       release_image=$(grep "^$ocp_release=" $basedir/local_release_info.txt|cut -f 2 -d =)
-    fi
-    if [[ -z "$release_image" ]]; then
-      if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
-        release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
-      else
-        release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${ocp_arch}"
+        
+        yq '.imageContentSources' ${local_mirror} |pr -T -o 4 >> ${idms_file}
+        OC_OPTION+=" --idms-file=${idms_file}"
       fi
+      
+      local_ca_file=$(yq '.additional_trust_bundle' $config_file)
+      if [[ "${local_ca_file}" != "null" ]]; then
+        echo "Using CA ${local_ca_file}"
+        OC_OPTION+=" --certificate-authority=${local_ca_file}"
+      fi
+
+      if [[ -f "$basedir/local_release_info.txt" ]]; then
+        echo "Using local release info: $basedir/local_release_info.txt"
+        release_image=$(grep "^$ocp_release=" $basedir/local_release_info.txt|cut -f 2 -d =)
+        echo "Using local release image: $release_image"
+      fi
+
+      if [[ -z "$release_image" ]]; then
+        if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
+          echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
+          release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
+        else
+          echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+          release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+        fi
+      fi
+
+      echo "Extracting openshift-install from release image: $release_image on ${client_arch} platform"
+      oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
+        echo "Error: adm release extract failed: oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} "
+        exit 1
+      }
     fi
+  else
 
-    echo "Extracting openshift-install from release image: $release_image"
-    oc adm release extract --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
-      echo "Error: adm release extract failed: oc adm release extract --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} "
-      exit 1
-    }
+    echo "You are going to reuse the local OpenShift installer $ocp_release: ${ocp_release_version} on ${client_arch} platform, target cluster platform is ${ocp_arch}"
+    tar zxf $basedir/$openshift_install_tar_file -C $basedir openshift-install
   fi
-else
-  tar zxf $basedir/openshift-install-linux.$ocp_release_version.tar.gz -C $basedir openshift-install
-fi
 
-if [[ ! -x $basedir/openshift-install ]]; then
-  echo "Failed to obtain openshift-install, for disconnected install, populate local_release_info.txt with missing"
-  echo "<release>=<image>"
-  exit -1
-fi
+  if [[ ! -x $basedir/openshift-install ]]; then
+    echo "Failed to obtain openshift-install, for disconnected install, populate local_release_info.txt with missing"
+    echo "<release>=<image>"
+    exit -1
+  fi
+  
+}
+
+download_openshift_installer
 
 platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
 
