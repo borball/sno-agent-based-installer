@@ -350,6 +350,11 @@ REMOTE_CURL="$SSH_CMD core@$api_fqdn curl -s"
 if [[ ! -z "${api_token}" ]]; then
   REMOTE_CURL+=" -H 'Authorization: ${api_token}'"
 fi
+
+# workaround for https://access.redhat.com/solutions/7120118
+exec 3>&2
+exec 2> /dev/null
+
 while [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
   echo -n "."
   sleep 10;
@@ -382,6 +387,10 @@ while
   sleep 20;
   [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" == "200" ]]
 do true; done
+
+# restore stderr
+exec 2>&3
+
 echo
 
 echo "-------------------------------"

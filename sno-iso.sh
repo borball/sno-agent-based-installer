@@ -387,7 +387,7 @@ install_operators(){
 
 config_operators(){
   echo "Configuring operators..."
-  #right now only local storage operator
+  #local storage operator
   if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
     sleep 1
   else
@@ -400,6 +400,18 @@ config_operators(){
       export DISK=$(yq '.day1.operators.local-storage.provision.disk_by_path' $config_file)
       export LVS=$(yq '.day1.operators.local-storage.provision.lvs|to_entries|map(.value + "x" + .key)|join(" ")' $config_file)
       jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
+    fi
+  fi
+  #lvms
+  if [[ "false" == $(yq ".day1.operators.lvm.enabled" $config_file) ]]; then
+    sleep 1
+  else
+    # enabled
+    if [[ $(yq ".day1.operators.lvm.provision" $config_file) == "null" ]]; then
+      sleep 1
+    else
+      info "lvm operator: provision storage"
+      jinja2 $templates/day1/lvm/98-prepare-lvm-disk-mc.yaml.j2 $config_file > $cluster_workspace/openshift/98-prepare-lvm-disk-mc.yaml
     fi
   fi
 }

@@ -71,7 +71,13 @@ day1:
     mcgh:
       enabled: false
     lvm:
+      #source: prega
       enabled: false
+      #source: cs-redhat-operator-index
+      #provision:
+      #  disks:
+      #    - disk_by_path: pci-0000:03:00.0-nvme-1
+      #      wipe_table: true
     fec:
       enabled: false
       #if you want to stay on a particular version sriov-fec.v2.7.2

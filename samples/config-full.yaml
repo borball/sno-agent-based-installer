@@ -131,6 +131,11 @@ day1:
     lvm:
       #source: prega
       enabled: false
+      #source: cs-redhat-operator-index
+      #provision:
+      #  disks:
+      #    - disk_by_path: pci-0000:03:00.0-nvme-1
+      #      wipe_table: true
     fec:
       #source: prega
       enabled: false
