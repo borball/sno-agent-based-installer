@@ -103,9 +103,16 @@ day1:
       #version: local-storage-operator.v4.12.0-202403082008
       #preparation work for local storage
       provision:
+        #type: default partition if "lvs" key is not present
+        #   partition: use ignition, can be done once during installation
+        #   lvs: use run-once service, can be adjusted later
+        type: partition
+        # file system type, default xfs
+        fs_type: ext4
         #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
         disk_by_path: pci-0000:c3:00.0-nvme-1
-        lvs:
+        # the previous lvs key is deprecated
+        partitions:
           1g: 10
           2g: 10
           4g: 5

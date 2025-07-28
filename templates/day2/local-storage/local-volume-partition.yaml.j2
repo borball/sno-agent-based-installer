@@ -6,11 +6,16 @@ metadata:
 spec:
   logLevel: Normal
   managementState: Managed
+  {% set provision= day1.operators["local-storage"].provision -%}
   storageClassDevices:
     - devicePaths:
-        {% for n in range(environ('TOTAL_LVS')|int) -%}
-        - /dev/autopart/lv_{{ n+1 }}
+        {% set ns = namespace(part_ind = 0) -%}
+        {% for part_size,part_count in provision.partitions | dictsort -%}
+        {% for count in range(part_count) -%}
+        {% set ns.part_ind = ns.part_ind + 1 -%}
+        - /dev/disk/by-path/{{ provision.disk_by_path }}-part{{ns.part_ind}}
+        {% endfor -%}
         {% endfor %}
       volumeMode: Filesystem
-      fsType: {{ environ('FS_TYPE') }}
+      fsType: {{ provision.fs_type | default('ext4') }}
       storageClassName: {{ day2 and day2.local_storage and day2.local_storage.local_volume and day2.local_storage.local_volume.storageClassName or 'general' }}

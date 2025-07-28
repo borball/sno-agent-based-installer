@@ -242,9 +242,26 @@ local_storage_config(){
     if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
       sleep 1
     else
-      info "local-storage operator" "create LocalVolume"
-      export TOTAL_LVS=$(yq ".day1.operators.local-storage.provision.lvs|to_entries|map(.value)" $config_file |yq '.[] as $item ireduce (0; . + $item)')
-      jinja2 $templates/day2/local-storage/local-volume.yaml.j2 $config_file |oc apply -f -
+      # maintain backward compatibility by checking for "provision.lvs"
+      if [[ $(yq '.day1.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
+         # using new configuration
+         prov_type=$(yq '.day1.operators.local-storage.provision.type // "partition"' $config_file)
+         partitions_key="partitions"
+      else
+         # maintain backward compatibility with old format
+         warn "local-storage operator" "using deprecated provision.lvs property"
+         prov_type="lvs"
+         partitions_key="lvs"
+      fi
+
+      info "local-storage operator" "create LocalVolume ($prov_type)"
+      if [[ "${prov_type}" == "partition" ]]; then
+        jinja2 $templates/day2/local-storage/local-volume-partition.yaml.j2 $config_file |oc apply -f -
+      else
+        export TOTAL_LVS=$(yq ".day1.operators.local-storage.provision.${partitions_key}|to_entries|map(.value)" $config_file |yq '.[] as $item ireduce (0; . + $item)')
+        export FS_TYPE=$(yq '.day1.operators.local-storage.provision.fs_type // "xfs"' $config_file)
+        jinja2 $templates/day2/local-storage/local-volume.yaml.j2 $config_file |oc apply -f -
+      fi
       storage_class_name=$(yq ".day2.local_storage.local_volume.storageClassName" $config_file)
       if [ "$storage_class_name" == "null" ]; then
         storage_class_name="general"

@@ -395,11 +395,38 @@ config_operators(){
     if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
       sleep 1
     else
-      info "local-storage operator: provision storage"
-      export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
-      export DISK=$(yq '.day1.operators.local-storage.provision.disk_by_path' $config_file)
-      export LVS=$(yq '.day1.operators.local-storage.provision.lvs|to_entries|map(.value + "x" + .key)|join(" ")' $config_file)
-      jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
+      # maintain backward compatibility by checking for "provision.lvs"
+      if [[ $(yq '.day1.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
+         # using new configuration
+         prov_type=$(yq '.day1.operators.local-storage.provision.type // "partition"' $config_file)
+         partitions_key="partitions"
+      else
+         # maintain backward compatibility with old format
+	 warn "local-storage operator" "using deprecated provision.lvs property"
+         prov_type="lvs"
+         partitions_key="lvs"
+      fi
+      info "local-storage operator: provision ${prov_type}"
+      if [[ "${prov_type}" == "partition" ]]; then
+        jinja2 $templates/day1/local-storage/60-prepare-lso-partition-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-prepare-lso-partition-mc.yaml
+      else
+        export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
+        export DISK=$(yq '.day1.operators.local-storage.provision.disk_by_path' $config_file)
+        export LVS=$(yq ".day1.operators.local-storage.provision.${partitions_key}|to_entries|map(.value + \"x\" + .key)|join(\" \")" $config_file)
+        jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
+      fi
+    fi
+  fi
+  #lvms
+  if [[ "false" == $(yq ".day1.operators.lvm.enabled" $config_file) ]]; then
+    sleep 1
+  else
+    # enabled
+    if [[ $(yq ".day1.operators.lvm.provision" $config_file) == "null" ]]; then
+      sleep 1
+    else
+      info "lvm operator: provision storage"
+      jinja2 $templates/day1/lvm/98-prepare-lvm-disk-mc.yaml.j2 $config_file > $cluster_workspace/openshift/98-prepare-lvm-disk-mc.yaml
     fi
   fi
   #lvms
