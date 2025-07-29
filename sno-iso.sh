@@ -429,18 +429,6 @@ config_operators(){
       jinja2 $templates/day1/lvm/98-prepare-lvm-disk-mc.yaml.j2 $config_file > $cluster_workspace/openshift/98-prepare-lvm-disk-mc.yaml
     fi
   fi
-  #lvms
-  if [[ "false" == $(yq ".day1.operators.lvm.enabled" $config_file) ]]; then
-    sleep 1
-  else
-    # enabled
-    if [[ $(yq ".day1.operators.lvm.provision" $config_file) == "null" ]]; then
-      sleep 1
-    else
-      info "lvm operator: provision storage"
-      jinja2 $templates/day1/lvm/98-prepare-lvm-disk-mc.yaml.j2 $config_file > $cluster_workspace/openshift/98-prepare-lvm-disk-mc.yaml
-    fi
-  fi
 }
 
 setup_ztp_hub(){

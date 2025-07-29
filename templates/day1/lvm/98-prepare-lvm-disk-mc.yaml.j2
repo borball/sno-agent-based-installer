@@ -12,5 +12,5 @@ spec:
       disks:
         {%- for disk in day1.operators.lvm.provision.disks %}
         - device: /dev/disk/by-path/{{ disk.disk_by_path }}
-          wipeTable: {{ disk.wipe_table }}
+          wipeTable: {{ disk.wipe_table | lower }}
         {%- endfor %}

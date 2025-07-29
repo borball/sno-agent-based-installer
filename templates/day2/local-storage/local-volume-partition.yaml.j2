@@ -17,5 +17,5 @@ spec:
         {% endfor -%}
         {% endfor %}
       volumeMode: Filesystem
-      fsType: {{ provision.fs_type | default('ext4') }}
+      fsType: {{ provision.fs_type | default('xfs') }}
       storageClassName: {{ day2 and day2.local_storage and day2.local_storage.local_volume and day2.local_storage.local_volume.storageClassName or 'general' }}
