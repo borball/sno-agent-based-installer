@@ -25,14 +25,10 @@ cluster:
       - marketplace
 host:
   hostname: sno148.outbound.vz.bos2.lab
-  #Set up networking:
-  #  - when "bond.enable" is set to true, "host.interface" is the name of bond interface and "host.mac" is not used;
-  #    otherwise, "host.interface" and "host.mac" is used to setup ethernet interface;
-  #  - when vlan.enabled is set to true, "host.interface" is used as parent interface for vlan interface "vlan.name"
-  #Testing:
-  # jinja2 templates/agent-config.yaml.j2 config.yaml|yq .hosts[0].networkConfig |nmstatectl gc -
-  interface: ens1f0
-  mac: b4:96:91:b4:9d:f0
+  # when bond is enabled, interface name is used for setting up bond interface
+  interface: bond0
+  #when bond is enabled, mac is not used, setting mac is not supported on bond interface
+  #mac: b4:96:91:b4:9d:f0
   ipv4:
     enabled: true
     dhcp: false
@@ -59,28 +55,29 @@ host:
     #cluster_network_cidr: fd01::/48
     #optional, default 64
     #cluster_network_host_prefix: 64
-   bond:
-     enabled: false
-     mode: 802.3ad
-     miimon: 100
-     # add bonding member by interface name and mac
-     members:
-       - interface: ens1f0
-         mac: b4:96:91:b4:9d:f0
-         #optional layer2 configuration on member
-         #ethernet:
-           #auto-negotiation: true
-           #duplex: true
-           #speed: 10000
-       - interface: ens2f0
-         mac: b4:96:91:b4:9e:f0
-         #optional layer2 configuration on member
-         #ethernet:
-           #auto-negotiation: true
-           #duplex: true
-           #speed: 10000
+  # see https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_networking/configuring-network-bonding_configuring-and-managing-networking
+  bond:
+    enabled: true
+    mode: 802.3ad
+    miimon: 100
+    # add bonding member by interface name and mac
+    members:
+      - interface: ens1f0
+        mac: b4:96:91:b4:9d:f0
+        #optional layer2 configuration on member
+        #ethernet:
+          #auto-negotiation: true
+          #duplex: true
+          #speed: 10000
+      - interface: ens2f0
+        mac: b4:96:91:b4:9e:f0
+        #optional layer2 configuration on member
+        #ethernet:
+          #auto-negotiation: true
+          #duplex: true
+          #speed: 10000
   vlan:
-    enabled: false
+    enabled: true
     name: vlan58
     id: 58
   disk: /dev/nvme0n1

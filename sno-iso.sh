@@ -139,6 +139,20 @@ is_gzipped(){
 echo "Will use $config_file as the configuration in other sno-* scripts."
 
 download_openshift_installer(){
+
+  # check to see if we can re-use the current binary
+  if [[ -x $basedir/openshift-install ]]; then
+    if [[ -z $($basedir/openshift-install version |grep -E "^.* $ocp_release_version$") ]]; then
+       echo "Ignore existing openshift-install: version does not matching" 
+    elif [[ -z $($basedir/openshift-install version |grep -E "^release architecture ${ocp_arch}$") ]]; then
+       echo "Ignore existing openshift-install: release architecture does not matching"
+    else
+      echo "Reusing existing openshift-install binary"
+      $basedir/openshift-install version
+      return
+    fi
+  fi
+
   openshift_install_tar_file=openshift-install-client-${client_arch}-target-${ocp_arch}.$ocp_release_version.tar.gz
   openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}
 
@@ -588,7 +602,7 @@ cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-back
 echo
 echo "Generating boot image..."
 echo
-$basedir/openshift-install --dir $cluster_workspace agent --log-level=info create image
+$basedir/openshift-install --dir $cluster_workspace agent --log-level=${ABI_LOG_LEVEL:-"info"} create image
 
 echo ""
 echo "------------------------------------------------"

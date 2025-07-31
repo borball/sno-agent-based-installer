@@ -17,8 +17,15 @@ additionalNTPSources:
 hosts:
   - hostname: {{ host.hostname }}
     interfaces:
+      {%- if host.bond is defined and host.bond.enabled %}
+      {%- for member in host.bond.members %}
+      - name: {{ member.interface }}
+        macAddress: {{ member.mac }}
+      {%- endfor -%}
+      {%- else %}
       - name: {{ host.interface }}
         macAddress: {{ host.mac }}
+      {%- endif %}
     rootDeviceHints:
       deviceName: {{ host.disk }}
     networkConfig:
@@ -55,7 +62,37 @@ hosts:
           {% else %}
           ipv6:
             enabled: false
-          {% endif %}
+          {%- endif %}
+        {%- if host.bond is defined and host.bond.enabled %}
+        - name: {{ host.interface }}
+          type: bond
+          link-aggregation:
+            mode: {{ host.bond.mode }}
+            {%- if host.bond.miimon is defined %}
+            options:
+               miimon: {{ host.bond.miimon }}
+            {%- endif %}
+            port:
+              {%- for member in host.bond.members %}
+              - {{ member.interface }}
+              {%- endfor %}
+          state: up
+          mac-address: {{ host.mac }}
+          ipv4:
+            enabled: false
+          ipv6:
+            enabled: false
+        {%- for member in host.bond.members %}
+        {%- if member.ethernet is defined %}
+        - name: {{ member.interface }}
+          type: ethernet
+          ethernet:
+            auto-negotiation: {{ member.ethernet.auto_negotiation |lower }}
+            duplex: {{ member.ethernet.duplex }}
+            speed: {{ member.ethernet.speed }}
+        {%- endif %}
+        {%- endfor %}
+        {%- endif %}
       dns-resolver:
         config:
           server:
@@ -141,5 +178,4 @@ hosts:
             next-hop-interface: {{ host.interface }}
             table-id: 254
           {% endif -%}
-      {%- endif -%}
-
+      {%- endif %}
