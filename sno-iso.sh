@@ -213,7 +213,7 @@ EOF
       fi
 
       if [[ -z "$release_image" ]]; then
-        if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
+        if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]] || [[ $ocp_release == *"ec"* ]]; then
           echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
           release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
         else
