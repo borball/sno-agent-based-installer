@@ -213,12 +213,18 @@ EOF
       fi
 
       if [[ -z "$release_image" ]]; then
-        if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]] || [[ $ocp_release == *"ec"* ]]; then
+        if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
           echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
           release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
         else
-          echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
-          release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+          # ec release image is only available for x86_64
+          if [[ $ocp_release == *"ec"* ]]; then
+            echo "Using ec release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
+            release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
+          else
+            echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+            release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+          fi
         fi
       fi
 
