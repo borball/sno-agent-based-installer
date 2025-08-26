@@ -92,6 +92,17 @@ hosts:
             speed: {{ member.ethernet.speed }}
         {%- endif %}
         {%- endfor %}
+        {%- elif host.mac is defined %}
+        - name: {{ host.interface }}
+          type: ethernet
+          identifier: mac-address
+          mac-address: {{ host.mac }} 
+          ipv4:
+            enabled: false
+            dhcp: false
+          ipv6:
+            enabled: false
+            dhcp: false
         {%- endif %}
       dns-resolver:
         config:
