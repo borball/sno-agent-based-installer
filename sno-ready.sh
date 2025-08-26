@@ -695,6 +695,17 @@ check_cgv1(){
   fi
 }
 
+check_lvm(){
+  if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
+    echo -e "\n${NC}Checking LVM storage:"
+    if [ "true" = "$(oc -n openshift-storage get lvmcluster -o jsonpath='{.items[0].status.ready}')" ]; then
+      info "LVM cluster ready" "true"
+    else
+      warn "LVM cluster ready" "false"
+    fi
+  fi
+}
+
 oc get clusterversion
 echo
 oc get node
@@ -723,5 +734,6 @@ check_olm_pprof
 check_ip
 check_container_runtime
 check_cgv1
+check_lvm
 
 echo -e "\n${NC}Completed the checking."
