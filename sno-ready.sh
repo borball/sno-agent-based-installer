@@ -706,6 +706,57 @@ check_lvm(){
   fi
 }
 
+check_extra_readiness(){
+  extra_readiness=$(yq '.readiness.extra_checks' $config_file)
+  if [ "$extra_readiness" == "null" ]; then
+    sleep 1
+  else
+    all_paths_config=$(yq '.readiness.extra_checks|join(" ")' $config_file)
+    all_paths=$(eval echo $all_paths_config)
+    for d in $all_paths; do
+      if [[ -d "$d" ]]; then
+        echo -e "\n${NC}Extra Checking $d:"
+        readarray -t check_files < <(find ${d} -type f \( -name "*.yaml" -o -name "*.yaml.j2" -o -name "*.sh" \) |sort)
+        for ((i=0; i<${#check_files[@]}; i++)); do
+          file="${check_files[$i]}"
+          case "$file" in
+            *.yaml)
+              output=$(oc diff -f $file)
+              if [[ $? -ne 0 ]]; then
+		            warn $(basename $file) "Failed"
+              else
+                info $(basename $file) "Successful"
+              fi
+              echo "$output"
+              ;;
+            *.yaml.j2)
+              output=$(jinja2 $file $config_file | oc diff -f -)
+              if [[ $? -ne 0 ]]; then
+                warn $(basename $file) "Failed"
+              else
+                info $(basename $file) "Successful"
+              fi
+              echo "$output"
+              ;;
+            *.sh)
+              output=$(. $file)
+              if [[ $? -ne 0 ]]; then
+                warn $(basename $file) "Failed"
+              else
+                info $(basename $file) "Successful"
+              fi
+              echo "$output"
+              ;;
+            *)
+              warn $file "Skipped: unknown type"
+              ;;
+          esac
+         done
+      fi
+    done
+  fi
+}
+
 oc get clusterversion
 echo
 oc get node
@@ -735,5 +786,6 @@ check_ip
 check_container_runtime
 check_cgv1
 check_lvm
+check_extra_readiness
 
 echo -e "\n${NC}Completed the checking."

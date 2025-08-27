@@ -338,6 +338,17 @@ day2:
     - ${HOME}/2
     - $OCP_Y_VERSION
 
+# support additional readiness script in folders
+#   script
+#      should have .sh extention
+#      return 0 if successfull
+#      return none zero if failed
+#      all output will be captured and displayed
+readiness:
+  extra_checks:
+    - ${HOME}/r1
+    - ${HOME}/21
+
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
