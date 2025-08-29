@@ -59,26 +59,26 @@ host:
     #cluster_network_cidr: fd01::/48
     #optional, default 64
     #cluster_network_host_prefix: 64
-   bond:
-     enabled: false
-     mode: 802.3ad
-     miimon: 100
-     # add bonding member by interface name and mac
-     members:
-       - interface: ens1f0
-         mac: b4:96:91:b4:9d:f0
-         #optional layer2 configuration on member
-         #ethernet:
-           #auto-negotiation: true
-           #duplex: true
-           #speed: 10000
-       - interface: ens2f0
-         mac: b4:96:91:b4:9e:f0
-         #optional layer2 configuration on member
-         #ethernet:
-           #auto-negotiation: true
-           #duplex: true
-           #speed: 10000
+  bond:
+    enabled: false
+    mode: 802.3ad
+    miimon: 100
+    # add bonding member by interface name and mac
+    members:
+      - interface: ens1f0
+        mac: b4:96:91:b4:9d:f0
+        #optional layer2 configuration on member
+        #ethernet:
+          #auto-negotiation: true
+          #duplex: true
+          #speed: 10000
+      - interface: ens2f0
+        mac: b4:96:91:b4:9e:f0
+        #optional layer2 configuration on member
+        #ethernet:
+          #auto-negotiation: true
+          #duplex: true
+          #speed: 10000
   vlan:
     enabled: false
     name: vlan58
