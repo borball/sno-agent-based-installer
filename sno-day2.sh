@@ -193,22 +193,27 @@ network_diagnostics(){
 }
 
 ptp_configs(){
-  if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-    warn "ptpconfig:" "disabled"
-  fi
-  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-    info "ptpconfig ordinary clock:" "enabled"
-    jinja2 $templates/day2/ptp/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
-  fi
-  if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-    info "ptpconfig boundary clock:" "enabled"
-    jinja2 $templates/day2/ptp/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+  if [ "false" = "$(yq '.day1.operators.ptp.enabled' $config_file)" ]; then
+    warn "ptp operator not enabled"
+  else
+    if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+      warn "ptpconfig:" "disabled"
+    fi
+    if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+      info "ptpconfig ordinary clock:" "enabled"
+      jinja2 $templates/day2/ptp/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
+    fi
+    if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
+      info "ptpconfig boundary clock:" "enabled"
+      jinja2 $templates/day2/ptp/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
+    fi
+
+    if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
+      info "ptp event notification:" "enabled"
+      jinja2 $templates/day2/ptp/ptp-operator-config-for-event.yaml.j2 $config_file | oc apply -f -
+    fi
   fi
 
-  if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
-    info "ptp event notification:" "enabled"
-    jinja2 $templates/day2/ptp/ptp-operator-config-for-event.yaml.j2 $config_file | oc apply -f -
-  fi
 }
 
 sriov_configs(){

@@ -262,7 +262,7 @@ approve_pending_install_plans(){
       echo "oc patch $IP --type merge --patch '{"spec":{"approved":true}}'"
       oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
     done < <(oc get sub -A -o json |
-      jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) and (.status.installPlanRef != null) )|.status.installPlanRef|"-n \(.namespace) ip \(.name)"')
+      jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) and (.status.installPlanRef != null) )|.status.installPlanRef|"-n \(.namespace) installplan \(.name)"')
 
     if [[ 0 ==  $(oc get sub -A -o json|jq '[.items[]|select(.status.installedCSV==null)]|length') ]]; then
       echo
