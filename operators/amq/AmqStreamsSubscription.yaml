@@ -1,0 +1,17 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: amq-streams
+  namespace: openshift-operators
+spec:
+  channel: {{ channel | default('amq-streams-2.9.x') }}
+  name: amq-streams
+  source: {{ source | default('redhat-operators') }}
+  sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
+  installPlanApproval: Automatic
+  {%- endif %}

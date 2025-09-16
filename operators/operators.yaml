@@ -71,3 +71,11 @@ operators:
     name: gpu
     desc: NVIDIA GPU Operator
     enabled: false
+  amq:
+    name: amq-streams
+    desc: AMQ Streams Operator
+    enabled: false
+  amq-console:
+    name: amq-streams-console
+    desc: AMQ Streams Console Operator
+    enabled: false

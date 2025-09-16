@@ -218,6 +218,18 @@ day1:
       #source: certified-operators
       #channel: v24.9
       #version: gpu-operator-certified.v24.9.2
+    amq:
+      #source: prega
+      enabled: false
+      #channel: amq-streams-2.9.x
+      #set the version
+      #version:
+    amq-console:
+      #source: prega
+      enabled: false
+      #channel: amq-streams-2.9.x
+      #set the version
+      #version:
   extra_manifests:
     - ${HOME}/1
     - ${HOME}/2
