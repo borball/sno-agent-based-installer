@@ -448,7 +448,7 @@ config_operators(){
                   info "    └─ rendering $filename"
                   data_file=$(yq ".operators.$key.provision.data" $config_file)
                   if [[ "$data_file" != "null" ]]; then
-                    jinja2 "$manifest_path" $(yq ".operators.$key.provision.data" $config_file) > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
+                    yq ".operators.$key.provision.data" $config_file |jinja2 "$manifest_path"  > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
                   else
                     jinja2 "$manifest_path" "$config_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
                   fi
