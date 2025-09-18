@@ -17,34 +17,34 @@ node_tunings:
     enabled: true
     
 operators:
-  example:
-    enabled: true
-    version: example.v4.18.0-202507211933
-    provision:
-      # env variables used by the manifests(j2 templates) can be set in the pre-setup.sh
-      before:
-        - pre-setup.sh
-      # if not specified, all the files under templates/day1/example will be used
-      manifests:
-        - example1.yaml
-        - example2.yaml.j2
-      data: 
-        key1: value1
-        key2: value2
-        key3: value3
-    config:
-      # env variables used by the manifests(j2 templates) can be set in the pre-setup.sh
-      before:
-        - pre-setup.sh
-      # if manifests not specified, all the files under templates/day2/example will be applied with order of filename
-      manifests:
-        - example1.yaml
-        - example2.yaml.j2
-      # data will be passed to the manifests(j2 templates) as env variables
-      data: 
-        key1: value1
-        key2: value2
-        key3: value3
+  # example:
+  #   enabled: true
+  #   version: example.v4.18.0-202507211933
+  #   provision:
+  #     # env variables used by the manifests(j2 templates) can be set in the pre-setup.sh
+  #     before:
+  #       - pre-setup.sh
+  #     # if not specified, all the files under templates/day1/example will be used
+  #     manifests:
+  #       - example1.yaml
+  #       - example2.yaml.j2
+  #     data: 
+  #       key1: value1
+  #       key2: value2
+  #       key3: value3
+  #   config:
+  #     # env variables used by the manifests(j2 templates) can be set in the pre-setup.sh
+  #     before:
+  #       - pre-setup.sh
+  #     # if manifests not specified, all the files under templates/day2/example will be applied with order of filename
+  #     manifests:
+  #       - example1.yaml
+  #       - example2.yaml.j2
+  #     # data will be passed to the manifests(j2 templates) as env variables
+  #     data: 
+  #       key1: value1
+  #       key2: value2
+  #       key3: value3
 
   local-storage:
     enabled: true
