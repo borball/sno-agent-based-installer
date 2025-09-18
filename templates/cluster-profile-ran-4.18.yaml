@@ -147,6 +147,22 @@ operators:
     enabled: true
     version: redhat-oadp-operator.v1.4.5
 
+  lvm:
+    enabled: false
+    version: lvm-operator.v4.18.3
+    provision:
+      data:
+        disks:
+          - disk_by_path: pci-0000:c3:00.0-nvme-1
+            wipe_table: true
+    config:
+      data:
+        device_classes:
+          - name: vg1
+            thin_pool_name: thin-pool-1
+            selector:
+              paths:
+                - /dev/nvme1n1
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
