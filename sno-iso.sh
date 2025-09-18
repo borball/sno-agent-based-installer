@@ -390,42 +390,79 @@ config_operators(){
     key="${keys[$k]}"
     if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
       if [[ $(yq ".operators.$key.provision" $config_file) == "null" ]]; then
-        sleep 1
+        # No provision configuration
+        continue
       else
-        info "$key operator: enabling provision:"
-        if [[ $(yq ".operators.$key.provision.before" $config_file) == "null" ]]; then
+        info "$key operator: enabling provision"
+        
+        # Handle before scripts
+        before_scripts=$(yq ".operators.$key.provision.before[]?" $config_file 2>/dev/null)
+        if [[ -z "$before_scripts" ]]; then
           info "  └─ no before scripts"
         else
-          info "  └─ before scripts"
-          for b in $(yq ".operators.$key.provision.before" $config_file); do
-            $templates/day1/$key/$b $config_file
-          done
-        fi
-
-        if [[ $(yq ".operators.$key.provision.manifests" $config_file) == "null" ]]; then
-          info "  └─ all files under templates/day1/$key"
-          for f in $(ls $templates/day1/$key/*.yaml 2>/dev/null); do
-            info "  └─ $f"
-            cp $f $cluster_workspace/openshift/
-          done
-          for f in $(ls $templates/day1/$key/*.yaml.j2 2>/dev/null); do
-            info "  └─ $f"
-            jinja2 $f $(yq ".operators.$key.provision.data" $(yq ".operators.$key.provision.data" $config_file)) > $cluster_workspace/openshift/$(basename $f .j2).yaml
-          done
-        else
-          info "  └─ specified files"
-          for f in $(yq ".operators.$key.provision.manifests" $config_file); do
-            info "  └─ $f"
-            #if it is yaml.j2, render it
-            if [[ $(echo $f |grep -E '\.j2$') ]]; then
-              jinja2 $templates/day1/$key/$f $(yq ".operators.$key.provision.data" $config_file) > $cluster_workspace/openshift/$(basename $f .j2).yaml
-            else
-              cp $templates/day1/$key/$f $cluster_workspace/openshift/
+          info "  └─ executing before scripts"
+          while IFS= read -r script; do
+            if [[ -n "$script" && "$script" != "null" ]]; then
+              script_path="$templates/day1/$key/$script"
+              if [[ -f "$script_path" ]]; then
+                info "    └─ running $script"
+                chmod +x "$script_path"
+                "$script_path" "$config_file"
+              else
+                warn "    └─ script not found: $script"
+              fi
             fi
-          done
+          done <<< "$before_scripts"
         fi
 
-
+        # Handle manifest files
+        manifest_files=$(yq ".operators.$key.provision.manifests[]?" $config_file 2>/dev/null)
+        if [[ -z "$manifest_files" ]]; then
+          info "  └─ using all files from templates/day1/$key/"
+          if [[ -d "$templates/day1/$key" ]]; then
+            for f in "$templates/day1/$key"/*.yaml "$templates/day1/$key"/*.yaml.j2; do
+              if [[ -f "$f" ]]; then
+                filename=$(basename "$f")
+                if [[ "$f" == *.j2 ]]; then
+                  info "    └─ rendering $filename"
+                  data_file=$(yq ".operators.$key.provision.data" $config_file)
+                  if [[ "$data_file" != "null" ]]; then
+                    jinja2 "$f" "$data_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                  else
+                    jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                  fi
+                else
+                  info "    └─ copying $filename"
+                  cp "$f" "$cluster_workspace/openshift/"
+                fi
+              fi
+            done
+          fi
+        else
+          info "  └─ using specified manifest files"
+          while IFS= read -r manifest; do
+            if [[ -n "$manifest" && "$manifest" != "null" ]]; then
+              manifest_path="$templates/day1/$key/$manifest"
+              if [[ -f "$manifest_path" ]]; then
+                filename=$(basename "$manifest")
+                if [[ "$manifest" == *.j2 ]]; then
+                  info "    └─ rendering $filename"
+                  data_file=$(yq ".operators.$key.provision.data" $config_file)
+                  if [[ "$data_file" != "null" ]]; then
+                    jinja2 "$manifest_path" "$data_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
+                  else
+                    jinja2 "$manifest_path" "$config_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
+                  fi
+                else
+                  info "    └─ copying $filename"
+                  cp "$manifest_path" "$cluster_workspace/openshift/"
+                fi
+              else
+                warn "    └─ manifest not found: $manifest"
+              fi
+            fi
+          done <<< "$manifest_files"
+        fi
       fi
     fi
   done
