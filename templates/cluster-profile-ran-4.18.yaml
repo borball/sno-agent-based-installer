@@ -56,7 +56,7 @@ operators:
         - pre-setup.sh
       # if not specified, the files under templates/day1/local-storage will be used
       manifests:
-        - file: 60-prepare-lso-partition-mc.yaml.j2
+        - 60-prepare-lso-partition-mc.yaml.j2
       data: 
         fs_type: ext4
         #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
