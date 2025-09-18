@@ -383,48 +383,52 @@ install_operators(){
 
 config_operators(){
   step "Configuring operator-specific settings"
-  #local storage operator
-  if [[ "false" == $(yq ".operators.local-storage.enabled" $config_file) ]]; then
-    sleep 1
-  else
-    # enabled
-    if [[ $(yq ".operators.local-storage.provision" $config_file) == "null" ]]; then
-      sleep 1
-    else
-      # maintain backward compatibility by checking for "provision.lvs"
-      if [[ $(yq '.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
-         # using new configuration
-         prov_type=$(yq '.operators.local-storage.provision.type // "partition"' $config_file)
-         partitions_key="partitions"
+
+  readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
+  
+  for ((k=0; k<${#keys[@]}; k++)); do
+    key="${keys[$k]}"
+    if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
+      if [[ $(yq ".operators.$key.provision" $config_file) == "null" ]]; then
+        sleep 1
       else
-         # maintain backward compatibility with old format
-	 warn "local-storage operator" "using deprecated provision.lvs property"
-         prov_type="lvs"
-         partitions_key="lvs"
-      fi
-      info "local-storage operator: provision ${prov_type}"
-      if [[ "${prov_type}" == "partition" ]]; then
-        jinja2 $templates/day1/local-storage/60-prepare-lso-partition-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-prepare-lso-partition-mc.yaml
-      else
-        export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
-        export DISK=$(yq '.operators.local-storage.provision.disk_by_path' $config_file)
-        export LVS=$(yq ".operators.local-storage.provision.${partitions_key}|to_entries|map(.value + \"x\" + .key)|join(\" \")" $config_file)
-        jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
+        info "$key operator: enabling provision:"
+        if [[ $(yq ".operators.$key.provision.before" $config_file) == "null" ]]; then
+          info "  └─ no before scripts"
+        else
+          info "  └─ before scripts"
+          for b in $(yq ".operators.$key.provision.before" $config_file); do
+            $templates/day1/$key/$b $config_file
+          done
+        fi
+
+        if [[ $(yq ".operators.$key.provision.manifests" $config_file) == "null" ]]; then
+          info "  └─ all files under templates/day1/$key"
+          for f in $(ls $templates/day1/$key/*.yaml 2>/dev/null); do
+            info "  └─ $f"
+            cp $f $cluster_workspace/openshift/
+          done
+          for f in $(ls $templates/day1/$key/*.yaml.j2 2>/dev/null); do
+            info "  └─ $f"
+            jinja2 $f $(yq ".operators.$key.provision.data" $(yq ".operators.$key.provision.data" $config_file)) > $cluster_workspace/openshift/$(basename $f .j2).yaml
+          done
+        else
+          info "  └─ specified files"
+          for f in $(yq ".operators.$key.provision.manifests" $config_file); do
+            info "  └─ $f"
+            #if it is yaml.j2, render it
+            if [[ $(echo $f |grep -E '\.j2$') ]]; then
+              jinja2 $templates/day1/$key/$f $(yq ".operators.$key.provision.data" $config_file) > $cluster_workspace/openshift/$(basename $f .j2).yaml
+            else
+              cp $templates/day1/$key/$f $cluster_workspace/openshift/
+            fi
+          done
+        fi
+
+
       fi
     fi
-  fi
-  #lvms
-  if [[ "false" == $(yq ".operators.lvm.enabled" $config_file) ]]; then
-    sleep 1
-  else
-    # enabled
-    if [[ $(yq ".operators.lvm.provision" $config_file) == "null" ]]; then
-      sleep 1
-    else
-      info "lvm operator: provision storage"
-      jinja2 $templates/day1/lvm/98-prepare-lvm-disk-mc.yaml.j2 $config_file > $cluster_workspace/openshift/98-prepare-lvm-disk-mc.yaml
-    fi
-  fi
+  done
 }
 
 # copy platform related configuration from source destination
