@@ -317,17 +317,18 @@ download_openshift_installer
 platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
 
 cluster_tunings(){
-  if [ -z "$(yq '.cluster_tunings' $config_file)" ]; then
+  cluster_tunings=$(yq '.cluster_tunings' $config_file)
+  if [ -z "$cluster_tunings" ]; then
     warn "Cluster tunings" "disabled"
   else
     step "Enabling cluster tunings for OpenShift $ocp_y_release"
-    tuning_files=$(ls $templates/day1/cluster-tunings/$ocp_y_release/*.yaml 2>/dev/null | wc -l)
+    tuning_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings/*.yaml 2>/dev/null | wc -l)
     info "Cluster tuning files found" "$tuning_files files"
-    for file in $templates/day1/cluster-tunings/$ocp_y_release/*.yaml; do
+    for file in $templates/day1/cluster-tunings/$cluster_tunings/*.yaml; do
       filename=$(basename "$file")
       info "  └─ $filename" "enabled"
     done
-    cp $templates/day1/cluster-tunings/$ocp_y_release/*.yaml $cluster_workspace/openshift/
+    cp $templates/day1/cluster-tunings/$cluster_tunings/*.yaml $cluster_workspace/openshift/
   fi
 }
 
