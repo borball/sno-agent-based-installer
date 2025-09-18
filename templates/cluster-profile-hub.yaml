@@ -1,0 +1,34 @@
+cluster:
+  capabilities:
+    baselineCapabilitySet: vCurrent
+      
+cluster_tunings: none
+node_tunings:
+  workload_partitioning:
+    enabled: true
+  performance_profile:
+    enabled: true
+
+operators:
+  lvm:
+    enabled: true
+  rhacm:
+    enabled: true
+  gitops:
+    enabled: true
+  talm:
+    enabled: true
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+
+readiness:
+  default: false
+
+pull_secret: ${HOME}/pull-secret.json
+ssh_key: ${HOME}/.ssh/id_rsa.pub
+ssh_priv_key: ${HOME}/.ssh/id_ed25519

@@ -1,0 +1,57 @@
+cluster:
+  capabilities:
+    baselineCapabilitySet: None
+    additionalEnabledCapabilities:
+      - NodeTuning
+      - OperatorLifecycleManager
+      - Ingress
+      
+cluster_tunings: 4.18
+
+node_tunings:
+  workload_partitioning:
+    enabled: true
+  performance_profile:
+    enabled: true
+  tuned_profile:
+    enabled: true
+    
+operators:
+  auto_upgrade: true
+
+  sriov:
+    enabled: true
+  local-storage:
+    enabled: true
+  ptp:
+    enabled: true
+  fec:
+    enabled: true
+  cluster-logging:
+    enabled: true
+  lca:
+    enabled: true
+  adp:
+    enabled: true
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+
+pull_secret: ${HOME}/pull-secret.json
+ssh_key: ${HOME}/.ssh/id_rsa.pub
+ssh_priv_key: ${HOME}/.ssh/id_ed25519
+
+catalog_sources:
+  create_marketplace_ns: true
+  update_operator_hub: false
+  create_default_catalog_sources: true
+  defaults:
+    - redhat-operators
+    - certified-operators
+
+readiness:
+  default: true

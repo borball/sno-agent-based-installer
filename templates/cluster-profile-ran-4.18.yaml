@@ -1,0 +1,66 @@
+cluster:
+  capabilities:
+    baselineCapabilitySet: None
+    additionalEnabledCapabilities:
+      - NodeTuning
+      - OperatorLifecycleManager
+      - Ingress
+      
+cluster_tunings: 4.18
+
+node_tunings:
+  workload_partitioning:
+    enabled: true
+  performance_profile:
+    enabled: true
+  tuned_profile:
+    enabled: true
+    
+operators:
+  sriov:
+    enabled: true
+    version: sriov-network-operator.v4.18.0-202507211933
+
+  local-storage:
+    enabled: true
+    version: local-storage-operator.v4.18.0-202507211933
+
+  ptp:
+    enabled: true
+    version: ptp-operator.v4.18.0-202507211933
+
+  fec:
+    enabled: true
+    version: sriov-fec.v2.11.1
+
+  cluster-logging:
+    enabled: true
+    version: cluster-logging.v6.2.4
+  lca:
+    enabled: true
+    version: lifecycle-agent.v4.18.0
+  adp:
+    enabled: true
+    version: redhat-oadp-operator.v1.4.5
+
+cpu:
+  isolated: 2-31,34-63
+  reserved: 0-1,32-33
+
+proxy:
+  enabled: false
+
+pull_secret: ${HOME}/pull-secret.json
+ssh_key: ${HOME}/.ssh/id_rsa.pub
+ssh_priv_key: ${HOME}/.ssh/id_ed25519
+
+catalog_sources:
+  create_marketplace_ns: true
+  update_operator_hub: false
+  create_default_catalog_sources: true
+  defaults:
+    - redhat-operators
+    - certified-operators
+
+readiness:
+  default: true

@@ -1,5 +1,8 @@
 apiVersion: v1
 baseDomain: {{ cluster.domain }}
+{%- if node_tunings.workload_partitioning is defined and node_tunings.workload_partitioning.enabled %}
+cpuPartitioningMode: AllNodes
+{%- endif %}
 {%- set platform_arch= cluster.platform | default('intel') %}
 {%- set cpu_arch={'intel': 'amd64', 'amd': 'amd64', 'arm': 'arm64'}.get( platform_arch ) %}
 compute:
@@ -19,28 +22,6 @@ capabilities:
     {% for c in cluster.capabilities.additionalEnabledCapabilities -%}
     - {{ c }}
     {% endfor %}
-{% else -%}
-capabilities:
-  baselineCapabilitySet: None
-  additionalEnabledCapabilities:
-  {% if environ('ocp_y_release') == '4.12' -%}
-  - marketplace
-  {%- elif environ('ocp_y_release') == '4.13' or environ('ocp_y_release') == '4.14' -%}
-  - marketplace
-  - NodeTuning
-  {%- elif environ('ocp_y_release') == '4.15'-%}
-  - OperatorLifecycleManager
-  - marketplace
-  - NodeTuning
-  {%- else -%}
-  #4.16+
-  - NodeTuning
-  - OperatorLifecycleManager
-  - Ingress
-  {% endif -%}
-{% endif %}
-{% if environ('ocp_y_release') != '4.12' and environ('ocp_y_release') != '4.13' -%}
-cpuPartitioningMode: AllNodes
 {% endif %}
 networking:
   networkType: OVNKubernetes
