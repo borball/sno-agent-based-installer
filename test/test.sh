@@ -52,8 +52,8 @@ install_ocp(){
   echo "Install OCP on node $node"
   rm -rf $sno_workspace
   $iso $config $version
-  cp $sno_workspace/agent.x86_64.iso /var/www/html/iso/$node.iso
-  cp $sno_workspace/auth/kubeconfig /root/workload-enablement/kubeconfigs/kubeconfig-$node.yaml
+  scp $sno_workspace/agent.x86_64.iso 192.168.58.15:/var/www/html/iso/$node.iso
+  cp $sno_workspace/auth/kubeconfig /etc/kubes/kubeconfig-$node.yaml
   $install
 }
 

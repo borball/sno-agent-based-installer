@@ -15,11 +15,11 @@ host:
     gateway: 192.168.14.1
     prefix: 27
     machine_network_cidr: 192.168.14.0/27
-  disk: /dev/nvme0n1
+  disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
 
 container_storage:
   enabled: true
-  device: /dev/nvme0n1
+  device: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
   startMiB: 500000
   sizeMiB: 0
 
@@ -34,18 +34,12 @@ iso:
 
 operators:
   local-storage:
-    enabled: true
-    provision:
-      data:
-        disks:
-          - disk_by_path: /dev/nvme1n1
-            wipe_table: true
-    config:
-      data:
-        device_classes:
-          - name: vg1
-            thin_pool_name: thin-pool-1
-            selector:
-              paths:
-                - /dev/nvme1n1
+    data:
+      disk_by_path: pci-0000:c3:00.0-nvme-1
+      device_classes:
+        - name: vg1
+          thin_pool_name: thin-pool-1
+          selector:
+            paths:
+              - /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
 

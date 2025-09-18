@@ -10,7 +10,7 @@ spec:
       version: 3.2.0
     storage:
       disks:
-        - device: /dev/disk/by-path/{{ isk_by_path }}
+        - device: /dev/disk/by-path/{{ disk_by_path }}
           wipeTable: true
           partitions:
             {% set ns = namespace(part_ind = 0) -%}

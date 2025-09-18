@@ -424,9 +424,9 @@ config_operators(){
                 filename=$(basename "$f")
                 if [[ "$f" == *.j2 ]]; then
                   info "    └─ rendering $filename"
-                  data_file=$(yq ".operators.$key.provision.data" $config_file)
+                  data_file=$(yq ".operators.$key.data" $config_file)
                   if [[ "$data_file" != "null" ]]; then
-                    jinja2 "$f" "$data_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                    yq ".operators.$key.data" $config_file |jinja2 "$f" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
                   else
                     jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
                   fi
@@ -446,9 +446,9 @@ config_operators(){
                 filename=$(basename "$manifest")
                 if [[ "$manifest" == *.j2 ]]; then
                   info "    └─ rendering $filename"
-                  data_file=$(yq ".operators.$key.provision.data" $config_file)
+                  data_file=$(yq ".operators.$key.data" $config_file)
                   if [[ "$data_file" != "null" ]]; then
-                    yq ".operators.$key.provision.data" $config_file |jinja2 "$manifest_path"  > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
+                    yq ".operators.$key.data" $config_file |jinja2 "$manifest_path"  > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
                   else
                     jinja2 "$manifest_path" "$config_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
                   fi

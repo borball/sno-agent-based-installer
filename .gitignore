@@ -3,6 +3,7 @@ pull-secret.json
 openshift-install
 openshift-install-linux.tar.gz
 openshift-install-linux.*.tar.gz
+*.tar.gz
 
 instances
 extra-manifests/*.yaml
