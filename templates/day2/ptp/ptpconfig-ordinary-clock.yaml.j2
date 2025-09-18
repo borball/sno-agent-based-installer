@@ -1,14 +1,14 @@
 apiVersion: ptp.openshift.io/v1
 kind: PtpConfig
 metadata:
- name: {{ day2.ptp.ordinary_clock.name |default('crdu-ptp-ordinary-clock') }}
+ name: {{ ordinary_clock.name |default('crdu-ptp-ordinary-clock') }}
  namespace: openshift-ptp
 spec:
  profile:
- - interface: {{ day2.ptp.ordinary_clock.interface }}
+ - interface: {{ ordinary_clock.interface }}
    name: ordinary-clock
    phc2sysOpts: "-a -r -m -n 24 -N 8 -R 16"
-   {% if day2.ptp.log_reduce -%}
+   {% if log_reduce -%}
    ptpSettings:
      logReduce: "true"
    {% endif -%}
@@ -63,7 +63,7 @@ spec:
      unicast_req_duration 3600
      use_syslog 1
      verbose 0
-     summary_interval {% if day2.ptp.enable_ptp_event %}-4{% else %}0{% endif %}
+     summary_interval {% if enable_ptp_event %}-4{% else %}0{% endif %}
      kernel_leap 1
      check_fup_sync 0
      clock_class_threshold 7
@@ -117,11 +117,11 @@ spec:
    ptp4lOpts: "-2 -s --summary_interval -4"
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
-   {% if day2.ptp.clock_threshold_tuning -%}
+   {% if clock_threshold_tuning -%}
    ptpClockThreshold:
-     holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
-     maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
-     minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
+     holdOverTimeout: {{ clock_threshold_tuning.hold_over_timeout | default(5) }}
+     maxOffsetThreshold: {{ clock_threshold_tuning.max_offset| default(500) }}
+     minOffsetThreshold: {{ clock_threshold_tuning.min_offset | default(-500) }}
    {% endif %}
 
  recommend:

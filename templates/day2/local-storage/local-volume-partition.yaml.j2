@@ -1,21 +1,20 @@
 apiVersion: local.storage.openshift.io/v1
 kind: LocalVolume
 metadata:
-  name: {{ day2 and day2.local_storage and day2.local_storage.local_volume and day2.local_storage.local_volume.name or 'local-disks' }}
+  name: {{ local_volume.name or 'local-disks' }}
   namespace: openshift-local-storage
 spec:
   logLevel: Normal
   managementState: Managed
-  {% set provision= day1.operators["local-storage"].provision -%}
   storageClassDevices:
     - devicePaths:
         {% set ns = namespace(part_ind = 0) -%}
-        {% for part_size,part_count in provision.partitions | dictsort -%}
+        {% for part_size,part_count in partitions | dictsort -%}
         {% for count in range(part_count) -%}
         {% set ns.part_ind = ns.part_ind + 1 -%}
-        - /dev/disk/by-path/{{ provision.disk_by_path }}-part{{ns.part_ind}}
+        - /dev/disk/by-path/{{ disk_by_path }}-part{{ns.part_ind}}
         {% endfor -%}
         {% endfor %}
       volumeMode: Filesystem
-      fsType: {{ provision.fs_type | default('xfs') }}
-      storageClassName: {{ day2 and day2.local_storage and day2.local_storage.local_volume and day2.local_storage.local_volume.storageClassName or 'general' }}
+      fsType: {{ fs_type | default('xfs') }}
+      storageClassName: {{ local_volume.storageClassName or 'general' }}

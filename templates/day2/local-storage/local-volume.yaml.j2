@@ -1,7 +1,7 @@
 apiVersion: local.storage.openshift.io/v1
 kind: LocalVolume
 metadata:
-  name: {{ day2 and day2.local_storage and day2.local_storage.local_volume and day2.local_storage.local_volume.name or 'local-disks' }}
+  name: {{ local_volume.name or 'local-disks' }}
   namespace: openshift-local-storage
 spec:
   logLevel: Normal

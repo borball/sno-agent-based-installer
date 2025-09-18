@@ -9,6 +9,6 @@ spec:
     node-role.kubernetes.io/master: ""
   ptpEventConfig:
     enableEventPublisher: true
-    {% if day2.ptp.event_api_version is defined -%}
-    apiVersion: "{{ day2.ptp.event_api_version }}"
+    {% if event_api_version is defined -%}
+    apiVersion: "{{ event_api_version }}"
     {%- endif %}

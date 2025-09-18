@@ -67,9 +67,9 @@ operators:
     config:
       # before:
       #   - pre-setup.sh
-      # manifests:
-      #   - local-volume-partition.yaml.j2
-    data: 
+      manifests:
+        - local-volume-partition.yaml.j2
+    data:
       local_volume:
         name: local-disks
         storageClassName: general

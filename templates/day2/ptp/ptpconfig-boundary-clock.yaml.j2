@@ -2,21 +2,21 @@
 apiVersion: ptp.openshift.io/v1
 kind: PtpConfig
 metadata:
- name: {{ day2.ptp.boundary_clock.name |default ('crdu-boundary-clock-ptp-config') }}
+ name: {{ boundary_clock.name |default ('crdu-boundary-clock-ptp-config') }}
  namespace: openshift-ptp
 spec:
  profile:
- {% for p in day2.ptp.boundary_clock.profiles -%}
+ {% for p in boundary_clock.profiles -%}
  - interface: ""
    name: {{ p.name }}
-   {% if day2.ptp.boundary_clock.ha_enabled -%}
+   {% if boundary_clock.ha_enabled -%}
    phc2sysOpts: ""
    {%else %}
    {% if loop.index == 1 -%}
-   phc2sysOpts: -a -r -m -n 24{% if day2.ptp.enable_ptp_event %} -N 8 -R 16{% endif %}
+   phc2sysOpts: -a -r -m -n 24{% if enable_ptp_event %} -N 8 -R 16{% endif %}
    {% endif -%}
    {% endif -%}
-   {% if day2.ptp.log_reduce -%}
+   {% if log_reduce -%}
    ptpSettings:
      logReduce: "true"
    {% endif -%}
@@ -80,7 +80,7 @@ spec:
      unicast_req_duration 3600
      use_syslog 1
      verbose 0
-     summary_interval {% if day2.ptp.enable_ptp_event %}-4{% else %}0{% endif %}
+     summary_interval {% if enable_ptp_event %}-4{% else %}0{% endif %}
      kernel_leap 1
      check_fup_sync 0
      clock_class_threshold 135
@@ -132,45 +132,43 @@ spec:
      userDescription ;
      timeSource 0xA0
    ptp4lOpts: "-2"
-   {% if day2.ptp.clock_threshold_tuning -%}
+   {% if clock_threshold_tuning -%}
    ptpClockThreshold:
-     holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
-     maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
-     minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
+     holdOverTimeout: {{ clock_threshold_tuning.hold_over_timeout | default(5) }}
+     maxOffsetThreshold: {{ clock_threshold_tuning.max_offset| default(500) }}
+     minOffsetThreshold: {{ clock_threshold_tuning.min_offset | default(-500) }}
    {% endif -%}
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
  {% endfor -%}
- {% if day2.ptp.boundary_clock.ha_enabled -%}
+ {% if boundary_clock.ha_enabled -%}
  - name: boundary-ha
-   phc2sysOpts: -a -r -m -n 24{% if day2.ptp.enable_ptp_event %} -N 8 -R 16{% endif %}
+   phc2sysOpts: -a -r -m -n 24{% if enable_ptp_event %} -N 8 -R 16{% endif %}
    ptp4lOpts: ""
    ptpSchedulingPolicy: SCHED_FIFO
    ptpSchedulingPriority: 10
-   {% if day2.ptp.clock_threshold_tuning -%}
+   {% if clock_threshold_tuning -%}
    ptpClockThreshold:
-     holdOverTimeout: {{ day2.ptp.clock_threshold_tuning.hold_over_timeout | default(5) }}
-     maxOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.max_offset| default(500) }}
-     minOffsetThreshold: {{ day2.ptp.clock_threshold_tuning.min_offset | default(-500) }}
+     holdOverTimeout: {{ clock_threshold_tuning.hold_over_timeout | default(5) }}
+     maxOffsetThreshold: {{ clock_threshold_tuning.max_offset| default(500) }}
+     minOffsetThreshold: {{ clock_threshold_tuning.min_offset | default(-500) }}
    {% endif -%}
    ptpSettings:
-     haProfiles: "{{ day2.ptp.boundary_clock.profiles[0].name }},{{ day2.ptp.boundary_clock.profiles[1].name }}"
-     {% if day2.ptp.log_reduce -%}
+     haProfiles: "{{ boundary_clock.profiles[0].name }},{{ boundary_clock.profiles[1].name }}"
+     {% if log_reduce -%}
      logReduce: "true"
      {%- endif %}
  {%- endif %}
  recommend:
- {% for p in day2.ptp.boundary_clock.profiles -%}
+ {% for p in boundary_clock.profiles -%}
  - match:
    - nodeLabel: node-role.kubernetes.io/master
-     nodeName: {{ host.hostname }}
    priority: 4
    profile: {{ p.name }}
  {% endfor -%}
- {% if day2.ptp.boundary_clock.ha_enabled -%}
+ {% if boundary_clock.ha_enabled -%}
  - match:
    - nodeLabel: node-role.kubernetes.io/master
-     nodeName: {{ host.hostname }}
    priority: 4
    profile: boundary-ha
  {%- endif %}

@@ -188,6 +188,73 @@ node_tuning(){
   fi
 }
 
+operator_day2_config(){
+  operator_name=$1
+  step "Configuring $1 operator"
+
+  # if before scripts exists, then execute them
+  before_scripts=$(yq ".operators.$operator_name.config.before[]?" $config_file 2>/dev/null)
+  if [[ -z "$before_scripts" ]]; then
+    sleep 1
+  else
+    info "  └─ executing before scripts"
+    while IFS= read -r script; do
+      if [[ -n "$script" && "$script" != "null" ]]; then
+        script_path="$templates/day2/$operator_name/$script"
+        if [[ -f "$script_path" ]]; then
+          info "    └─ running $script"
+          "$script_path" "$config_file"
+        fi
+      fi
+    done <<< "$before_scripts"
+  fi
+
+  # if manifest files exists, then apply them one by one
+  manifest_files=$(yq ".operators.$operator_name.config.manifests[]?" $config_file 2>/dev/null)
+  if [[ -z "$manifest_files" ]]; then
+    # apply all files from templates/day2/$operator_name
+    for f in "$templates/day2/$operator_name"/*.yaml "$templates/day2/$operator_name"/*.yaml.j2; do
+      if [[ -f "$f" ]]; then
+        info "    └─ applying $f"
+        if [[ "$f" == *.j2 ]]; then
+          # if data file exists, then render it
+          data_file=$(yq ".operators.$operator_name.data" $config_file)
+          if [[ "$data_file" != "null" ]]; then
+            yq ".operators.$operator_name.data" $config_file |jinja2 "$f" |oc apply -f -
+          else
+            jinja2 "$f" "$config_file" |oc apply -f -
+          fi
+        else
+          oc apply -f "$f"
+        fi
+      fi
+    done
+  else
+    info "  └─ applying manifest files"
+    while IFS= read -r manifest; do
+      if [[ -n "$manifest" && "$manifest" != "null" ]]; then
+        manifest_path="$templates/day2/$operator_name/$manifest"
+        if [[ -f "$manifest_path" ]]; then
+          info "    └─ applying $manifest"
+          if [[ "$manifest" == *.j2 ]]; then
+            # if data file exists, then render it
+            data_file=$(yq ".operators.$operator_name.data" $config_file)
+            if [[ "$data_file" != "null" ]]; then
+              yq ".operators.$operator_name.data" $config_file |jinja2 "$manifest_path" |oc apply -f -
+            else
+              jinja2 "$manifest_path" "$config_file" |oc apply -f -
+            fi
+          else
+            oc apply -f "$manifest_path"
+          fi
+        fi
+      fi
+    done <<< "$manifest_files"
+  fi
+
+
+}
+
 operator_configs(){
   step "Configuring OpenShift Operators"
   if [ "$(yq '.operators' $config_file)" = "null" ]; then
@@ -195,91 +262,22 @@ operator_configs(){
   else
     readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
     
-    enabled_count=0
-    disabled_count=0
-    
     for key in ${keys[@]}; do
       if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
-        info "$key operator" "enabled"
-        ((enabled_count++))
-        
-        before_scripts=$(yq ".operators.$key.config.before[]?" $config_file 2>/dev/null)
-        if [[ -z "$before_scripts" ]]; then
-          info "  ├─ no before scripts"
+        # if templates/day2/$key exists and not empty, then do day2 config
+        if [[ -d "$templates/day2/$key" && -n "$(ls -A $templates/day2/$key)" ]]; then
+          #call day2 config function
+          operator_day2_config $key
         else
-          info "  ├─ executing before scripts"
-          while IFS= read -r script; do
-            if [[ -n "$script" && "$script" != "null" ]]; then
-              script_path="$templates/day2/$key/$script"
-              if [[ -f "$script_path" ]]; then
-                info "  │  └─ running $script"
-                "$script_path" "$config_file"
-              else
-                warn "  │  └─ script not found: $script"
-              fi
-            fi
-          done <<< "$before_scripts"
-        fi
-
-        manifest_files=$(yq ".operators.$key.config.manifests[]?" $config_file 2>/dev/null)
-        if [[ -z "$manifest_files" ]]; then
-          info "  └─ using all files from templates/day2/$key/"
-          if [[ -d "$templates/day2/$key" ]]; then
-            for f in "$templates/day2/$key"/*.yaml "$templates/day2/$key"/*.yaml.j2; do
-              if [[ -f "$f" ]]; then
-                filename=$(basename "$f")
-                if [[ "$f" == *.j2 ]]; then
-                  info "     ├─ rendering $filename"
-                  data_file=$(yq ".operators.$key.config.data" $config_file)
-                  if [[ "$data_file" != "null" ]]; then
-                    yq ".operators.$key.config.data" $config_file |jinja2 "$f"  > "$cluster_workspace/openshift/$(basename "$f" .j2)"
-                  else
-                    jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
-                  fi
-                else
-                  info "     ├─ copying $filename"
-                  cp "$f" "$cluster_workspace/openshift/"
-                fi
-              fi
-            done
-          fi
-        else
-          info "  └─ using specified manifest files"
-          while IFS= read -r manifest; do
-            if [[ -n "$manifest" && "$manifest" != "null" ]]; then
-              manifest_path="$templates/day2/$key/$manifest"
-              if [[ -f "$manifest_path" ]]; then
-                filename=$(basename "$manifest")
-                if [[ "$manifest" == *.j2 ]]; then
-                  info "     ├─ rendering $filename"
-                  data_file=$(yq ".operators.$key.config.data" $config_file)
-                  if [[ "$data_file" != "null" ]]; then
-                    yq ".operators.$key.config.data" $config_file |jinja2 "$manifest_path"  > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
-                  else
-                    jinja2 "$manifest_path" "$config_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
-                  fi
-                else
-                  info "     ├─ copying $filename"
-                  cp "$manifest_path" "$cluster_workspace/openshift/"
-                fi
-              else
-                warn "     ├─ manifest not found: $manifest"
-              fi
-            fi
-          done <<< "$manifest_files"
-        fi
-      else
-        warn "$key operator" "disabled"
-        ((disabled_count++))
+          sleep 1
+        fi 
       fi
     done
     
     separator
-    info "Operators enabled" "$enabled_count"
-    info "Operators disabled" "$disabled_count"
-    echo
   fi
 }
+
 install_plan_approval(){
   subs=$(oc get subs -A -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}')
   subs=($subs)
