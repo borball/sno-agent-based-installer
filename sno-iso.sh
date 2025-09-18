@@ -27,15 +27,30 @@ RESET=$(tput sgr0)
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-64s ${GREEN}%10s${RESET}\n" "$@"
+  local desc="$1"
+  local value="$2"
+  local terminal_width=$(tput cols 2>/dev/null || echo 100)
+  local value_width=$((terminal_width - 68))  # Leave space for icon, desc, and padding
+  if [ $value_width -lt 20 ]; then value_width=20; fi
+  printf "${GREEN}✓${RESET} %-64s ${GREEN}%${value_width}s${RESET}\n" "$desc" "$value"
 }
   
 warn(){
-  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%10s${RESET}\n" "$@"
+  local desc="$1"
+  local value="$2"
+  local terminal_width=$(tput cols 2>/dev/null || echo 100)
+  local value_width=$((terminal_width - 68))  # Leave space for icon, desc, and padding
+  if [ $value_width -lt 20 ]; then value_width=20; fi
+  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%${value_width}s${RESET}\n" "$desc" "$value"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-64s ${RED}%10s${RESET}\n" "$@"
+  local desc="$1"
+  local value="$2"
+  local terminal_width=$(tput cols 2>/dev/null || echo 100)
+  local value_width=$((terminal_width - 68))  # Leave space for icon, desc, and padding
+  if [ $value_width -lt 20 ]; then value_width=20; fi
+  printf "${RED}✗${RESET} %-64s ${RED}%${value_width}s${RESET}\n" "$desc" "$value"
 }
 
 step(){
