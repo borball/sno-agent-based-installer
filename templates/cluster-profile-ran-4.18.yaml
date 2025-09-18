@@ -53,15 +53,19 @@ operators:
     provision:
       before:
         # env variables used by the manifests(j2 templates) will be set in the pre-setup.sh
-        - pre-setup.sh
+        # option 1: partition, no need pre-setup.sh
+        # option 2: lvs, need pre-setup.sh
+        #- pre-setup.sh
       # if not specified, the files under templates/day1/local-storage will be used
       manifests:
+        # option 1: partition
         - 60-prepare-lso-partition-mc.yaml.j2
-      data: 
+        # option 2: lvs
+        #- 60-create-lvs-mc.yaml.j2
+      data:
         fs_type: ext4
         #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
         disk_by_path: pci-0000:c3:00.0-nvme-1
-        # the previous lvs key is deprecated
         partitions:
           1g: 10
           2g: 10
@@ -70,6 +74,7 @@ operators:
           10g: 2
           15g: 1
           30g: 1
+
     #day2
     config:
       # before:
