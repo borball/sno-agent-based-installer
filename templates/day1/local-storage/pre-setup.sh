@@ -2,6 +2,9 @@
 
 config_file=$1
 
+basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+templates=$basedir/templates
+
 if [[ -z $config_file ]]; then
   echo "Usage: $0 <config_file>"
   exit 1
