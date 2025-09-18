@@ -406,7 +406,6 @@ config_operators(){
               script_path="$templates/day1/$key/$script"
               if [[ -f "$script_path" ]]; then
                 info "    └─ running $script"
-                chmod +x "$script_path"
                 "$script_path" "$config_file"
               else
                 warn "    └─ script not found: $script"
