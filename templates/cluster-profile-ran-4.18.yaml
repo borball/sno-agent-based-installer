@@ -17,10 +17,6 @@ node_tunings:
     enabled: true
     
 operators:
-  sriov:
-    enabled: true
-    version: sriov-network-operator.v4.18.0-202507211933
-
   local-storage:
     enabled: true
     version: local-storage-operator.v4.18.0-202507211933
@@ -29,6 +25,10 @@ operators:
     enabled: true
     version: ptp-operator.v4.18.0-202507211933
 
+  sriov:
+    enabled: true
+    version: sriov-network-operator.v4.18.0-202507211933
+
   fec:
     enabled: true
     version: sriov-fec.v2.11.1
@@ -36,6 +36,7 @@ operators:
   cluster-logging:
     enabled: true
     version: cluster-logging.v6.2.4
+    
   lca:
     enabled: true
     version: lifecycle-agent.v4.18.0

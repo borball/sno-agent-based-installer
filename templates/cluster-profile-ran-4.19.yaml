@@ -17,8 +17,6 @@ node_tunings:
     enabled: true
     
 operators:
-  auto_upgrade: true
-
   sriov:
     enabled: true
   local-storage:

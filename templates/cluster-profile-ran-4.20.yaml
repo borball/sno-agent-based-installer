@@ -25,17 +25,14 @@ node_tunings:
     enabled: true
 
 operators:
-  auto_upgrade: true
-
-  sriov:
+  ptp:
     enabled: true
   local-storage:
     enabled: true
-  ptp:
+  sriov:
     enabled: true
   fec:
     enabled: true
-    version: sriov-fec.v2.9.0
   cluster-logging:
     enabled: true
   lca:

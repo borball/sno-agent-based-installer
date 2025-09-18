@@ -79,8 +79,6 @@ readiness:
     - ${HOME}/r1
     - ${HOME}/21
 
-
-
 bmc:
   address: 192.168.13.148
   username: Administrator
