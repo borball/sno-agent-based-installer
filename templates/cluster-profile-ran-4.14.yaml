@@ -74,7 +74,7 @@ proxy:
 
 pull_secret: ${HOME}/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
-ssh_priv_key: ${HOME}/.ssh/id_ed25519
+ssh_priv_key: ${HOME}/.ssh/id_rda
 
 catalog_sources:
   create_marketplace_ns: false

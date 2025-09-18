@@ -18,6 +18,17 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
+# Color codes for better output
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
+
 usage(){
 	echo "Usage: $0 <cluster-name>"
 	echo "If <cluster-name> is not present, it will run day2 ops towards the newest cluster installed by sno-install"
@@ -31,12 +42,31 @@ then
   exit
 fi
 
+# Enhanced output functions
 info(){
-  printf  $(tput setaf 2)"%-60s %-10s"$(tput sgr0)"\n" "$@"
+  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+}
+  
+warn(){
+  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
 }
 
-warn(){
-  printf  $(tput setaf 3)"%-60s %-10s"$(tput sgr0)"\n" "$@"
+error(){
+  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+}
+
+step(){
+  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+}
+
+header(){
+  echo
+  printf "${BOLD}${CYAN}%s${RESET}\n" "$1"
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s=' {1..60})"
+}
+
+separator(){
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
 }
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -52,9 +82,10 @@ cluster_workspace=$basedir/instances/$cluster_name
 
 config_file=$cluster_workspace/config-resolved.yaml
 if [ -f "$config_file" ]; then
-  echo "Will run day2 config towards the cluster $cluster_name with config: $config_file"
+  info "Configuration file" "$config_file"
+  info "Target cluster" "$cluster_name"
 else
-  "Config file $config_file not exist, please check."
+  error "Config file not found" "$config_file"
   exit -1
 fi
 
@@ -76,21 +107,21 @@ cluster_info(){
   missing_csv=$(oc get sub -A -o json | jq -cMr '.items[]|select(.status.installedCSV == null) |.metadata|{namespace: .namespace, name: .name}')
   if [[ -n "${missing_csv}" ]]; then
     echo ""
-    echo "The following Subscription(s) are not installed properly, please address it before proceed"
+    error "Uninstalled subscriptions found" "Manual intervention required"
     echo "${missing_csv}"
-    exit
+    exit 1
   fi
 
   i=1
   while [[ ! -z "$(oc get csv --no-headers -A |grep -v 'Succeeded')" ]]; do
-    echo "The following csv are not installed yet:"
+    warn "CSV installation in progress" "waiting..."
     oc get csv -A |grep -v "Succeeded"
     if [[ $i -le 5 ]]; then
-      echo "Waiting [$i/5] for another 30 seconds"
+      info "Waiting [$i/5] for another 30 seconds" "..."
       sleep 30
     else
-      echo "Please address the issue before proceed."
-      exit
+      error "CSV installation timeout" "Manual intervention required"
+      exit 1
     fi
     ((i=i+1))
   done
@@ -104,7 +135,7 @@ export OCP_Z_VERSION=$ocp_release
 delay_mcp_update=$(yq '.day2.delay_mcp_update // 0' $config_file)
 
 pause_mcp_update(){
-  echo "Pause update for master machine config pool"
+  step "Pausing master machine config pool update"
   trap resume_mcp_update SIGINT SIGABRT SIGKILL
   oc patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
 }
@@ -112,206 +143,143 @@ pause_mcp_update(){
 resume_mcp_update(){
   local delay=${1:-0}
   if [[ ${delay} -gt 0 ]]; then
-    echo "Delay ${delay} second(s) before resume master machine config pool update"
+    step "Resuming master machine config pool update (delayed ${delay}s)"
     sleep ${delay}
   else
-    echo "Resume master machine config pool update"
+    step "Resuming master machine config pool update"
   fi
   for i in {1..20}; do
     oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
     if [[ $? -eq 0 ]]; then
       return
     fi
-    echo "Failed, retry ($i/20) in 15 seconds..."
+    warn "Retry ($i/20) in 15 seconds..." "Failed"
     sleep 15
   done
-  cat <<EOF
-Failed to resume master machine config pool, please manually resume using following command:
-oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
-EOF
+  error "Failed to resume master MCP" "Manual intervention required"
+  printf "${RED}Please manually resume using:${RESET}\n"
+  printf "${YELLOW}oc patch --type=merge --patch='{\"spec\":{\"paused\":false}}' mcp/master${RESET}\n"
 }
 
-performance_profile(){
-  if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
-    warn "performance profile:" "disabled"
+node_tuning(){
+  step "Configuring node tunings"
+  if [ "$(yq '.node_tunings' $config_file)" = "null" ]; then
+    warn "Node tuning" "disabled"
   else
-    info "performance profile:" "enabled"
-    if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
-      jinja2 $templates/day2/performance-profile/performance-profile-$ocp_y_version.yaml.j2 $config_file | oc apply -f -
+    if [ "$(yq '.node_tunings.workload_partitioning.enabled' $config_file)" = "true" ]; then
+      info "Workload partitioning" "enabled (configured in day1)"
     else
-      #4.14+
-      jinja2 $templates/day2/performance-profile/performance-profile.yaml.j2 $config_file | oc apply -f -
+      warn "Workload partitioning" "disabled"
     fi
-  fi
-}
 
-tuned_profile(){
-  if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
-    warn "tuned performance patch:" "disabled"
-  else
-    info "tuned performance patch:" "enabled"
-    if [ "4.12" = $ocp_y_version ] || [ "4.13" = $ocp_y_version ] || [ "4.14" = $ocp_y_version ] || [ "4.15" = $ocp_y_version ] ; then
+    if [ "$(yq '.node_tunings.performance_profile.enabled' $config_file)" = "true" ]; then
+      info "Performance profile" "enabled"
+      jinja2 $templates/day2/performance-profile/performance-profile.yaml.j2 $config_file | oc apply -f -
+    else
+      warn "Performance profile" "disabled"
+    fi
+
+    if [ "$(yq '.node_tunings.tuned_profile.enabled' $config_file)" = "true" ]; then
+      info "Tuned profile" "enabled"
       jinja2 $templates/day2/tuned/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
     else
-      #4.16+
-      jinja2 $templates/day2/tuned/performance-patch-tuned-4.16.yaml.j2 $config_file | oc apply -f -
+      warn "Tuned profile" "disabled"
     fi
   fi
 }
 
-kdump_for_lab_only(){
-  if [ "true" = "$(yq '.day2.tuned_profile.kdump' $config_file)" ]; then
-    info "tuned kdump settings:" "enabled"
-    oc apply -f $templates/day2/tuned/performance-patch-kdump-setting.yaml
+operator_configs(){
+  step "Configuring OpenShift Operators"
+  if [ "$(yq '.operators' $config_file)" = "null" ]; then
+    warn "Operators" "not configured"
   else
-    warn "tuned kdump settings:" "disabled"
-  fi
-}
+    readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
+    
+    enabled_count=0
+    disabled_count=0
+    
+    for key in ${keys[@]}; do
+      if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
+        info "$key operator" "enabled"
+        ((enabled_count++))
+        
+        before_scripts=$(yq ".operators.$key.config.before[]?" $config_file 2>/dev/null)
+        if [[ -z "$before_scripts" ]]; then
+          info "  ├─ no before scripts"
+        else
+          info "  ├─ executing before scripts"
+          while IFS= read -r script; do
+            if [[ -n "$script" && "$script" != "null" ]]; then
+              script_path="$templates/day2/$key/$script"
+              if [[ -f "$script_path" ]]; then
+                info "  │  └─ running $script"
+                "$script_path" "$config_file"
+              else
+                warn "  │  └─ script not found: $script"
+              fi
+            fi
+          done <<< "$before_scripts"
+        fi
 
-cluster_monitoring(){
-  if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
-    warn "cluster monitor tuning:" "disabled"
-  else
-    info "cluster monitor tuning:" "enabled"
-    if [ "4.12" = "$ocp_y_version" ]; then
-      oc apply -f $templates/day2/cluster-tunings/cluster-monitoring-cm-4.12.yaml
-    elif [ "4.13" = "$ocp_y_version" ]; then
-      oc apply -f $templates/day2/cluster-tunings/cluster-monitoring-cm-4.13.yaml
-    else
-      oc apply -f $templates/day2/cluster-tunings/cluster-monitoring-cm.yaml
-    fi
-  fi
-}
-
-network_diagnostics(){
-  if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
-    warn "network diagnostics:" "enabled"
-  else
-    info "network diagnostics:" "disabled"
-    oc patch network.operator.openshift.io cluster --type='json' -p=['{"op": "replace", "path": "/spec/disableNetworkDiagnostics", "value":true}']
-  fi
-}
-
-ptp_configs(){
-  if [ "false" = "$(yq '.day1.operators.ptp.enabled' $config_file)" ]; then
-    warn "ptp operator not enabled"
-  else
-    if [ "disabled" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-      warn "ptpconfig:" "disabled"
-    fi
-    if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-      info "ptpconfig ordinary clock:" "enabled"
-      jinja2 $templates/day2/ptp/ptpconfig-ordinary-clock.yaml.j2 $config_file | oc apply -f -
-    fi
-    if [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file)" ]; then
-      info "ptpconfig boundary clock:" "enabled"
-      jinja2 $templates/day2/ptp/ptpconfig-boundary-clock.yaml.j2 $config_file | oc apply -f -
-    fi
-
-    if [ "true" = "$(yq '.day2.ptp.enable_ptp_event' $config_file)" ]; then
-      info "ptp event notification:" "enabled"
-      jinja2 $templates/day2/ptp/ptp-operator-config-for-event.yaml.j2 $config_file | oc apply -f -
-    fi
-  fi
-
-}
-
-sriov_configs(){
-  if [ "false" = "$(yq '.day1.operators.sriov.enabled' $config_file)" ]; then
-    warn "sriov operator not enabled"
-  else
-    info "sriov operator configuration"
-    jinja2 $templates/day2/sriov/sriov-operator-config-default.yaml.j2 $config_file | oc apply -f -
-  fi
-}
-
-nmstate_config(){
-  if [ "true" = "$(yq '.day1.operators.nmstate.enabled' $config_file)" ]; then
-    info "nmstate operator configuration"
-    oc apply -f $templates/day2/nmstate/nmstate-nmstate.yaml
-  fi
-}
-
-metallb_config(){
-  if [ "true" = "$(yq '.day1.operators.metallb.enabled' $config_file)" ]; then
-    info "metallb-metallb operator configuration"
-    oc apply -f $templates/day2/metallb/metallb-metallb.yaml
-  fi
-}
-
-local_storage_config(){
-  if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
-    sleep 1
-  else
-    # enabled
-    if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
-      sleep 1
-    else
-      # maintain backward compatibility by checking for "provision.lvs"
-      if [[ $(yq '.day1.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
-         # using new configuration
-         prov_type=$(yq '.day1.operators.local-storage.provision.type // "partition"' $config_file)
-         partitions_key="partitions"
+        manifest_files=$(yq ".operators.$key.config.manifests[]?" $config_file 2>/dev/null)
+        if [[ -z "$manifest_files" ]]; then
+          info "  └─ using all files from templates/day2/$key/"
+          if [[ -d "$templates/day2/$key" ]]; then
+            for f in "$templates/day2/$key"/*.yaml "$templates/day2/$key"/*.yaml.j2; do
+              if [[ -f "$f" ]]; then
+                filename=$(basename "$f")
+                if [[ "$f" == *.j2 ]]; then
+                  info "     ├─ rendering $filename"
+                  data_file=$(yq ".operators.$key.config.data" $config_file)
+                  if [[ "$data_file" != "null" ]]; then
+                    yq ".operators.$key.config.data" $config_file |jinja2 "$f"  > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                  else
+                    jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                  fi
+                else
+                  info "     ├─ copying $filename"
+                  cp "$f" "$cluster_workspace/openshift/"
+                fi
+              fi
+            done
+          fi
+        else
+          info "  └─ using specified manifest files"
+          while IFS= read -r manifest; do
+            if [[ -n "$manifest" && "$manifest" != "null" ]]; then
+              manifest_path="$templates/day2/$key/$manifest"
+              if [[ -f "$manifest_path" ]]; then
+                filename=$(basename "$manifest")
+                if [[ "$manifest" == *.j2 ]]; then
+                  info "     ├─ rendering $filename"
+                  data_file=$(yq ".operators.$key.config.data" $config_file)
+                  if [[ "$data_file" != "null" ]]; then
+                    yq ".operators.$key.config.data" $config_file |jinja2 "$manifest_path"  > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
+                  else
+                    jinja2 "$manifest_path" "$config_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
+                  fi
+                else
+                  info "     ├─ copying $filename"
+                  cp "$manifest_path" "$cluster_workspace/openshift/"
+                fi
+              else
+                warn "     ├─ manifest not found: $manifest"
+              fi
+            fi
+          done <<< "$manifest_files"
+        fi
       else
-         # maintain backward compatibility with old format
-         warn "local-storage operator" "using deprecated provision.lvs property"
-         prov_type="lvs"
-         partitions_key="lvs"
+        warn "$key operator" "disabled"
+        ((disabled_count++))
       fi
-
-      info "local-storage operator" "create LocalVolume ($prov_type)"
-      if [[ "${prov_type}" == "partition" ]]; then
-        jinja2 $templates/day2/local-storage/local-volume-partition.yaml.j2 $config_file |oc apply -f -
-      else
-        export TOTAL_LVS=$(yq ".day1.operators.local-storage.provision.${partitions_key}|to_entries|map(.value)" $config_file |yq '.[] as $item ireduce (0; . + $item)')
-        export FS_TYPE=$(yq '.day1.operators.local-storage.provision.fs_type // "xfs"' $config_file)
-        jinja2 $templates/day2/local-storage/local-volume.yaml.j2 $config_file |oc apply -f -
-      fi
-      storage_class_name=$(yq ".day2.local_storage.local_volume.storageClassName" $config_file)
-      if [ "$storage_class_name" == "null" ]; then
-        storage_class_name="general"
-      fi
-      oc wait --for=jsonpath='{.volumeBindingMode}'=WaitForFirstConsumer storageclass $storage_class_name --timeout=30s
-      oc patch storageclass $storage_class_name -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-    fi
-  fi
-}
-
-lvm_config(){
-  if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
-    info "lvm operator configuration"
-    jinja2 $templates/day2/lvm/lvmcluster-singlenode.yaml.j2 $config_file | oc apply -f -
-  fi
-}
-
-hyperconverged_config(){
-  if [ "true" = "$(yq '.day1.operators.kubevirt-hyperconverged.enabled' $config_file)" ]; then
-    info "kubevirt-hyperconverged operator configuration"
-    oc apply -f $templates/day2/kubevirt-hyperconverged/hyperconverged.yaml
-  fi
-}
-
-nfd_config(){
-  if [ "true" = "$(yq '.day1.operators.nfd.enabled' $config_file)" ]; then
-    info "nfd operator configuration"
-    oc apply -f $templates/day2/nfd/NodeFeatureDiscovery.yaml
-  fi
-}
-
-olm_pprof(){
-  # 4.14+ specific
-  if [ "4.12" = $ocp_y_version ] ||  [ "4.13" = $ocp_y_version ]; then
+    done
+    
+    separator
+    info "Operators enabled" "$enabled_count"
+    info "Operators disabled" "$disabled_count"
     echo
-  else
-    if [ "false" = "$(yq '.day2.disable_olm_pprof' $config_file)" ]; then
-      warn "disable olm pprof:" "false"
-    else
-      info "disable olm pprof:" "true"
-      oc apply -f $templates/day2/cluster-tunings/disable-olm-pprof.yaml
-    fi
   fi
 }
-
 install_plan_approval(){
   subs=$(oc get subs -A -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}')
   subs=($subs)
@@ -319,30 +287,33 @@ install_plan_approval(){
   for i in $( seq 0 2 $((length-2)) ); do
     ns=${subs[$i]}
     name=${subs[$i+1]}
-    info "operator $name subscription installPlanApproval:" "$1"
+    info "  ├─ $name subscription installPlanApproval" "$1"
     oc patch subscription -n $ns $name --type='json' -p=["{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}"]
   done
 }
 
 operator_auto_upgrade(){
+  step "Configuring operator auto-upgrade policy"
   case "$(yq '.day2.disable_operator_auto_upgrade' $config_file)" in
     true)
-      warn "Disable operators auto upgrade" "true"
+      warn "Operator auto-upgrade" "disabled (manual approval)"
       install_plan_approval "Manual"
       ;;
     false)
-      warn "Disable operators auto upgrade" "false"
+      info "Operator auto-upgrade" "enabled (automatic approval)"
       install_plan_approval "Automatic"
       ;;
     *)
+      info "Operator auto-upgrade" "not configured (keeping defaults)"
       ;;
   esac
 }
 
 apply_extra_manifests(){
+  step "Applying extra manifest files"
   extra_manifests=$(yq '.day2.extra_manifests' $config_file)
   if [ "$extra_manifests" == "null" ]; then
-    sleep 1
+    warn "Extra manifests" "not configured"
   else
     all_paths_config=$(yq '.day2.extra_manifests|join(" ")' $config_file)
     all_paths=$(eval echo $all_paths_config)
@@ -351,36 +322,37 @@ apply_extra_manifests(){
         readarray -t csr_files < <(find ${d} -type f \( -name "*.yaml" -o -name "*.yaml.j2" -o -name "*.sh" \) |sort)
         for ((i=0; i<${#csr_files[@]}; i++)); do
           file="${csr_files[$i]}"
+          filename=$(basename "$file")
           case "$file" in
             *.yaml)
-              output=$(oc apply -f $file)
+              output=$(oc apply -f $file 2>&1)
               if [[ $? -ne 0 ]]; then
-                warn $file "Failed"
+                warn "  ├─ $filename" "failed"
+                echo "$output"
               else
-                info $file "Successful"
+                info "  ├─ $filename" "applied"
               fi
-              echo "$output"
               ;;
 	          *.yaml.j2)
-              output=$(jinja2 $file $config_file | oc apply -f -)
+              output=$(jinja2 $file $config_file | oc apply -f - 2>&1)
               if [[ $? -ne 0 ]]; then
-                warn $file "Failed"
+                warn "  ├─ $filename" "failed"
+                echo "$output"
               else
-                info $file "Successful"
+                info "  ├─ $filename" "rendered & applied"
               fi
-              echo "$output"
 	            ;;
             *.sh)
-              output=$(. $file)
+              output=$(. $file 2>&1)
               if [[ $? -ne 0 ]]; then
-                warn $file "Failed"
+                warn "  ├─ $filename" "failed"
+                echo "$output"
               else
-                info $file "Successful"
+                info "  ├─ $filename" "executed"
               fi
-              echo "$output"
               ;;
             *)
-              warn $file "Skipped: unknown type"
+              warn "  ├─ $filename" "skipped (unknown type)"
               ;;
           esac
          done
@@ -389,40 +361,36 @@ apply_extra_manifests(){
   fi
 }
 
-echo "------------------------------------------------"
+header "SNO Day2 Operations - Cluster Configuration"
+
+step "Gathering cluster information"
 cluster_info
-echo
-echo "------------------------------------------------"
-echo "Applying day2 operations...."
-echo
+
+separator
+step "Applying day2 operations"
+
 pause_mcp_update
-echo
-performance_profile
-echo
-tuned_profile
-echo
-kdump_for_lab_only
-echo
-cluster_monitoring
-echo
-network_diagnostics
-ptp_configs
-echo
-sriov_configs
-nmstate_config
-metallb_config
-local_storage_config
-lvm_config
-echo
-hyperconverged_config
-echo
-nfd_config
-echo
-olm_pprof
-echo
+
+node_tuning
+
+operator_configs
+
 operator_auto_upgrade
-echo
+
 apply_extra_manifests
-echo
+
 resume_mcp_update $delay_mcp_update
-echo "Done."
+
+header "Day2 Operations Complete - Summary"
+info "✅ Day2 configuration applied" "successfully"
+info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
+info "⚙️  Configuration file" "$config_file"
+info "🎯 Target cluster" "$cluster_name"
+info "🔧 OpenShift version" "$ocp_release"
+
+separator
+printf "${BOLD}${GREEN}🎉 Day2 operations completed successfully!${RESET}\n"
+printf "${CYAN}Next Steps:${RESET}\n"
+printf "  └─ Monitor cluster operators and workloads\n"
+printf "  └─ Verify performance and tuning configurations\n"
+printf "  └─ Check application deployments\n"
