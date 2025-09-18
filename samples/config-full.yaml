@@ -6,7 +6,8 @@ cluster:
   ntps:
     - 0.rhel.pool.ntp.org
     - 1.rhel.pool.ntp.org
-
+  profile: ran
+  
   #optional: https://docs.openshift.com/container-platform/4.14/post_installation_configuration/enabling-cluster-capabilities.html
   #if not present:
   #for 4.12 it will set:

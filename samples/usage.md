@@ -1,10 +1,13 @@
 ## Usages
 
 - [full configuration](config-full.yaml)
-- [ipv4](config-sno130.yaml)
+- [ipv4](config-ipv4.yaml)
+- [ipv6](config-ipv6.yaml)
 - [ipv6 with proxy](config-ipv6-proxy.yaml)
-- [kvm](config-testkvm.yaml)
-- [hub cluster on SNO](config-hub.yaml)
+- [ipv6 with vlan](config-ipv6-vlan.yaml)
+- [dual stack](config-dual-stack.yaml)
+- [bond configuration](config-bond.yaml)
+- [RAN configuration](config-ran.yaml)
 
 ## Day1
 
@@ -113,7 +116,27 @@ day1:
       enabled: false
       #source: certified-operators
       #channel: v24.9
-      #version: gpu-operator-certified.v24.9.2     
+      #version: gpu-operator-certified.v24.9.2
+    metallb:
+      enabled: false
+      #channel: stable
+      #set the version
+      #version: metallb-operator.v4.16.0-202408081808
+    nmstate:
+      enabled: false
+      #channel: stable
+      #set the version
+      #version: kubernetes-nmstate-operator.4.16.0-202408081808
+    amq:
+      enabled: false
+      #channel: stable
+      #set the version
+      #version: amq-streams.v2.8.0-0
+    amq-console:
+      enabled: false
+      #channel: stable
+      #set the version
+      #version: amq-streams-console.v2.8.0-0
   extra_manifests:
     - ${HOME}/1
     - ${HOME}/2
@@ -257,12 +280,12 @@ systemctl restart sushy-tools.service
 
 rm -f ~/.cache/agent/image_cache/coreos-x86_64.iso
 rm -rf hub
-./sno-iso.sh samples/ztp-hub-on-sno/config-hub.yaml
+./sno-iso.sh test/configs/config-hub.yaml
 cp hub/agent.x86_64.iso /var/www/html/iso/hub.iso
 
 
 ## Install OCP
-./sno-install.sh samples/ztp-hub-on-sno/config-hub.yaml
+./sno-install.sh test/configs/config-hub.yaml
 
 
 oc get node --kubeconfig hub/auth/kubeconfig
