@@ -3,7 +3,6 @@
 config_file=$1
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-templates=$basedir/templates
 
 if [[ -z $config_file ]]; then
   echo "Usage: $0 <config_file>"
@@ -15,6 +14,6 @@ if [[ ! -f $config_file ]]; then
   exit 1
 fi
 
-export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
+export CREATE_LVS_FOR_SNO=$(cat $basedir/create_lvs_for_lso.sh |base64 -w0)
 export DISK=$(yq '.operators.local-storage.provision.disk_by_path' $config_file)
 export LVS=$(yq ".operators.local-storage.provision.${partitions_key}|to_entries|map(.value + \"x\" + .key)|join(\" \")" $config_file)
