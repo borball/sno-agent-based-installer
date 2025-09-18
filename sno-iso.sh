@@ -349,7 +349,7 @@ install_operator(){
   for f in $j2files; do
     tname=$(basename $f)
     fname=${tname//.j2/}
-    yq ".day1.operators.$key" $config_file| jinja2 $f > $cluster_workspace/openshift/$fname
+    yq ".operators.$key" $config_file| jinja2 $f > $cluster_workspace/openshift/$fname
   done
 }
 
@@ -383,17 +383,17 @@ install_operators(){
 config_operators(){
   step "Configuring operator-specific settings"
   #local storage operator
-  if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
+  if [[ "false" == $(yq ".operators.local-storage.enabled" $config_file) ]]; then
     sleep 1
   else
     # enabled
-    if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
+    if [[ $(yq ".operators.local-storage.provision" $config_file) == "null" ]]; then
       sleep 1
     else
       # maintain backward compatibility by checking for "provision.lvs"
-      if [[ $(yq '.day1.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
+      if [[ $(yq '.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
          # using new configuration
-         prov_type=$(yq '.day1.operators.local-storage.provision.type // "partition"' $config_file)
+         prov_type=$(yq '.operators.local-storage.provision.type // "partition"' $config_file)
          partitions_key="partitions"
       else
          # maintain backward compatibility with old format
@@ -406,18 +406,18 @@ config_operators(){
         jinja2 $templates/day1/local-storage/60-prepare-lso-partition-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-prepare-lso-partition-mc.yaml
       else
         export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
-        export DISK=$(yq '.day1.operators.local-storage.provision.disk_by_path' $config_file)
-        export LVS=$(yq ".day1.operators.local-storage.provision.${partitions_key}|to_entries|map(.value + \"x\" + .key)|join(\" \")" $config_file)
+        export DISK=$(yq '.operators.local-storage.provision.disk_by_path' $config_file)
+        export LVS=$(yq ".operators.local-storage.provision.${partitions_key}|to_entries|map(.value + \"x\" + .key)|join(\" \")" $config_file)
         jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
       fi
     fi
   fi
   #lvms
-  if [[ "false" == $(yq ".day1.operators.lvm.enabled" $config_file) ]]; then
+  if [[ "false" == $(yq ".operators.lvm.enabled" $config_file) ]]; then
     sleep 1
   else
     # enabled
-    if [[ $(yq ".day1.operators.lvm.provision" $config_file) == "null" ]]; then
+    if [[ $(yq ".operators.lvm.provision" $config_file) == "null" ]]; then
       sleep 1
     else
       info "lvm operator: provision storage"
