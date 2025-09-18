@@ -27,15 +27,15 @@ RESET=$(tput sgr0)
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-54s ${GREEN}%10s${RESET}\n" "$@"
+  printf "${GREEN}✓${RESET} %-64s ${GREEN}%10s${RESET}\n" "$@"
 }
-
+  
 warn(){
-  printf "${YELLOW}⚠${RESET} %-54s ${YELLOW}%10s${RESET}\n" "$@"
+  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%10s${RESET}\n" "$@"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-54s ${RED}%10s${RESET}\n" "$@"
+  printf "${RED}✗${RESET} %-64s ${RED}%10s${RESET}\n" "$@"
 }
 
 step(){
