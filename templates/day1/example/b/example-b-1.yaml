@@ -1,0 +1,10 @@
+#generate a random yaml file with random data
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-b-1
+data:
+  key1: value1
+  key2: value2
+  key3: value3

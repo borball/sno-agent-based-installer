@@ -385,86 +385,68 @@ config_operators(){
   step "Configuring operator-specific settings"
 
   readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
-  
+
   for ((k=0; k<${#keys[@]}; k++)); do
     key="${keys[$k]}"
     if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
-      if [[ $(yq ".operators.$key.provision" $config_file) == "null" ]]; then
-        # No provision configuration
-        continue
-      else
-        info "$key operator: enabling provision"
-        
-        # Handle before scripts
-        before_scripts=$(yq ".operators.$key.provision.before[]?" $config_file 2>/dev/null)
-        if [[ -z "$before_scripts" ]]; then
-          info "  └─ no before scripts"
+      # if day1 files under templates/day1/$key exists, then apply them
+      if [[ -d "$templates/day1/$key" ]]; then 
+        info "$key operator: enabling day1"
+        manifest_folders="$templates/day1/$key"
+        # if .operators.$key contains day1, then use it to override manifest_folders
+        if [[ $(yq ".operators.$key.day1" $config_file) != "null" ]]; then
+          profile_names=$(yq ".operators.$key.day1[].profile" $config_file)
+          for profile_name in $profile_names; do
+            manifest_folders="$manifest_folders $templates/day1/$key/$profile_name"
+          done
         else
-          info "  └─ executing before scripts"
-          while IFS= read -r script; do
-            if [[ -n "$script" && "$script" != "null" ]]; then
-              script_path="$templates/day1/$key/$script"
-              if [[ -f "$script_path" ]]; then
-                info "    └─ running $script"
-                "$script_path" "$config_file"
-              else
-                warn "    └─ script not found: $script"
-              fi
-            fi
-          done <<< "$before_scripts"
+          if [[ -d "$templates/day1/$key/default" ]]; then
+            manifest_folders="manifest_folders $templates/day1/$key/default"
+          fi
         fi
 
-        # Handle manifest files
-        manifest_files=$(yq ".operators.$key.provision.manifests[]?" $config_file 2>/dev/null)
-        if [[ -z "$manifest_files" ]]; then
-          info "  └─ using all files from templates/day1/$key/"
-          if [[ -d "$templates/day1/$key" ]]; then
-            for f in "$templates/day1/$key"/*.yaml "$templates/day1/$key"/*.yaml.j2; do
+        info "  └─ manifest_folders" "$manifest_folders" "to be applied"
+        for manifest_folder in $manifest_folders; do
+          info "    └─ applying $manifest_folder"
+          if [[ -d "$manifest_folder" ]]; then
+            # execute *.sh files in the manifest_folder
+            for f in "$manifest_folder"/*.sh; do
               if [[ -f "$f" ]]; then
-                filename=$(basename "$f")
-                if [[ "$f" == *.j2 ]]; then
-                  info "    └─ rendering $filename"
-                  data_file=$(yq ".operators.$key.data" $config_file)
-                  if [[ "$data_file" != "null" ]]; then
-                    yq ".operators.$key.data" $config_file |jinja2 "$f" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
-                  else
-                    jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
-                  fi
+                info "    └─ executing $f"
+                "$f" "$config_file"
+              fi
+            done
+            # copy *.yaml files in the manifest_folder to $cluster_workspace/openshift/
+            for f in "$manifest_folder"/*.yaml; do
+              if [[ -f "$f" ]]; then
+                info "    └─ applying $f"
+                cp "$f" "$cluster_workspace/openshift/"
+              fi
+            done
+            # apply *.yaml.j2 files in the manifest_folder
+            for f in "$manifest_folder"/*.yaml.j2; do
+              if [[ -f "$f" ]]; then
+                info "    └─ applying $f"
+                # if data file exists, then render it
+                data_file=$(yq ".operators.$key.data" $config_file)
+                if [[ "$data_file" != "null" ]]; then
+                  yq ".operators.$key.data" $config_file |jinja2 "$f" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
                 else
-                  info "    └─ copying $filename"
-                  cp "$f" "$cluster_workspace/openshift/"
+                  jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
                 fi
               fi
             done
+          else
+            info "    └─ $manifest_folder not found"
+            continue
           fi
-        else
-          info "  └─ using specified manifest files"
-          while IFS= read -r manifest; do
-            if [[ -n "$manifest" && "$manifest" != "null" ]]; then
-              manifest_path="$templates/day1/$key/$manifest"
-              if [[ -f "$manifest_path" ]]; then
-                filename=$(basename "$manifest")
-                if [[ "$manifest" == *.j2 ]]; then
-                  info "    └─ rendering $filename"
-                  data_file=$(yq ".operators.$key.data" $config_file)
-                  if [[ "$data_file" != "null" ]]; then
-                    yq ".operators.$key.data" $config_file |jinja2 "$manifest_path"  > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
-                  else
-                    jinja2 "$manifest_path" "$config_file" > "$cluster_workspace/openshift/$(basename "$manifest" .j2)"
-                  fi
-                else
-                  info "    └─ copying $filename"
-                  cp "$manifest_path" "$cluster_workspace/openshift/"
-                fi
-              else
-                warn "    └─ manifest not found: $manifest"
-              fi
-            fi
-          done <<< "$manifest_files"
-        fi
+        done
       fi
     fi
   done
+
+  separator
+  echo
 }
 
 # copy platform related configuration from source destination

@@ -229,67 +229,66 @@ operator_day2_config(){
   operator_name=$1
   step "Configuring $1 operator"
 
-  # if before scripts exists, then execute them
-  before_scripts=$(yq ".operators.$operator_name.config.before[]?" $config_file 2>/dev/null)
-  if [[ -z "$before_scripts" ]]; then
-    sleep 1
-  else
-    info "  └─ executing before scripts"
-    while IFS= read -r script; do
-      if [[ -n "$script" && "$script" != "null" ]]; then
-        script_path="$templates/day2/$operator_name/$script"
-        if [[ -f "$script_path" ]]; then
-          info "    └─ running $script"
-          "$script_path" "$config_file"
-        fi
-      fi
-    done <<< "$before_scripts"
-  fi
+  readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
 
-  # if manifest files exists, then apply them one by one
-  manifest_files=$(yq ".operators.$operator_name.config.manifests[]?" $config_file 2>/dev/null)
-  if [[ -z "$manifest_files" ]]; then
-    # apply all files from templates/day2/$operator_name
-    for f in "$templates/day2/$operator_name"/*.yaml "$templates/day2/$operator_name"/*.yaml.j2; do
-      if [[ -f "$f" ]]; then
-        info "    └─ applying $f"
-        if [[ "$f" == *.j2 ]]; then
-          # if data file exists, then render it
-          data_file=$(yq ".operators.$operator_name.data" $config_file)
-          if [[ "$data_file" != "null" ]]; then
-            yq ".operators.$operator_name.data" $config_file |jinja2 "$f" |oc apply -f -
-          else
-            jinja2 "$f" "$config_file" |oc apply -f -
-          fi
+  for ((k=0; k<${#keys[@]}; k++)); do
+    key="${keys[$k]}"
+    if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
+      # if day2 files under templates/day2/$key exists, then apply them
+      if [[ -d "$templates/day2/$key" ]]; then 
+        info "$key operator: enabling day2"
+        manifest_folders="$templates/day2/$key"
+        # if .operators.$key contains day2, then use it to override manifest_folders
+        if [[ $(yq ".operators.$key.day2" $config_file) != "null" ]]; then
+          profile_names=$(yq ".operators.$key.day2[].profile" $config_file)
+          for profile_name in $profile_names; do
+            manifest_folders="$manifest_folders $templates/day2/$key/$profile_name"
+          done
         else
-          oc apply -f "$f"
+          if [[ -d "$templates/day2/$key/default" ]]; then
+            manifest_folders="manifest_folders $templates/day2/$key/default"
+          fi
         fi
-      fi
-    done
-  else
-    info "  └─ applying manifest files"
-    while IFS= read -r manifest; do
-      if [[ -n "$manifest" && "$manifest" != "null" ]]; then
-        manifest_path="$templates/day2/$operator_name/$manifest"
-        if [[ -f "$manifest_path" ]]; then
-          info "    └─ applying $manifest"
-          case "$manifest" in
-            *.sh)
-              . $manifest_path
-              ;;
-            *.yaml)
-              oc apply -f $manifest_path
-              ;;
-            *.yaml.j2)
-              jinja2 $manifest_path $config_file | oc apply -f -
-              ;;
-          esac
-          
-        fi
-      fi
-    done <<< "$manifest_files"
-  fi
 
+        info "  └─ manifest_folders" "$manifest_folders" "to be applied"
+        for manifest_folder in $manifest_folders; do
+          info "    └─ applying $manifest_folder"
+          if [[ -d "$manifest_folder" ]]; then
+            # execute *.sh files in the manifest_folder
+            for f in "$manifest_folder"/*.sh; do
+              if [[ -f "$f" ]]; then
+                info "    └─ executing $f"
+                "$f" "$config_file"
+              fi
+            done
+            # copy *.yaml files in the manifest_folder to $cluster_workspace/openshift/
+            for f in "$manifest_folder"/*.yaml; do
+              if [[ -f "$f" ]]; then
+                info "    └─ applying $f"
+                oc apply -f $f
+              fi
+            done
+            # apply *.yaml.j2 files in the manifest_folder
+            for f in "$manifest_folder"/*.yaml.j2; do
+              if [[ -f "$f" ]]; then
+                info "    └─ applying $f"
+                # if data file exists, then render it
+                data_file=$(yq ".operators.$key.data" $config_file)
+                if [[ "$data_file" != "null" ]]; then
+                  yq ".operators.$key.data" $config_file |jinja2 "$f" | oc apply -f -
+                else
+                  jinja2 "$f" "$config_file" | oc apply -f -
+                fi
+              fi
+            done
+          else
+            info "    └─ $manifest_folder not found"
+            continue
+          fi
+        done
+      fi
+    fi
+  done
 
 }
 
