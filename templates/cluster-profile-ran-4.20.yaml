@@ -147,7 +147,7 @@ operators:
     source: prega
     enabled: true
     #Do not lock version in preGA
-    #version: redhat-oadp-operator.v1.4.5
+    #version: oadp-operator.v1.4.5
 
   lvm:
     enabled: false

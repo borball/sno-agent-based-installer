@@ -138,7 +138,7 @@ operators:
     version: lifecycle-agent.v4.18.0
   adp:
     enabled: true
-    version: redhat-oadp-operator.v1.4.5
+    version: oadp-operator.v1.4.5
 
   lvm:
     enabled: false
