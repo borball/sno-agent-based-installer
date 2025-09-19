@@ -15,7 +15,12 @@ node_tunings:
     enabled: true
   tuned_profile:
     enabled: true
-    
+
+update_control:
+  pause_before_update: true
+  delay_after_update: 60
+  disable_operator_auto_upgrade: true
+  
 operators:
   # example:
   #   enabled: true

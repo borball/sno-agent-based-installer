@@ -318,7 +318,7 @@ platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
 
 cluster_tunings(){
   cluster_tunings=$(yq '.cluster_tunings' $config_file)
-  if [ -z "$cluster_tunings" ]; then
+  if [[ -z "$cluster_tunings" || "$cluster_tunings" == "none" ]]; then
     warn "Cluster tunings" "disabled"
   else
     step "Enabling cluster tunings for OpenShift $ocp_y_release"

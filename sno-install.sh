@@ -228,7 +228,7 @@ virtual_media_eject() {
 
 virtual_media_status(){
     # Media Status
-    echo "Virtual Media Status: "
+    info "Virtual media status" "checking"
     $CURL -s --globoff -H "Content-Type: application/json" -H "Accept: application/json" \
     -k -X GET --user ${username_password} \
     $virtual_media_path| jq
@@ -287,25 +287,26 @@ server_set_boot_once_from_cd() {
 approve_pending_install_plans(){
   info "Checking for pending InstallPlans" "up to 5 attempts"
   for i in {1..5}; do
-    info "Checking attempt" "$i/5"
+    info "  └─ Checking attempt" "$i/5"
     oc get installplan -A
     while read -s IP; do
-      info "Approving InstallPlan" "$IP"
+      info "    └─ Approving InstallPlan" "$IP"
       oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
     done < <(oc get sub -A -o json |
       jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) and (.status.installPlanRef != null) )|.status.installPlanRef|"-n \(.namespace) installplan \(.name)"')
 
     if [[ 0 ==  $(oc get sub -A -o json|jq '[.items[]|select(.status.installedCSV==null)]|length') ]]; then
-      info "All subscriptions installed" "✓"
+      info "  └─ All subscriptions installed" "✓"
       break
     fi
 
-    warn "Waiting for subscriptions" "30 seconds..."
+    warn "  └─ Waiting for subscriptions" "30 seconds..."
     sleep 30
     echo
   done
 
-  info "Operator versions installed" "listing all"
+  separator
+  info "📋 Operator versions installed" "summary"
   oc get csv -A -o custom-columns="0AME:.metadata.name,DISPLAY:.spec.displayName,VERSION:.spec.version" |sort -f|uniq|sed 's/0AME/NAME/'
 }
 
@@ -346,21 +347,27 @@ step "Initializing Redfish connection"
 redfish_init
 
 step "Starting SNO deployment"
+info "  └─ Powering off server" "preparing for boot"
 server_power_off
 sleep 15
+info "  └─ Ejecting existing media" "cleanup"
 virtual_media_eject
+info "  └─ Inserting installation media" "mounting ISO"
 virtual_media_insert
 #virtual_media_status
+info "  └─ Setting boot order" "CD/DVD first"
 server_set_boot_once_from_cd
 sleep 10
+info "  └─ Powering on server" "starting installation"
 server_power_on
 #server_restart
 
 separator
-info "Node is booting from virtual media" "$iso_image"
-info "Monitor installation progress" "via BMC console"
+info "🚀 Node is booting from virtual media" "$iso_image"
+info "📺 Monitor installation progress" "via BMC console"
 echo
-echo -n "Node booting."
+step "Waiting for assisted installer service"
+echo -n "  └─ Node booting"
 
 #ipv4_enabled=$(yq '.host.ipv4.enabled // "" ' $config_file)
 #if [ "true" = "$ipv4_enabled" ]; then
@@ -395,7 +402,7 @@ while [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "2
 done
 
 echo
-step "Monitoring installation progress"
+step "Monitoring installation status"
 while
   separator
   _status=$($REMOTE_CURL $assisted_rest)
@@ -407,7 +414,8 @@ do sleep 15; done
 echo
 prev_percentage=""
 separator
-step "Installation progress tracking"
+step "Tracking installation progress"
+info "  └─ Monitoring cluster deployment" "real-time updates"
 while
   total_percentage=$($REMOTE_CURL $assisted_rest |jq '.[].progress.total_percentage')
   if [ ! -z $total_percentage ]; then
@@ -415,7 +423,7 @@ while
        echo -n "."
     else
       echo
-      info "Installation progress" "$total_percentage% completed"
+      info "  └─ Installation progress" "$total_percentage% completed"
       prev_percentage=$total_percentage
     fi
   fi
@@ -430,18 +438,21 @@ echo
 
 separator
 step "Post-installation cleanup and setup"
-info "Node has rebooted" "Installation continuing"
-info "OpenShift commands will be available soon" "Monitor with oc commands"
+info "  └─ Node has rebooted" "Installation continuing"
+info "  └─ OpenShift commands available soon" "Monitor with oc commands"
 echo
 
 step "Ejecting virtual media"
+info "  └─ Removing installation media" "cleanup"
 virtual_media_eject
 
 step "Waiting for cluster stabilization"
+info "  └─ Allowing cluster to settle" "60 seconds"
 sleep 60
+info "  └─ Checking cluster stability" "monitoring operators"
 wait_for_stable_cluster 60
 
-step "Approving pending install plans"
+step "Finalizing operator installations"
 approve_pending_install_plans
 
 header "Installation Complete - Summary"

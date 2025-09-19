@@ -132,36 +132,67 @@ ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 export OCP_Y_VERSION=$ocp_y_release
 export OCP_Z_VERSION=$ocp_release
 
-delay_mcp_update=$(yq '.day2.delay_mcp_update // 0' $config_file)
-
 pause_mcp_update(){
-  step "Pausing master machine config pool update"
-  trap resume_mcp_update SIGINT SIGABRT SIGKILL
-  oc patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
+  if [ "$(yq '.update_control.pause_before_update' $config_file)" = "true" ]; then
+    step "Pausing master machine config pool update"
+    trap resume_mcp_update SIGINT SIGABRT SIGKILL
+    oc patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
+  else
+    info "MCP update" "not paused"
+    return
+  fi
+
 }
 
 resume_mcp_update(){
-  local delay=${1:-0}
-  if [[ ${delay} -gt 0 ]]; then
-    step "Resuming master machine config pool update (delayed ${delay}s)"
-    sleep ${delay}
-  else
-    step "Resuming master machine config pool update"
-  fi
-  for i in {1..20}; do
-    oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
-    if [[ $? -eq 0 ]]; then
-      return
+  if [ "$(yq '.update_control.pause_before_update' $config_file)" = "true" ]; then
+    delay_mcp_update=$(yq '.update_control.delay_after_update // 0' $config_file)
+
+    if [[ ${delay_mcp_update} -gt 0 ]]; then
+      step "Resuming master machine config pool update (delayed ${delay_mcp_update}s)"
+      sleep ${delay_mcp_update}
+    else
+      step "Resuming master machine config pool update"
     fi
-    warn "Retry ($i/20) in 15 seconds..." "Failed"
-    sleep 15
-  done
-  error "Failed to resume master MCP" "Manual intervention required"
-  printf "${RED}Please manually resume using:${RESET}\n"
-  printf "${YELLOW}oc patch --type=merge --patch='{\"spec\":{\"paused\":false}}' mcp/master${RESET}\n"
+    for i in {1..20}; do
+      oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
+      if [[ $? -eq 0 ]]; then
+        return
+      fi
+      warn "Retry ($i/20) in 15 seconds..." "Failed"
+      sleep 15
+    done
+    error "Failed to resume master MCP" "Manual intervention required"
+    printf "${RED}Please manually resume using:${RESET}\n"
+    printf "${YELLOW}oc patch --type=merge --patch='{\"spec\":{\"paused\":false}}' mcp/master${RESET}\n"
+  else
+    return
+  fi
+
 }
 
-node_tuning(){
+cluster_tunings(){
+  step "Configuring cluster tunings"
+  if [[ "$(yq '.cluster_tunings' $config_file)" == "null" || "$(yq '.cluster_tunings' $config_file)" == "none" ]]; then
+    warn "Cluster tunings" "disabled"
+  else
+    info "Cluster tunings" "enabled"
+    cluster_tunings=$(yq '.cluster_tunings' $config_file)
+    #no versioning for cluster tunings so far
+    # for all yaml and j2 files in templates/day2/cluster-tunings
+    for file in $templates/day2/cluster-tunings/*; do
+      filename=$(basename "$file")
+      info "  └─ $filename" "enabled"
+      if [[ "$file" == *.j2 ]]; then
+        jinja2 $file $config_file | oc apply -f -
+      else
+        oc apply -f $file
+      fi
+    done
+  fi
+}
+
+node_tunings(){
   step "Configuring node tunings"
   if [ "$(yq '.node_tunings' $config_file)" = "null" ]; then
     warn "Node tuning" "disabled"
@@ -292,7 +323,7 @@ install_plan_approval(){
 
 operator_auto_upgrade(){
   step "Configuring operator auto-upgrade policy"
-  case "$(yq '.day2.disable_operator_auto_upgrade' $config_file)" in
+  case "$(yq '.update_control.disable_operator_auto_upgrade' $config_file)" in
     true)
       warn "Operator auto-upgrade" "disabled (manual approval)"
       install_plan_approval "Manual"
@@ -307,13 +338,13 @@ operator_auto_upgrade(){
   esac
 }
 
-apply_extra_manifests(){
+extra_manifests(){
   step "Applying extra manifest files"
-  extra_manifests=$(yq '.day2.extra_manifests' $config_file)
+  extra_manifests=$(yq '.extra_manifests.day2' $config_file)
   if [ "$extra_manifests" == "null" ]; then
     warn "Extra manifests" "not configured"
   else
-    all_paths_config=$(yq '.day2.extra_manifests|join(" ")' $config_file)
+    all_paths_config=$(yq '.extra_manifests.day2|join(" ")' $config_file)
     all_paths=$(eval echo $all_paths_config)
     for d in $all_paths; do
       if [[ -d "$d" ]]; then
@@ -368,16 +399,12 @@ separator
 step "Applying day2 operations"
 
 pause_mcp_update
-
-node_tuning
-
+cluster_tunings
+node_tunings
 operator_configs
-
 operator_auto_upgrade
-
-apply_extra_manifests
-
-resume_mcp_update $delay_mcp_update
+extra_manifests
+resume_mcp_update
 
 header "Day2 Operations Complete - Summary"
 info "✅ Day2 configuration applied" "successfully"
