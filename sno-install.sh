@@ -17,19 +17,49 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
-show_info(){
-  printf  $(tput setaf 2)"%-54s %-10s"$(tput sgr0)"\n" "$@"
+# Color codes for better output
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
+
+# Enhanced output functions
+info(){
+  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+}
+  
+warn(){
+  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
 }
 
-show_warn(){
-  printf  $(tput setaf 3)"%-54s %-10s"$(tput sgr0)"\n" "$@"
+error(){
+  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+}
+
+step(){
+  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+}
+
+header(){
+  echo
+  printf "${BOLD}${CYAN}%s${RESET}\n" "$1"
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s=' {1..60})"
+}
+
+separator(){
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
 }
 
 usage(){
-  echo "Usage: $0 <cluster-name>"
-  echo "If <cluster-name> is not present, it will install the newest cluster created by sno-iso"
-  echo "Example: $0"
-  echo "Example: $0 sno130"
+  info "Usage: $0 <cluster-name>"
+  info "If <cluster-name> is not present, it will install the newest cluster created by sno-iso"
+  info "Example: $0"
+  info "Example: $0 sno130"
 }
 
 if [[ ( $@ == "--help") ||  $@ == "-h" ]]
@@ -49,9 +79,10 @@ cluster_workspace=$basedir/instances/$cluster_name
 
 config_file=$cluster_workspace/config-resolved.yaml
 if [ -f "$config_file" ]; then
-  echo "Will install cluster $cluster_name with config: $config_file"
+  info "Configuration file" "$config_file"
+  info "Target cluster" "$cluster_name"
 else
-  "Config file $config_file not exist, please check."
+  error "Config file not found" "$config_file"
   exit -1
 fi
 
@@ -71,7 +102,7 @@ export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 if [[ -n "${password_var}" ]]; then
   if [[ -z "${!password_var}" ]]; then
-    echo "Failed to pick up BMC password from environment variable '${password_var}'"
+    error "BMC password not found" "Environment variable '${password_var}' is empty"
     exit -1
   fi
   username_password="${bmc_user}:${!password_var}"
@@ -105,7 +136,7 @@ redfish_init(){
   fi
 
   if [ $manager == "null" ] || [ $system == "null" ]; then
-    echo "FATAL: either redfish system or manager is 'null', please check!"
+    error "Redfish initialization failed" "System or manager is 'null'"
     exit -1
   fi
 
@@ -126,7 +157,7 @@ redfish_init(){
   done
 
   if [ $virtual_media_path == "null" ] || [ -z $virtual_media_path ]; then
-    echo "FATAL: redfish virtual media path is empty, cannot start the deployment, please check!"
+    error "Virtual media path not found" "Cannot start deployment"
     exit -1
   else
     virtual_media_path=https://$bmc_address$virtual_media_path
@@ -146,9 +177,9 @@ check_rest_result() {
     local rest_response=$3
 
     if [[ -n "$rest_result" ]] && [[ $rest_result -lt 300 ]]; then
-      show_info "$action" "$rest_result"
+      info "$action" "$rest_result"
     else
-      show_warn "$action" "$rest_result"
+      warn "$action" "$rest_result"
       echo $(cat $rest_response)
     fi
     rm -f $rest_response
@@ -161,7 +192,7 @@ server_get_bios_config(){
 
 server_restart() {
     # Restart
-    echo "Restart server."
+    info "Restarting server" "..."
     $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
     -H "Content-Type: application/json" -H "Accept: application/json" \
     -d '{"ResetType": "ForceRestart"}' \
@@ -205,13 +236,13 @@ virtual_media_status(){
 
 deploy_iso(){
   [[ -z "$deploy_cmd" ]] && return
-  [[ ! -x $(realpath $deploy_cmd) ]] && echo "Failed to deploy ISO, command not executable: $deploy_cmd" && exit
+  [[ ! -x $(realpath $deploy_cmd) ]] && error "Deploy command not executable" "$deploy_cmd" && exit
   iso_file=$(find "$cluster_workspace" -name 'agent.*.iso')
-  echo "Deploy ISO: $deploy_cmd $iso_file $iso_image"
+  info "Deploying ISO" "$deploy_cmd $iso_file $iso_image"
   $deploy_cmd $iso_file $iso_image
   local result=$?
   if [[ $result -ne 0 ]]; then
-    echo "Failed: $result"
+    error "ISO deployment failed" "Exit code: $result"
     exit
   fi
 }
@@ -254,26 +285,27 @@ server_set_boot_once_from_cd() {
 }
 
 approve_pending_install_plans(){
-  echo "Approve pending approval InstallPlans if have, will repeat 5 times."
+  info "Checking for pending InstallPlans" "up to 5 attempts"
   for i in {1..5}; do
-    echo "checking $i"
+    info "Checking attempt" "$i/5"
     oc get installplan -A
     while read -s IP; do
-      echo "oc patch $IP --type merge --patch '{"spec":{"approved":true}}'"
+      info "Approving InstallPlan" "$IP"
       oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
     done < <(oc get sub -A -o json |
       jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) and (.status.installPlanRef != null) )|.status.installPlanRef|"-n \(.namespace) installplan \(.name)"')
 
     if [[ 0 ==  $(oc get sub -A -o json|jq '[.items[]|select(.status.installedCSV==null)]|length') ]]; then
-      echo
+      info "All subscriptions installed" "✓"
       break
     fi
 
+    warn "Waiting for subscriptions" "30 seconds..."
     sleep 30
     echo
   done
 
-  echo "All operator versions:"
+  info "Operator versions installed" "listing all"
   oc get csv -A -o custom-columns="0AME:.metadata.name,DISPLAY:.spec.displayName,VERSION:.spec.version" |sort -f|uniq|sed 's/0AME/NAME/'
 }
 
@@ -304,14 +336,16 @@ wait_for_stable_cluster(){
   fi
 }
 
-echo "-------------------------------"
+header "SNO Agent-Based Installation - Deployment"
+
+step "Deploying ISO image"
 deploy_iso
-echo ""
-echo "-------------------------------"
+
+separator
+step "Initializing Redfish connection"
 redfish_init
 
-echo "Starting SNO deployment..."
-echo
+step "Starting SNO deployment"
 server_power_off
 sleep 15
 virtual_media_eject
@@ -321,10 +355,10 @@ server_set_boot_once_from_cd
 sleep 10
 server_power_on
 #server_restart
-echo
-echo "-------------------------------"
-echo "Node is booting from virtual media mounted with $iso_image, check your BMC console to monitor the installation progress."
-echo
+
+separator
+info "Node is booting from virtual media" "$iso_image"
+info "Monitor installation progress" "via BMC console"
 echo
 echo -n "Node booting."
 
@@ -361,9 +395,9 @@ while [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "2
 done
 
 echo
-echo "Installing in progress..."
+step "Monitoring installation progress"
 while
-  echo "-------------------------------"
+  separator
   _status=$($REMOTE_CURL $assisted_rest)
   echo "$_status"| \
    jq -c '.[] | with_entries(select(.key | contains("name","updated_at","_count","status","validations_info")))|.validations_info|=(.// empty|fromjson|del(.. | .id?))'
@@ -372,7 +406,8 @@ do sleep 15; done
 
 echo
 prev_percentage=""
-echo "-------------------------------"
+separator
+step "Installation progress tracking"
 while
   total_percentage=$($REMOTE_CURL $assisted_rest |jq '.[].progress.total_percentage')
   if [ ! -z $total_percentage ]; then
@@ -380,7 +415,7 @@ while
        echo -n "."
     else
       echo
-      echo -n "Installation in progress: completed $total_percentage/100"
+      info "Installation progress" "$total_percentage% completed"
       prev_percentage=$total_percentage
     fi
   fi
@@ -393,17 +428,33 @@ exec 2>&3
 
 echo
 
-echo "-------------------------------"
-echo "Node Rebooted..."
-echo "Installation still in progress, oc command will be available soon, you can open another terminal to check the installation progress with oc commands..."
+separator
+step "Post-installation cleanup and setup"
+info "Node has rebooted" "Installation continuing"
+info "OpenShift commands will be available soon" "Monitor with oc commands"
 echo
-echo "Will eject the ISO now..."
+
+step "Ejecting virtual media"
 virtual_media_eject
-echo
-echo "Waiting for the cluster to be ready..."
+
+step "Waiting for cluster stabilization"
 sleep 60
 wait_for_stable_cluster 60
 
+step "Approving pending install plans"
 approve_pending_install_plans
-echo
-echo "You are all set..."
+
+header "Installation Complete - Summary"
+info "✅ SNO installation completed" "successfully"
+info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
+info "🔑 Admin password file" "$cluster_workspace/auth/kubeadmin-password"
+info "⚙️  Configuration file" "$config_file"
+info "🎯 Target cluster" "$cluster_name"
+info "🌐 API endpoint" "https://$api_fqdn:6443"
+
+separator
+printf "${BOLD}${GREEN}🎉 SNO installation completed successfully!${RESET}\n"
+printf "${CYAN}Next Steps:${RESET}\n"
+printf "  └─ Access the cluster using the kubeconfig file\n"
+printf "  └─ Run day2 operations: ${YELLOW}./sno-day2.sh $cluster_name${RESET}\n"
+printf "  └─ Monitor cluster operators and workloads\n"
