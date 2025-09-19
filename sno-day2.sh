@@ -183,11 +183,17 @@ cluster_tunings(){
     for file in $templates/day2/cluster-tunings/*; do
       filename=$(basename "$file")
       info "  └─ $filename" "enabled"
-      if [[ "$file" == *.j2 ]]; then
-        jinja2 $file $config_file | oc apply -f -
-      else
-        oc apply -f $file
-      fi
+      case "$file" in
+        *.sh)
+          . $file
+          ;;
+        *.yaml)
+          oc apply -f $file
+          ;;
+        *.yaml.j2)
+          jinja2 $file $config_file | oc apply -f -
+          ;;
+      esac
     done
   fi
 }
@@ -267,17 +273,18 @@ operator_day2_config(){
         manifest_path="$templates/day2/$operator_name/$manifest"
         if [[ -f "$manifest_path" ]]; then
           info "    └─ applying $manifest"
-          if [[ "$manifest" == *.j2 ]]; then
-            # if data file exists, then render it
-            data_file=$(yq ".operators.$operator_name.data" $config_file)
-            if [[ "$data_file" != "null" ]]; then
-              yq ".operators.$operator_name.data" $config_file |jinja2 "$manifest_path" |oc apply -f -
-            else
-              jinja2 "$manifest_path" "$config_file" |oc apply -f -
-            fi
-          else
-            oc apply -f "$manifest_path"
-          fi
+          case "$manifest" in
+            *.sh)
+              . $manifest_path
+              ;;
+            *.yaml)
+              oc apply -f $manifest_path
+              ;;
+            *.yaml.j2)
+              jinja2 $manifest_path $config_file | oc apply -f -
+              ;;
+          esac
+          
         fi
       fi
     done <<< "$manifest_files"

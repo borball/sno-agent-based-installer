@@ -1,21 +1,20 @@
-{% if day2 and day2.performance_profile -%}
 ---
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
- name: {{ day2.performance_profile.name or 'openshift-node-performance-profile' }}
+ name: {{ node_tunings.performance_profile.name or 'openshift-node-performance-profile' }}
 spec:
  realTimeKernel:
-   enabled: {{ day2.performance_profile.real_time |default(true) | lower }}
+   enabled: {{ node_tunings.performance_profile.real_time |default(true) | lower }}
  cpu:
    isolated: "{{ cpu.isolated }}"
    reserved: "{{ cpu.reserved }}"
- {% if (day2.performance_profile.hugepage is defined and day2.performance_profile.hugepage.enabled) -%}
+ {% if (node_tunings.performance_profile.hugepage is defined and node_tunings.performance_profile.hugepage.enabled) -%}
  hugepages:
-   defaultHugepagesSize: {{ (day2.performance_profile.hugepage and day2.performance_profile.hugepage.default) or '1G' }}
+   defaultHugepagesSize: {{ (node_tunings.performance_profile.hugepage and node_tunings.performance_profile.hugepage.default) or '1G' }}
    pages:
-     {% if (day2.performance_profile.hugepage and day2.performance_profile.hugepage.pages) -%}
-     {% for page in day2.performance_profile.hugepage.pages %}
+     {% if (node_tunings.performance_profile.hugepage and node_tunings.performance_profile.hugepage.pages) -%}
+     {% for page in node_tunings.performance_profile.hugepage.pages %}
      - size: {{ page.size }}
        count: {{ page.count }}
        {%- if page.node is defined %}
@@ -30,12 +29,12 @@ spec:
  additionalKernelArgs:
   - "rcupdate.rcu_normal_after_boot=0"
   - "efi=runtime"
-  {% if (day1.operators.fec and day1.operators.fec.enabled) -%}
+  {% if (operators.fec and operators.fec.enabled) -%}
   - "vfio_pci.enable_sriov=1"
   - "vfio_pci.disable_idle_d3=1"
   {%- endif %}
-  {% if (day2.performance_profile.additional_kernel_args) -%}
-  {% for arg in day2.performance_profile.additional_kernel_args -%}
+  {% if (node_tunings.performance_profile.additional_kernel_args) -%}
+  {% for arg in node_tunings.performance_profile.additional_kernel_args -%}
   - "{{ arg }}"
   {% endfor -%}
   {% else -%}
@@ -46,10 +45,10 @@ spec:
  nodeSelector:
    node-role.kubernetes.io/master: ""
  numa:
-   topologyPolicy: {{ (day2.performance_profile.numa and day2.performance_profile.numa.policy) or 'restricted' }}
- {% if day2.performance_profile.net and day2.performance_profile.net.user_level_networking -%}
+   topologyPolicy: {{ (node_tunings.performance_profile.numa and node_tunings.performance_profile.numa.policy) or 'restricted' }}
+ {% if node_tunings.performance_profile.net and node_tunings.performance_profile.net.user_level_networking -%}
  net:
-   userLevelNetworking: {{ day2.performance_profile.net.user_level_networking | lower }}
+   userLevelNetworking: {{ node_tunings.performance_profile.net.user_level_networking | lower }}
  {% endif -%}
  workloadHints:
    # WorkloadHints defines the set of upper level flags for different type of workloads.
@@ -59,49 +58,11 @@ spec:
    realTime: true
    highPowerConsumption: false
    perPodPowerManagement: false
- {% if day2.performance_profile.hardwareTuning -%}
+ {% if node_tunings.performance_profile.hardwareTuning -%}
  hardwareTuning:
-   isolatedCpuFreq: {{ day2.performance_profile.hardwareTuning.isolatedCpuFreq }}
-   reservedCpuFreq: {{ day2.performance_profile.hardwareTuning.reservedCpuFreq }}
+   isolatedCpuFreq: {{ node_tunings.performance_profile.hardwareTuning.isolatedCpuFreq }}
+   reservedCpuFreq: {{ node_tunings.performance_profile.hardwareTuning.reservedCpuFreq }}
  {% endif -%}
-{% else -%}
----
-apiVersion: performance.openshift.io/v2
-kind: PerformanceProfile
-metadata:
- name: openshift-node-performance-profile
-spec:
- realTimeKernel:
-   enabled: true
- cpu:
-   isolated: "{{ cpu.isolated }}"
-   reserved: "{{ cpu.reserved }}"
- hugepages:
-   defaultHugepagesSize: 1G
-   pages:
-     - count: 32
-       size: 1G
- additionalKernelArgs:
-  - "rcupdate.rcu_normal_after_boot=0"
-  - "efi=runtime"
-  - "vfio_pci.enable_sriov=1"
-  - "vfio_pci.disable_idle_d3=1"
-  - "module_blacklist=irdma"
- machineConfigPoolSelector:
-   pools.operator.machineconfiguration.openshift.io/master: ""
- nodeSelector:
-   node-role.kubernetes.io/master: ""
- numa:
-   topologyPolicy: restricted
- net:
-   userLevelNetworking: true
- workloadHints:
-   # WorkloadHints defines the set of upper level flags for different type of workloads.
-   # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
-   # for detailed descriptions of each item.
-   # The configuration below is set for a low latency, performance mode.
-   realTime: true
-   highPowerConsumption: false
-   perPodPowerManagement: false
-{% endif -%}
+
+
 

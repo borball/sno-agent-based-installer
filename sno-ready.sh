@@ -61,18 +61,46 @@ if [[ ! -z "${ssh_priv_key_input}" ]]; then
   SSH+=" -i ${ssh_key_path}"
 fi
 
-NC='\033[0m' # No Color
+# Color codes for better output
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
 
+# Enhanced output functions
 info(){
-  printf  $(tput setaf 2)"%-62s %-10s"$(tput sgr0)"\n" "[+]""$@"
+  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+}
+  
+warn(){
+  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
 }
 
-warn(){
-  printf  $(tput setaf 3)"%-62s %-10s"$(tput sgr0)"\n" "[-]""$@"
+error(){
+  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+}
+
+step(){
+  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+}
+
+header(){
+  echo
+  printf "${BOLD}${CYAN}%s${RESET}\n" "$1"
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s=' {1..60})"
+}
+
+separator(){
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
 }
 
 check_node(){
-  echo -e "\n${NC}Checking node:"
+  step "Checking node status"
   if [ $(oc get node -o jsonpath='{..conditions[?(@.type=="Ready")].status}') = "True" ]; then
     info "Node" "ready"
   else
@@ -85,7 +113,7 @@ export_address(){
 }
 
 check_pods(){
-  echo -e "\n${NC}Checking all pods:"
+  step "Checking all pods"
   if [ $(oc get pods -A |grep -vE "Running|Completed" |wc -l) -gt 1 ]; then
     warn "Some pods are failing or creating."
     oc get pods -A |grep -vE "Running|Completed"
@@ -95,7 +123,7 @@ check_pods(){
 }
 
 check_co(){
-  echo -e "\n${NC}Checking cluster operators:"
+  step "Checking cluster operators"
   for name in $(oc get co -o jsonpath={..metadata.name}); do
     local progressing=$(oc get co $name -o jsonpath='{..conditions[?(@.type=="Progressing")].status}')
     local available=$(oc get co $name -o jsonpath='{..conditions[?(@.type=="Available")].status}')
@@ -109,7 +137,7 @@ check_co(){
 }
 
 check_mc(){
-  echo -e "\n${NC}Checking required machine configs:"
+  step "Checking required machine configs"
 
   if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
     warn "workload_partition is not enabled in $config_file"
@@ -217,7 +245,7 @@ check_mc(){
 }
 
 check_mcp(){
-  echo -e "\n${NC}Checking machine config pool:"
+  step "Checking machine config pool"
   updated=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Updated")].status}')
   updating=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Updating")].status}')
   degraded=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Degraded")].status}')
@@ -229,7 +257,7 @@ check_mcp(){
 }
 
 check_pp(){
-  echo -e "\n${NC}Checking required performance profile:"
+  step "Checking required performance profile"
 
   if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
     warn "performance profile:" "disabled"
@@ -260,7 +288,7 @@ check_pp_detail(){
 
 
 check_tuned(){
-  echo -e "\n${NC}Checking required tuned:"
+  step "Checking required tuned"
 
   if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
     warn "Tuned performance patch:" "disabled"
@@ -283,7 +311,7 @@ check_tuned(){
 }
 
 check_sriov(){
-  echo -e "\n${NC}Checking SRIOV operator status:"
+  step "Checking SRIOV operator status"
 
   if [ "false" = "$(yq '.day1.operators.sriov' $config_file)" ]; then
     warn "SR-IOV operator" "disabled"
@@ -297,7 +325,7 @@ check_sriov(){
 }
 
 check_ptp(){
-  echo -e "\n${NC}Checking PTP operator status:"
+  step "Checking PTP operator status"
   if [ "false" = "$(yq '.day1.operators.ptp.enabled' $config_file)" ]; then
     warn "PTP operator" "disabled"
   else
@@ -333,7 +361,7 @@ check_ptpconfig(){
 }
 
 check_monitoring(){
-  echo -e "\n${NC}Checking openshift monitoring:"
+  step "Checking openshift monitoring"
   if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
     warn "cluster_monitor_tuning is not enabled in $config_file"
   else
@@ -372,7 +400,7 @@ check_monitoring(){
 }
 
 check_capabilities(){
-  echo -e "\n${NC}Checking openshift capabilities:"
+  step "Checking openshift capabilities"
 
   #only check when capabilities are not specified in the config file
   #for others we assume it is not vDU case, and will skip the check
@@ -410,7 +438,7 @@ check_co_disabled(){
 
 
 check_network_diagnostics(){
-  echo -e "\n${NC}Checking network diagnostics:"
+  step "Checking network diagnostics"
   if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
     warn "disable_network_diagnostics is not enabled in $config_file"
   else
@@ -423,7 +451,7 @@ check_network_diagnostics(){
 }
 
 check_operator_hub(){
-  echo -e "\n${NC}Checking Operator hub:"
+  step "Checking Operator hub"
   if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
     warn "operator_hub_tuning is not enabled in $config_file"
   else
@@ -441,13 +469,13 @@ check_operator_hub(){
 }
 
 check_cmdline(){
-  echo -e "\n${NC}Checking /proc/cmdline:"
+  step "Checking /proc/cmdline"
   export cmdline_arguments=$($SSH core@$address cat /proc/cmdline)
   check_cpuset
 }
 
 check_kernel(){
-  echo -e "\n${NC}Checking RHCOS kernel:"
+  step "Checking RHCOS kernel"
   kernel_version=$($SSH core@$address uname -r)
   if [ $(echo $kernel_version |grep rt | wc -l ) -eq 1 ]; then
     info "Node kernel" "realtime"
@@ -562,7 +590,7 @@ check_cpuset(){
 }
 
 check_kdump(){
-  echo -e "\n${NC}Checking kdump.service:"
+  step "Checking kdump.service"
   if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
     warn "kdump is not enabled in $config_file"
   else
@@ -581,7 +609,7 @@ check_kdump(){
 }
 
 check_chronyd(){
-  echo -e "\n${NC}Checking chronyd.service:"
+  step "Checking chronyd.service"
   if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
     if [[ $($SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
       info "chronyd service" "inactive"
@@ -611,7 +639,7 @@ check_chronyd(){
 }
 
 check_ip(){
-  echo -e "\n${NC}Checking InstallPlans:"
+  step "Checking InstallPlans"
   if [ $(oc get installplans.operators.coreos.com -A |grep false |wc -l) -gt 0 ]; then
     warn "InstallPlans below are not approved yet."
     oc get installplans.operators.coreos.com -A |grep false
@@ -621,7 +649,7 @@ check_ip(){
 }
 
 check_container_runtime(){
-  echo -e "\n${NC}Checking container runtime:"
+  step "Checking container runtime"
   local search=$($SSH core@$address grep -rv "^#" /etc/crio/crio.conf.d |grep 'default_runtime = "crun"'|wc -l)
   local container_runtime="runc"
   if [ $search -ge 1 ]; then
@@ -697,7 +725,7 @@ check_cgv1(){
 
 check_lvm(){
   if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
-    echo -e "\n${NC}Checking LVM storage:"
+    step "Checking LVM storage"
     if [ "true" = "$(oc -n openshift-storage get lvmcluster -o jsonpath='{.items[0].status.ready}')" ]; then
       info "LVM cluster ready" "true"
     else
@@ -715,7 +743,7 @@ check_extra_readiness(){
     all_paths=$(eval echo $all_paths_config)
     for d in $all_paths; do
       if [[ -d "$d" ]]; then
-        echo -e "\n${NC}Extra Checking $d:"
+        step "Extra Checking $d"
         readarray -t check_files < <(find ${d} -type f \( -name "*.yaml" -o -name "*.yaml.j2" -o -name "*.sh" \) |sort)
         for ((i=0; i<${#check_files[@]}; i++)); do
           file="${check_files[$i]}"
@@ -757,6 +785,8 @@ check_extra_readiness(){
   fi
 }
 
+header "SNO Agent-Based Installer - Readiness Validation"
+step "Gathering cluster information"
 oc get clusterversion
 echo
 oc get node
@@ -788,4 +818,7 @@ check_cgv1
 check_lvm
 check_extra_readiness
 
-echo -e "\n${NC}Completed the checking."
+header "SNO Readiness Check Complete - Summary"
+info "✅ All checks completed" "successfully"
+separator
+printf "${BOLD}${GREEN}🎉 SNO readiness validation completed!${RESET}\n"
