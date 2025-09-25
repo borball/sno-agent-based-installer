@@ -91,15 +91,20 @@ fetch_archs(){
   fi
 
   ocp_arch=$(yq '.cluster.platform' $config_file_input)
+  if [ -z "$ocp_arch" ] || [ "$ocp_arch" == "null" ]; then
+    ocp_arch=$client_arch
+  fi
+
   if [ "$ocp_arch" == "arm" ]; then
     ocp_arch="arm64"
-  fi
-  if [ "$ocp_arch" == "amd" ] || [ "$ocp_arch" == "intel" ]; then
+  elif [ "$ocp_arch" == "amd" ] || [ "$ocp_arch" == "intel" ]; then
     ocp_arch="amd64"
   fi
 
-  if [ -z "$ocp_arch" ] || [ "$ocp_arch" == "null" ]; then
-    ocp_arch=$client_arch
+  if [ "$ocp_arch" == "arm64" ]; then
+     release_arch="aarch64"
+  elif [ "$ocp_arch" == "amd64" ]; then
+    release_arch="x86_64"
   fi
 }
 
@@ -209,23 +214,33 @@ EOF
       if [[ -f "$basedir/local_release_info.txt" ]]; then
         echo "Using local release info: $basedir/local_release_info.txt"
         release_image=$(grep "^$ocp_release=" $basedir/local_release_info.txt|cut -f 2 -d =)
-        echo "Using local release image: $release_image"
       fi
 
       if [[ -z "$release_image" ]]; then
         if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
-          echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
-          release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
+          #echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
+          release_image_base="registry.ci.openshift.org/ocp/release"
+          release_image_tag="$ocp_release_version"
         else
+          release_image_base="quay.io/openshift-release-dev/ocp-release"
           # ec release image is only available for x86_64
           if [[ $ocp_release == *"ec"* ]]; then
-            echo "Using ec release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
-            release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
+            #echo "Using ec release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
+            release_image_tag="$ocp_release_version-x86_64"
           else
-            echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
-            release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+            #echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${release_arch}"
+            release_image_tag="$ocp_release_version-${release_arch}"
           fi
         fi
+        mirror_source=$(yq '.container_registry.image_source' $config_file)
+        if [[ "null" != "$mirror_source" ]]; then
+          mirror_image_base=$(yq ".imageContentSources|filter(.source == \"${release_image_base}\")|.[].mirrors[0]" $mirror_source)
+          if [[ ! -z "${mirror_image_base}" ]]; then
+            release_image_base=$mirror_image_base
+          fi
+        fi
+        release_image="$release_image_base:$release_image_tag"
+        echo "Using release image: $release_image"
       fi
 
       echo "Extracting openshift-install from release image: $release_image on ${client_arch} platform"
