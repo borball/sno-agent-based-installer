@@ -198,6 +198,35 @@ cluster_tunings(){
   fi
 }
 
+performance_profile(){
+  info "Performance profile" "enabled"
+  profile=$(yq '.node_tunings.performance_profile.profile' $config_file)
+
+  if [ -f "$templates/day2/performance-profile/performance-profile-$profile.yaml.j2" ]; then
+    yq '.node_tunings.performance_profile' $config_file |jinja2 $templates/day2/performance-profile/performance-profile-$profile.yaml.j2 | oc apply -f -
+  else
+    error "Performance profile template not found" "$templates/day2/performance-profile/performance-profile-$profile.yaml.j2"
+    exit 1
+  fi
+}
+
+tuned_profiles(){
+  info "Tuned profiles" "enabled"
+  #for all profiles in node_tunings.tuned_profile.profiles
+  for profile in $(yq '.node_tunings.tuned_profile.profiles[].profile' $config_file); do
+    if [ -f "$templates/day2/tuned/tuned-$profile.yaml" ]; then
+      info "Tuned profile" "$templates/day2/tuned/$profile/tuned-$profile.yaml"
+      oc apply -f $templates/day2/tuned/tuned-$profile.yaml
+    elif [ -f "$templates/day2/tuned/tuned-$profile.yaml.j2" ]; then
+      info "Tuned profile" "$templates/day2/tuned/tuned-$profile.yaml.j2"
+      yq '.node_tunings.tuned_profile' $config_file |jinja2 $templates/day2/tuned/tuned-$profile.yaml.j2 | oc apply -f -
+    else
+      error "Tuned profile or template not found" "$templates/day2/tuned/tuned-$profile.yaml or $templates/day2/tuned/tuned-$profile.yaml.j2"
+      exit 1
+    fi
+  done
+}
+
 node_tunings(){
   step "Configuring node tunings"
   if [ "$(yq '.node_tunings' $config_file)" = "null" ]; then
@@ -210,25 +239,21 @@ node_tunings(){
     fi
 
     if [ "$(yq '.node_tunings.performance_profile.enabled' $config_file)" = "true" ]; then
-      info "Performance profile" "enabled"
-      jinja2 $templates/day2/performance-profile/performance-profile.yaml.j2 $config_file | oc apply -f -
+      performance_profile
     else
       warn "Performance profile" "disabled"
     fi
 
     if [ "$(yq '.node_tunings.tuned_profile.enabled' $config_file)" = "true" ]; then
-      info "Tuned profile" "enabled"
-      jinja2 $templates/day2/tuned/performance-patch-tuned.yaml.j2 $config_file | oc apply -f -
+      tuned_profiles
     else
       warn "Tuned profile" "disabled"
     fi
   fi
 }
 
-operator_day2_config(){
-  operator_name=$1
-  step "Configuring $1 operator"
-
+operator_configs(){
+  step "Configuring operator day2 configs"
   readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
 
   for ((k=0; k<${#keys[@]}; k++)); do
@@ -236,7 +261,7 @@ operator_day2_config(){
     if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
       # if day2 files under templates/day2/$key exists, then apply them
       if [[ -d "$templates/day2/$key" ]]; then 
-        info "$key operator: enabling day2"
+        info "$key operator"
         manifest_folders="$templates/day2/$key"
         # if .operators.$key contains day2, then use it to override manifest_folders
         if [[ $(yq ".operators.$key.day2" $config_file) != "null" ]]; then
@@ -246,13 +271,12 @@ operator_day2_config(){
           done
         else
           if [[ -d "$templates/day2/$key/default" ]]; then
-            manifest_folders="manifest_folders $templates/day2/$key/default"
+            manifest_folders="$manifest_folders $templates/day2/$key/default"
           fi
         fi
 
-        info "  └─ manifest_folders" "$manifest_folders" "to be applied"
+        info "  └─ manifest_folders" "$manifest_folders"
         for manifest_folder in $manifest_folders; do
-          info "    └─ applying $manifest_folder"
           if [[ -d "$manifest_folder" ]]; then
             # execute *.sh files in the manifest_folder
             for f in "$manifest_folder"/*.sh; do
@@ -290,29 +314,6 @@ operator_day2_config(){
     fi
   done
 
-}
-
-operator_configs(){
-  step "Configuring OpenShift Operators"
-  if [ "$(yq '.operators' $config_file)" = "null" ]; then
-    warn "Operators" "not configured"
-  else
-    readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
-    
-    for key in ${keys[@]}; do
-      if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
-        # if templates/day2/$key exists and not empty, then do day2 config
-        if [[ -d "$templates/day2/$key" && -n "$(ls -A $templates/day2/$key)" ]]; then
-          #call day2 config function
-          operator_day2_config $key
-        else
-          sleep 1
-        fi 
-      fi
-    done
-    
-    separator
-  fi
 }
 
 install_plan_approval(){

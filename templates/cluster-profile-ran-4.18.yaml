@@ -13,37 +13,32 @@ node_tunings:
     enabled: true
   performance_profile:
     enabled: true
-    template: a|b|c|d
-    data:
-      name: sno-perfprofile
+    profile: ran
+    # name: sno-perfprofile
+    spec:
       cpu:
         isolated: 2-31,34-63
         reserved: 0-1,32-33
-      hugepages:
-        defaultHugepagesSize: 1G
-        pages:
-          - size: 1G
-            count: 32
       hardwareTuning:
         isolatedCpuFreq: 2500000
         reservedCpuFreq: 2500000
-      userLevelNetworking: true
 
   tuned_profile:
     enabled: true
     profiles:
-    - template: a|b|c|d
-      data:
-        cmdline_pstate: intel_pstate=active
-        kdump: false
-        sysfs:
-          cpufreq_max_freq: 2500000
-    - template: a|b|c|d
-      data:
-        cmdline_pstate: intel_pstate=active
-        kdump: false
-        sysfs:
-          cpufreq_max_freq: 2500000
+    # Dell XR8620t example
+    - profile: performance-patch
+      spec:
+        # performance_profile_name: sno-perfprofile
+
+    - profile: dell-nmi
+    - profile: dell-microcode
+    # HPE DL110 Gen 11 example
+    # - profile: performance-patch
+    #   spec:
+    #     performance_profile_name: sno-perfprofile
+    # - profile: hpe-microcode
+
 
 update_control:
   pause_before_update: true

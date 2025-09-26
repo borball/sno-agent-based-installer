@@ -1,0 +1,45 @@
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  name: {{ name or 'openshift-node-performance-profile' }}
+  annotations:
+    ran.openshift.io/ztp-deploy-wave: "10"
+    ran.openshift.io/reference-configuration: "ran-du.redhat.com"
+spec:
+  additionalKernelArgs:
+    - rcupdate.rcu_normal_after_boot=0
+    - efi=runtime
+    - vfio_pci.enable_sriov=1
+    - vfio_pci.disable_idle_d3=1
+    - module_blacklist=irdma
+  cpu:
+    isolated: {{spec.cpu.isolated}}
+    reserved: {{spec.cpu.reserved}}
+  hugepages:
+    defaultHugepagesSize: 1G
+    pages:
+      - size: 1G
+        count: 32
+  machineConfigPoolSelector:
+    pools.operator.machineconfiguration.openshift.io/master: ""
+  {% if spec and spec.hardwareTuning -%}
+  hardwareTuning:
+    isolatedCpuFreq: {{ spec.hardwareTuning.isolatedCpuFreq }}
+    reservedCpuFreq: {{ spec.hardwareTuning.reservedCpuFreq }}
+  {% endif -%}
+  userLevelNetworking: true
+  nodeSelector:
+    node-role.kubernetes.io/master: ""
+  numa:
+    topologyPolicy: "restricted"
+  # To use the standard (non-realtime) kernel, set enabled to false
+  realTimeKernel:
+    enabled: true
+  workloadHints:
+    # WorkloadHints defines the set of upper level flags for different type of workloads.
+    # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
+    # for detailed descriptions of each item.
+    # The configuration below is set for a low latency, performance mode.
+    realTime: true
+    highPowerConsumption: false
+    perPodPowerManagement: false

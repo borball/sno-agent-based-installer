@@ -1,11 +1,7 @@
 apiVersion: performance.openshift.io/v2
 kind: PerformanceProfile
 metadata:
-  # if you change this name make sure the 'include' line in TunedPerformancePatch.yaml
-  # matches this name: include=openshift-node-performance-${PerformanceProfile.metadata.name}
-  # Also in file 'validatorCRs/informDuValidator.yaml': 
-  # name: 50-performance-${PerformanceProfile.metadata.name}
-  name: openshift-node-performance-profile
+  name: {{ name or 'openshift-node-performance-profile' }}
   annotations:
     ran.openshift.io/ztp-deploy-wave: "10"
     ran.openshift.io/reference-configuration: "ran-du.redhat.com"
@@ -26,9 +22,11 @@ spec:
         count: 32
   machineConfigPoolSelector:
     pools.operator.machineconfiguration.openshift.io/master: ""
+  {% if spec and spec.hardwareTuning -%}
   hardwareTuning:
-    isolatedCpuFreq: {{hardwareTuning.isolatedCpuFreq}}
-    reservedCpuFreq: {{hardwareTuning.reservedCpuFreq}}
+    isolatedCpuFreq: {{ spec.hardwareTuning.isolatedCpuFreq }}
+    reservedCpuFreq: {{ spec.hardwareTuning.reservedCpuFreq }}
+  {% endif -%}
   userLevelNetworking: true
   nodeSelector:
     node-role.kubernetes.io/master: ""

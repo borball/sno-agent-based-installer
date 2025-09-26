@@ -12,8 +12,33 @@ node_tunings:
     enabled: true
   performance_profile:
     enabled: true
+    profile: ran
+    name: sno-perfprofile
+    spec:
+      cpu:
+        isolated: 2-31,34-63
+        reserved: 0-1,32-33
+
   tuned_profile:
     enabled: true
+    profiles:
+    # Dell XR8620t example
+    - profile: performance-patch
+      spec:
+        performance_profile_name: sno-perfprofile
+        cmdline_pstate: intel_pstate=active
+        sysfs:
+          cpufreq_max_freq: 2500000
+
+    - profile: dell-nmi
+    # HPE DL110 Gen 11 example
+    # - profile: performance-patch
+    #   spec:
+    #     performance_profile_name: sno-perfprofile
+    #     cmdline_pstate: intel_pstate=active
+    #     sysfs:
+    #       cpufreq_max_freq: 2500000
+
 
 update_control:
   pause_before_update: true

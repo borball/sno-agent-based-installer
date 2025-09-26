@@ -1,0 +1,18 @@
+---
+apiVersion: tuned.openshift.io/v1
+kind: Tuned
+metadata:
+  name: dell-nmi-tune
+  namespace: openshift-cluster-node-tuning-operator
+spec:
+  profile:
+    - name: dell-nmi-tune
+      data: |
+        [main]
+        summary=Configuration changes profile inherited from performance created tuned
+        include=performance-patch
+        [sysctl]
+        kernel.panic_on_unrecovered_nmi=1
+  recommend:
+    - profile: dell-nmi-tune
+      priority: 18
