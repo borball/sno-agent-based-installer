@@ -161,7 +161,7 @@ operators:
     #version: lvm-operator.v4.20.0
     data:
       disks:
-        - disk_by_path: example-to-be-replaced
+        - path: /dev/disk/by-path/example-to-be-replaced
           wipe_table: true
       device_classes:
         - name: vg1

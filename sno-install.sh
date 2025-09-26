@@ -5,17 +5,18 @@
 #
 # The script will install the latest cluster created by sno-iso.sh if <cluster-name> is not present
 # If cluster-name presents it will install the cluster with config file: instance/<cluster-name>/config-resolved.yaml
-#
 
-if ! type "yq" > /dev/null; then
-  echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
-fi
+check_dependencies(){
+  if ! type "yq" > /dev/null; then
+    echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+  fi
 
-if ! type "jinja2" > /dev/null; then
-  echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
-  pip3 install --user jinja2-cli
-  pip3 install --user jinja2-cli[yaml]
-fi
+  if ! type "jinja2" > /dev/null; then
+    echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
+    pip3 install --user jinja2-cli
+    pip3 install --user jinja2-cli[yaml]
+  fi
+}
 
 # Color codes for better output
 RED=$(tput setaf 1)
@@ -55,18 +56,14 @@ separator(){
   printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
 }
 
-usage(){
-  info "Usage: $0 <cluster-name>"
-  info "If <cluster-name> is not present, it will install the newest cluster created by sno-iso"
-  info "Example: $0"
-  info "Example: $0 sno130"
-}
+check_dependencies
 
-if [[ ( $@ == "--help") ||  $@ == "-h" ]]
-then
-  usage
-  exit
-fi
+usage(){
+  echo "Usage: $0 <cluster-name>"
+  echo "If <cluster-name> is not present, it will install the newest cluster created by sno-iso.sh"
+  echo "Example: $0"
+  echo "Example: $0 sno130"
+}
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 cluster_name=$1; shift
@@ -86,155 +83,13 @@ else
   exit -1
 fi
 
-domain_name=$(yq '.cluster.domain' $config_file)
-api_fqdn="api."$cluster_name"."$domain_name
-api_token=$(jq -r '.["*gencrypto.AuthConfig"].UserAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
-if [[ -z "${api_token}" ]]; then
-  api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
-fi
-
-bmc_address=$(yq '.bmc.address' $config_file)
-bmc_user="$(yq '.bmc.username' $config_file)"
-bmc_password="$(yq '.bmc.password' $config_file)"
-password_var=$(echo "$bmc_password" |sed -n 's;^ENV{\(.*\)}$;\1;gp')
-
-export KUBECONFIG=$cluster_workspace/auth/kubeconfig
-
-if [[ -n "${password_var}" ]]; then
-  if [[ -z "${!password_var}" ]]; then
-    error "BMC password not found" "Environment variable '${password_var}' is empty"
-    exit -1
-  fi
-  username_password="${bmc_user}:${!password_var}"
-else
-  username_password="${bmc_user}:${bmc_password}"
-fi
-bmc_noproxy=$(yq ".bmc.bypass_proxy" $config_file)
-
-rest_response=$(mktemp)
-
-CURL="curl -s"
-if [[ "true"=="${bmc_noproxy}" ]]; then
-  CURL+=" --noproxy ${bmc_address}"
-fi
-
-iso_image=$(yq '.iso.address' $config_file)
-deploy_cmd=$(eval echo $(yq '.iso.deploy // ""' $config_file))
-ocp_arch=$(uname -m)
-iso_protocol=$(yq -r '.iso.protocol|select( . != null )' $config_file)
-kvm_uuid=$(yq '.bmc.kvm_uuid // "" ' $config_file)
-
-set -euoE pipefail
-
-redfish_init(){
-  if [ ! -z $kvm_uuid ] && [ ! $kvm_uuid == "null" ]; then
-    system=/redfish/v1/Systems/$kvm_uuid
-    manager=/redfish/v1/Managers/$kvm_uuid
-  else
-    system=$($CURL -sku ${username_password}  https://$bmc_address/redfish/v1/Systems | jq '.Members[0]."@odata.id"' )
-    manager=$($CURL -sku ${username_password}  https://$bmc_address/redfish/v1/Managers | jq '.Members[0]."@odata.id"' )
-  fi
-
-  if [ $manager == "null" ] || [ $system == "null" ]; then
-    error "Redfish initialization failed" "System or manager is 'null'"
-    exit -1
-  fi
-
-  system=$(sed -e 's/^"//' -e 's/"$//' <<<$system)
-  manager=$(sed -e 's/^"//' -e 's/"$//' <<<$manager)
-  system_path=https://$bmc_address$system
-  manager_path=https://$bmc_address$manager
-  virtual_media_root=$manager_path/VirtualMedia
-  virtual_media_path=""
-
-  virtual_medias=$($CURL -sku ${username_password} $virtual_media_root | jq '.Members[]."@odata.id"' )
-  for vm in $virtual_medias; do
-    vm=$(sed -e 's/^"//' -e 's/"$//' <<<$vm)
-    if [ $($CURL -sku ${username_password} https://$bmc_address$vm | jq '.MediaTypes[]' |grep -ciE 'CD|DVD') -gt 0 ]; then
-      virtual_media_path=$vm
-      break
-    fi
-  done
-
-  if [ $virtual_media_path == "null" ] || [ -z $virtual_media_path ]; then
-    error "Virtual media path not found" "Cannot start deployment"
-    exit -1
-  else
-    virtual_media_path=https://$bmc_address$virtual_media_path
-  fi
-}
-
-server_secureboot_delete_keys() {
-    $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{"ResetKeysType":"DeleteAllKeys"}' \
-    -X POST  $system_path/SecureBoot/Actions/SecureBoot.ResetKeys
-}
-
-check_rest_result() {
-    local action=$1
-    local rest_result=$2
-    local rest_response=$3
-
-    if [[ -n "$rest_result" ]] && [[ $rest_result -lt 300 ]]; then
-      info "$action" "$rest_result"
-    else
-      warn "$action" "$rest_result"
-      echo $(cat $rest_response)
-    fi
-    rm -f $rest_response
-}
-
-server_get_bios_config(){
-    # Retrieve BIOS config over Redfish
-    $CURL -sku ${username_password}  $system_path/Bios |jq
-}
-
-server_restart() {
-    # Restart
-    info "Restarting server" "..."
-    $CURL --globoff  -L -w "%{http_code} %{url_effective}\\n" -ku ${username_password} \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -d '{"ResetType": "ForceRestart"}' \
-    -X POST $system_path/Actions/ComputerSystem.Reset
-}
-
-server_power_off() {
-    # Power off
-    local action="Power off Server"
-    rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
-    -H "Content-Type: application/json" -H "Accept: application/json" \
-    -o "$rest_response" -d '{"ResetType": "ForceOff"}' -X POST $system_path/Actions/ComputerSystem.Reset)
-    check_rest_result "$action" "$rest_result" "$rest_response"
-}
-
-server_power_on() {
-    # Power on
-    local action="Power on Server"
-    rest_result=$($CURL --globoff  -L -w "%{http_code}" -ku ${username_password} \
-      -H "Content-Type: application/json" -H "Accept: application/json" -d '{"ResetType": "On"}' \
-      -o "$rest_response" -X POST $system_path/Actions/ComputerSystem.Reset)
-    check_rest_result "$action" "$rest_result" "$rest_response"
-}
-
-virtual_media_eject() {
-    # Eject Media
-    local action="Eject Virtual Media"
-    rest_result=$($CURL --globoff -L -w "%{http_code}"  -ku ${username_password} \
-      -H "Content-Type: application/json" -H "Accept: application/json" -d '{}' \
-      -o "$rest_response" -X POST $virtual_media_path/Actions/VirtualMedia.EjectMedia)
-    check_rest_result "$action" "$rest_result" "$rest_response"
-}
-
-virtual_media_status(){
-    # Media Status
-    info "Virtual media status" "checking"
-    $CURL -s --globoff -H "Content-Type: application/json" -H "Accept: application/json" \
-    -k -X GET --user ${username_password} \
-    $virtual_media_path| jq
+iso_info(){
+  iso_image=$(yq '.iso.address' $config_file)
 }
 
 deploy_iso(){
+  deploy_cmd=$(eval echo $(yq '.iso.deploy // ""' $config_file))
+
   [[ -z "$deploy_cmd" ]] && return
   [[ ! -x $(realpath $deploy_cmd) ]] && error "Deploy command not executable" "$deploy_cmd" && exit
   iso_file=$(find "$cluster_workspace" -name 'agent.*.iso')
@@ -243,49 +98,378 @@ deploy_iso(){
   local result=$?
   if [[ $result -ne 0 ]]; then
     error "ISO deployment failed" "Exit code: $result"
-    exit
+    exit -1
   fi
 }
 
-virtual_media_insert(){
-    # Insert Media from http server and iso file
-    local action="Insert Virtual Media"
-    local protocol="${iso_protocol}"
-    if [[ -z "$protocol" ]]; then
-      if [[ $iso_image == https* ]]; then
-        protocol="HTTPS"
-      else
-        protocol="HTTP"
-      fi
+redfish_init(){
+  step "Initializing Redfish"
+  rest_response=$(mktemp)
+
+  bmc_address=$(yq '.bmc.address' $config_file)
+  bmc_user="$(yq '.bmc.username' $config_file)"
+  bmc_password="$(yq '.bmc.password' $config_file)"
+  password_var=$(echo "$bmc_password" |sed -n 's;^ENV{\(.*\)}$;\1;gp')
+
+  if [[ -n "${password_var}" ]]; then
+    if [[ -z "${!password_var}" ]]; then
+      error "BMC password not found" "Environment variable '${password_var}' is empty"
+      exit -1
     fi
-    if [[ "${protocol}" == "skip" ]]; then
-      rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
-      -H "Content-Type: application/json" -H "Accept: application/json" \
-      -o "$rest_response" \
-      -d "{\"Image\": \"${iso_image}\"}" \
-      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia)
+    username_password="${bmc_user}:${!password_var}"
+  else
+    username_password="${bmc_user}:${bmc_password}"
+  fi
+  bmc_noproxy=$(yq ".bmc.bypass_proxy" $config_file)
+
+  redfish_curl_cmd="curl -s"
+  if [[ "true"=="${bmc_noproxy}" ]]; then
+    redfish_curl_cmd+=" --noproxy ${bmc_address}"
+  fi
+  redfish_curl_cmd+=" -ku ${username_password}"
+  redfish_curl_cmd+=" -H 'Content-Type: application/json'"
+  redfish_curl_cmd+=" -H 'Accept: application/json'"
+
+  # Function to get HTTP status code from redfish endpoint
+  get_redfish_status() {
+    local url="$1"
+    local temp_file=$(mktemp)
+    local status_code
+    
+    if [[ "true"=="${bmc_noproxy}" ]]; then
+      status_code=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        -w '%{http_code}' -o "$temp_file" "$url" 2>&1 | tail -c 3)
     else
-      rest_result=$($CURL --globoff -L -w "%{http_code}" -ku ${username_password} \
-      -H "Content-Type: application/json" -H "Accept: application/json" \
-      -o "$rest_response" \
-      -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
-      -X POST $virtual_media_path/Actions/VirtualMedia.InsertMedia)
+      status_code=$(curl -s -ku "${username_password}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        -w '%{http_code}' -o "$temp_file" "$url" 2>&1 | tail -c 3)
     fi
-    check_rest_result "$action" "$rest_result" "$rest_response"
+    
+    # Fallback if status_code is empty or not a number
+    if [[ ! "$status_code" =~ ^[0-9]{3}$ ]]; then
+      status_code="000"
+    fi
+    
+    rm -f "$temp_file"
+    echo "$status_code"
+  }
+
+  if [ ! -z $kvm_uuid ] && [ ! $kvm_uuid == "null" ]; then
+    system=https://$bmc_address/redfish/v1/Systems/$kvm_uuid
+    status_code=$(get_redfish_status "$system")
+    if [ "$status_code" -ne 200 ]; then
+      error "Redfish initialization failed" "System is not available"
+      exit -1
+    fi
+
+    manager=https://$bmc_address/redfish/v1/Managers/$kvm_uuid
+    status_code=$(get_redfish_status "$manager")
+    if [ "$status_code" -ne 200 ]; then
+      warn "Redfish initialization failed" "Manager is not available, will try to use system instead"
+      manager=$system
+    fi
+  else
+    status_code=$(get_redfish_status "https://$bmc_address/redfish/v1/Systems")
+    if [ "$status_code" -ne 200 ]; then
+      error "Redfish initialization failed" "System is not available"
+      exit -1
+    else
+      system=https://$bmc_address$($redfish_curl_cmd  https://$bmc_address/redfish/v1/Systems | jq -r '.Members[0]."@odata.id"' )
+    fi
+
+    status_code=$(get_redfish_status "https://$bmc_address/redfish/v1/Managers")
+    if [ "$status_code" -ne 200 ]; then
+      warn "Redfish initialization failed" "Manager is not available, will try to use system instead"
+      manager=$system
+    else
+      manager=https://$bmc_address$($redfish_curl_cmd  https://$bmc_address/redfish/v1/Managers | jq -r '.Members[0]."@odata.id"' )
+    fi
+  fi
+
+  virtual_medias=$($redfish_curl_cmd $manager/VirtualMedia | jq -r '.Members[]."@odata.id"' )
+  for vm in $virtual_medias; do
+    if [ $($redfish_curl_cmd https://$bmc_address$vm | jq -r '.MediaTypes[]' |grep -ciE 'CD|DVD|cdrom') -gt 0 ]; then
+      virtual_media=$vm
+      break
+    fi
+  done
+
+  if [ $virtual_media == "null" ] || [ -z $virtual_media ]; then
+    error "Virtual media path not found" "Cannot start deployment"
+    exit -1
+  else
+    virtual_media=https://$bmc_address$virtual_media
+  fi
+
+  info "System" "$system"
+  info "Manager" "$manager"
+  info "Virtual media" "$virtual_media"
+
+}
+
+check_rest_result() {
+  local action=$1
+  local rest_result=$2
+  local rest_response=$3
+
+  if [[ -n "$rest_result" ]] && [[ $rest_result -lt 300 ]]; then
+    info "$action" "$rest_result"
+  else
+    warn "$action" "$rest_result"
+    echo $(cat $rest_response)
+  fi
+  rm -f $rest_response
+}
+
+virtual_media_insert(){
+  # Insert Media from http server and iso file
+  local action="Insert Virtual Media"
+  local temp_file=$(mktemp)
+   
+  local protocol="${iso_protocol}"
+  if [[ -z "$protocol" ]]; then
+    if [[ $iso_image == https* ]]; then
+      protocol="HTTPS"
+    else
+      protocol="HTTP"
+    fi
+  fi
+  
+  if [[ "${protocol}" == "skip" ]]; then
+    if [[ "true"=="${bmc_noproxy}" ]]; then
+      rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        --globoff -L -w "%{http_code}" \
+        -d "{\"Image\": \"${iso_image}\"}" \
+        -o "$temp_file" -X POST "$virtual_media/Actions/VirtualMedia.InsertMedia" 2>&1 | tail -c 3)
+    else
+      rest_result=$(curl -s -ku "${username_password}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        --globoff -L -w "%{http_code}" \
+        -d "{\"Image\": \"${iso_image}\"}" \
+        -o "$temp_file" -X POST "$virtual_media/Actions/VirtualMedia.InsertMedia" 2>&1 | tail -c 3)
+    fi
+  else
+    if [[ "true"=="${bmc_noproxy}" ]]; then
+      rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        --globoff -L -w "%{http_code}" \
+        -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
+        -o "$temp_file" -X POST "$virtual_media/Actions/VirtualMedia.InsertMedia" 2>&1 | tail -c 3)
+    else
+      rest_result=$(curl -s -ku "${username_password}" \
+        -H 'Content-Type: application/json' -H 'Accept: application/json' \
+        --globoff -L -w "%{http_code}" \
+        -d "{\"Image\": \"${iso_image}\", \"TransferProtocolType\": \"${protocol}\"}" \
+        -o "$temp_file" -X POST "$virtual_media/Actions/VirtualMedia.InsertMedia" 2>&1 | tail -c 3)
+    fi
+  fi
+  
+  # Copy temp response to rest_response for check_rest_result
+  cp "$temp_file" "$rest_response"
+  rm -f "$temp_file"
+  
+  # Fallback if rest_result is not a valid HTTP code
+  if [[ ! "$rest_result" =~ ^[0-9]{3}$ ]]; then
+    rest_result="000"
+  fi
+  
+  check_rest_result "$action" "$rest_result" "$rest_response"
+}
+
+server_power_off() {
+  # Power off
+  local action="Power off Server"
+  local temp_file=$(mktemp)
+  
+  if [[ "true"=="${bmc_noproxy}" ]]; then
+    rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" \
+      -d '{"ResetType": "ForceOff"}' \
+      -o "$temp_file" -X POST "$system/Actions/ComputerSystem.Reset" 2>&1 | tail -c 3)
+  else
+    rest_result=$(curl -s -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" \
+      -d '{"ResetType": "ForceOff"}' \
+      -o "$temp_file" -X POST "$system/Actions/ComputerSystem.Reset" 2>&1 | tail -c 3)
+  fi
+  
+  # Copy temp response to rest_response for check_rest_result
+  cp "$temp_file" "$rest_response"
+  rm -f "$temp_file"
+  
+  # Fallback if rest_result is not a valid HTTP code
+  if [[ ! "$rest_result" =~ ^[0-9]{3}$ ]]; then
+    rest_result="000"
+  fi
+  
+  check_rest_result "$action" "$rest_result" "$rest_response"
+}
+
+server_power_on() {
+  # Power on
+  local action="Power on Server"
+  local temp_file=$(mktemp)
+  
+  if [[ "true"=="${bmc_noproxy}" ]]; then
+    rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" \
+      -d '{"ResetType": "On"}' \
+      -o "$temp_file" -X POST "$system/Actions/ComputerSystem.Reset" 2>&1 | tail -c 3)
+  else
+    rest_result=$(curl -s -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" \
+      -d '{"ResetType": "On"}' \
+      -o "$temp_file" -X POST "$system/Actions/ComputerSystem.Reset" 2>&1 | tail -c 3)
+  fi
+  
+  # Copy temp response to rest_response for check_rest_result
+  cp "$temp_file" "$rest_response"
+  rm -f "$temp_file"
+  
+  # Fallback if rest_result is not a valid HTTP code
+  if [[ ! "$rest_result" =~ ^[0-9]{3}$ ]]; then
+    rest_result="000"
+  fi
+  
+  check_rest_result "$action" "$rest_result" "$rest_response"
+}
+
+virtual_media_eject() {
+  # Eject Media
+  local action="Eject Virtual Media"
+  local temp_file=$(mktemp)
+  
+  if [[ "true"=="${bmc_noproxy}" ]]; then
+    rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" -d '{}' \
+      -o "$temp_file" -X POST "$virtual_media/Actions/VirtualMedia.EjectMedia" 2>&1 | tail -c 3)
+  else
+    rest_result=$(curl -s -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" -d '{}' \
+      -o "$temp_file" -X POST "$virtual_media/Actions/VirtualMedia.EjectMedia" 2>&1 | tail -c 3)
+  fi
+  
+  # Copy temp response to rest_response for check_rest_result
+  cp "$temp_file" "$rest_response"
+  rm -f "$temp_file"
+  
+  # Fallback if rest_result is not a valid HTTP code
+  if [[ ! "$rest_result" =~ ^[0-9]{3}$ ]]; then
+    rest_result="000"
+  fi
+  
+  check_rest_result "$action" "$rest_result" "$rest_response"
+}
+
+virtual_media_status(){
+  # Media Status
+  info "Virtual media status" "checking..."
+  $redfish_curl_cmd --globoff $virtual_media| jq
 }
 
 server_set_boot_once_from_cd() {
-    # Set boot
-    local action="Boot node from Virtual Media Once"
-    rest_result=$($CURL --globoff  -L -w "%{http_code}"  -ku ${username_password}  \
-      -H "Content-Type: application/json" -H "Accept: application/json" \
+  # Set boot
+  local action="Boot node from Virtual Media Once"
+  local temp_file=$(mktemp)
+  
+  if [[ "true"=="${bmc_noproxy}" ]]; then
+    rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" \
       -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
-      -o "$rest_response" -X PATCH $system_path)
-    check_rest_result "$action" "$rest_result" "$rest_response"
+      -o "$temp_file" -X PATCH "$system" 2>&1 | tail -c 3)
+  else
+    rest_result=$(curl -s -ku "${username_password}" \
+      -H 'Content-Type: application/json' -H 'Accept: application/json' \
+      --globoff -L -w "%{http_code}" \
+      -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
+      -o "$temp_file" -X PATCH "$system" 2>&1 | tail -c 3)
+  fi
+  
+  # Copy temp response to rest_response for check_rest_result
+  cp "$temp_file" "$rest_response"
+  rm -f "$temp_file"
+  
+  # Fallback if rest_result is not a valid HTTP code
+  if [[ ! "$rest_result" =~ ^[0-9]{3}$ ]]; then
+    rest_result="000"
+  fi
+  
+  check_rest_result "$action" "$rest_result" "$rest_response"
+}
+
+monitor_installation_status(){
+  step "Monitoring installation status"
+  
+  export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+
+  if [ -f $cluster_workspace/.openshift_install_state.json ]; then
+    info "Installation state file" "exists"
+  else
+    error "Installation state file" "does not exist"
+    exit -1
+  fi
+
+  domain_name=$(yq '.cluster.domain' $config_file)
+  api_fqdn="api."$cluster_name"."$domain_name
+  api_token=$(jq -r '.["*gencrypto.AuthConfig"].UserAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+  if [[ -z "${api_token}" ]]; then
+    api_token=$(jq -r '.["*gencrypto.AuthConfig"].AgentAuthToken // empty' $cluster_workspace/.openshift_install_state.json)
+  fi
+
+  assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
+  
+  # Function to make authenticated API calls
+  monitor_curl() {
+    curl -s -H "Authorization: ${api_token}" "$@"
+  }
+
+  while [[ "$(monitor_curl "$assisted_rest" -o /dev/null -w '%{http_code}')" != "200" ]]; do
+    echo -n "."
+    sleep 10;
+  done
+
+  echo
+  info "API endpoint available" "starting monitoring"
+  while
+    echo "-------------------------------"
+    _status=$(monitor_curl "$assisted_rest")
+    echo "$_status"| \
+    jq -c '.[] | with_entries(select(.key | contains("name","updated_at","_count","status","validations_info")))|.validations_info|=(.// empty|fromjson|del(.. | .id?))'
+    [[ "\"installing\"" != $(echo "$_status" |jq '.[].status') ]]
+  do sleep 15; done
+
+  echo
+  prev_percentage=""
+  echo "-------------------------------"
+  while
+    total_percentage=$(monitor_curl "$assisted_rest" |jq '.[].progress.total_percentage')
+    if [ ! -z $total_percentage ]; then
+      if [ "$total_percentage" != "$prev_percentage" ]; then
+        info "Installation progress" "$total_percentage%"
+        prev_percentage="$total_percentage"
+      fi
+    fi
+    sleep 20;
+    [[ "$(monitor_curl "$assisted_rest" -o /dev/null -w '%{http_code}')" == "200" ]]
+  do true; done
+
+  echo
+  header "Installation Complete - Summary"
+  info "✅ Installation completed" "successfully"
+  info "📊 Installation progress" "$total_percentage%"
 }
 
 approve_pending_install_plans(){
-  info "Checking for pending InstallPlans" "up to 5 attempts"
+  step "Checking for pending InstallPlans"
   for i in {1..5}; do
     info "  └─ Checking attempt" "$i/5"
     oc get installplan -A
@@ -337,135 +521,50 @@ wait_for_stable_cluster(){
   fi
 }
 
-header "SNO Agent-Based Installation - Deployment"
+redfish_install(){
+  header "SNO Agent-Based Installer - Redfish Installation"
+  
+  redfish_init
+  server_power_off
+  sleep 15
+  virtual_media_insert
+  virtual_media_status
+  server_set_boot_once_from_cd
+  sleep 15
+  server_power_on
+  monitor_installation_status
+}
 
-step "Deploying ISO image"
+post_install(){
+  step "Post installation"
+  
+  # Set KUBECONFIG for any post-installation operations
+  if [ -f "$cluster_workspace/auth/kubeconfig" ]; then
+    export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+    info "KUBECONFIG set" "$cluster_workspace/auth/kubeconfig"
+  else
+    warn "Kubeconfig not found" "Post-install operations may be limited"
+  fi
+}
+
+iso_info
 deploy_iso
 
-separator
-step "Initializing Redfish connection"
-redfish_init
+skip_redfish=$(yq '.iso.skip_redfish' $config_file)
 
-step "Starting SNO deployment"
-info "  └─ Powering off server" "preparing for boot"
-server_power_off
-sleep 15
-info "  └─ Ejecting existing media" "cleanup"
-virtual_media_eject
-info "  └─ Inserting installation media" "mounting ISO"
-virtual_media_insert
-#virtual_media_status
-info "  └─ Setting boot order" "CD/DVD first"
-server_set_boot_once_from_cd
-sleep 10
-info "  └─ Powering on server" "starting installation"
-server_power_on
-#server_restart
-
-separator
-info "🚀 Node is booting from virtual media" "$iso_image"
-info "📺 Monitor installation progress" "via BMC console"
-echo
-step "Waiting for assisted installer service"
-echo -n "  └─ Node booting"
-
-#ipv4_enabled=$(yq '.host.ipv4.enabled // "" ' $config_file)
-#if [ "true" = "$ipv4_enabled" ]; then
-#  node_ip=$(yq '.host.ipv4.ip' $config_file)
-#  assisted_rest=http://$node_ip:8090/api/assisted-install/v2/clusters
-#else
-#  node_ip=$(yq '.host.ipv6.ip' $config_file)
-#  assisted_rest=http://[$node_ip]:8090/api/assisted-install/v2/clusters
-#fi
-
-assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
-
-SSH_CMD="ssh -q -oStrictHostKeyChecking=no"
-ssh_priv_key_input=$(yq -r '.ssh_priv_key //""' $config_file)
-if [[ ! -z "${ssh_priv_key_input}" ]]; then
-  ssh_key_path=$(eval echo $ssh_priv_key_input)
-  SSH_CMD+=" -i ${ssh_key_path}"
+if [ "$skip_redfish" == "true" ]; then
+  warn "Skipping Redfish" "ISO image mounted via other methods"
+  #monitor_installation_status
+else
+  info "Using Redfish" "ISO image will be mounted via Redfish"
+  redfish_install
 fi
 
-REMOTE_CURL="$SSH_CMD core@$api_fqdn curl -s"
-if [[ ! -z "${api_token}" ]]; then
-  REMOTE_CURL+=" -H 'Authorization: ${api_token}'"
-fi
+export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
-# workaround for https://access.redhat.com/solutions/7120118
-exec 3>&2
-exec 2> /dev/null
-
-while [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" != "200" ]]; do
-  echo -n "."
-  sleep 10;
-done
-
-echo
-step "Monitoring installation status"
-while
-  separator
-  _status=$($REMOTE_CURL $assisted_rest)
-  echo "$_status"| \
-   jq -c '.[] | with_entries(select(.key | contains("name","updated_at","_count","status","validations_info")))|.validations_info|=(.// empty|fromjson|del(.. | .id?))'
-  [[ "\"installing\"" != $(echo "$_status" |jq '.[].status') ]]
-do sleep 15; done
-
-echo
-prev_percentage=""
-separator
-step "Tracking installation progress"
-info "  └─ Monitoring cluster deployment" "real-time updates"
-while
-  total_percentage=$($REMOTE_CURL $assisted_rest |jq '.[].progress.total_percentage')
-  if [ ! -z $total_percentage ]; then
-    if [[ "$total_percentage" == "$prev_percentage" ]]; then
-       echo -n "."
-    else
-      echo
-      info "  └─ Installation progress" "$total_percentage% completed"
-      prev_percentage=$total_percentage
-    fi
-  fi
-  sleep 20;
-  [[ "$($REMOTE_CURL -o /dev/null -w ''%{http_code}'' $assisted_rest)" == "200" ]]
-do true; done
-
-# restore stderr
-exec 2>&3
-
-echo
-
-separator
-step "Post-installation cleanup and setup"
-info "  └─ Node has rebooted" "Installation continuing"
-info "  └─ OpenShift commands available soon" "Monitor with oc commands"
-echo
-
-step "Ejecting virtual media"
-info "  └─ Removing installation media" "cleanup"
-virtual_media_eject
-
-step "Waiting for cluster stabilization"
-info "  └─ Allowing cluster to settle" "60 seconds"
-sleep 60
-info "  └─ Checking cluster stability" "monitoring operators"
-wait_for_stable_cluster 60
-
-step "Finalizing operator installations"
+wait_for_stable_cluster
 approve_pending_install_plans
 
-header "Installation Complete - Summary"
-info "✅ SNO installation completed" "successfully"
-info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
-info "🔑 Admin password file" "$cluster_workspace/auth/kubeadmin-password"
-info "⚙️  Configuration file" "$config_file"
-info "🎯 Target cluster" "$cluster_name"
-info "🌐 API endpoint" "https://$api_fqdn:6443"
+post_install
 
-separator
-printf "${BOLD}${GREEN}🎉 SNO installation completed successfully!${RESET}\n"
-printf "${CYAN}Next Steps:${RESET}\n"
-printf "  └─ Access the cluster using the kubeconfig file\n"
-printf "  └─ Run day2 operations: ${YELLOW}./sno-day2.sh $cluster_name${RESET}\n"
-printf "  └─ Monitor cluster operators and workloads\n"
+

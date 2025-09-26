@@ -5,7 +5,13 @@ metadata:
     name: openshift-gitops-operator
     namespace: openshift-operators
 spec:
-    installPlanApproval: Automatic
-    name: openshift-gitops-operator
-    source: {{ source | default('redhat-operators') }}
-    sourceNamespace: openshift-marketplace
+  channel: {{ channel | default('gitops-1.16') }}
+  name: openshift-gitops-operator
+  source: {{ source | default('redhat-operators') }}
+  sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
+  installPlanApproval: Automatic
+  {%- endif %}

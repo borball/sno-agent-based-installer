@@ -103,6 +103,11 @@ node_tunings:
     enabled: false
   tuned_profile:
     enabled: false
+    
+update_control:
+  pause_before_update: true
+  delay_after_update: 60
+  disable_operator_auto_upgrade: true
 
 extra_manifests:
   day1:
@@ -163,7 +168,7 @@ cpu:
 
 pull_secret: ${HOME}/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
-ssh_priv_key: ${HOME}/.ssh/id_rda
+ssh_priv_key: ${HOME}/.ssh/id_rsa
 
 catalog_sources:
   create_marketplace_ns: true

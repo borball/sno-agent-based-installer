@@ -6,11 +6,11 @@ cluster_tunings: none
 
 node_tunings:
   workload_partitioning:
-    enabled: true
+    enabled: false
   performance_profile:
-    enabled: true
+    enabled: false
 
- update_control:
+update_control:
   pause_before_update: true
   delay_after_update: 60
   disable_operator_auto_upgrade: false
@@ -25,10 +25,6 @@ operators:
   talm:
     enabled: true
 
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
 proxy:
   enabled: false
 
@@ -37,4 +33,6 @@ readiness:
 
 pull_secret: ${HOME}/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
-ssh_priv_key: ${HOME}/.ssh/id_rda
+ssh_priv_key: ${HOME}/.ssh/id_rsa
+monitor_over_ssh: false
+

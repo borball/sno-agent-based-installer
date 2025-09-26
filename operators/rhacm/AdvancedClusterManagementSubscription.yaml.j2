@@ -5,7 +5,13 @@ metadata:
   name: advanced-cluster-management
   namespace: open-cluster-management
 spec:
-  installPlanApproval: Automatic
+  channel: {{ channel | default('release-2.13') }}
   name: advanced-cluster-management
   source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
+  installPlanApproval: Automatic
+  {%- endif %}

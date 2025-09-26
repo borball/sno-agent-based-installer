@@ -4,7 +4,13 @@ metadata:
     name: openshift-topology-aware-lifecycle-manager-subscription
     namespace: openshift-operators
 spec:
-    channel: stable
-    name: topology-aware-lifecycle-manager
-    source: {{ source | default('redhat-operators') }}
-    sourceNamespace: openshift-marketplace
+  channel: {{ channel | default('stable') }}
+  name: topology-aware-lifecycle-manager
+  source: {{ source | default('redhat-operators') }}
+  sourceNamespace: openshift-marketplace
+  {% if version is defined -%}
+  startingCSV: {{ version }}
+  installPlanApproval: Manual
+  {% else -%}
+  installPlanApproval: Automatic
+  {%- endif %}

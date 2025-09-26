@@ -142,7 +142,7 @@ operators:
     enabled: false
     data:
       disks:
-        - disk_by_path: example-to-be-replaced
+        - path: /dev/disk/by-path/example-to-be-replaced
           wipe_table: true
       device_classes:
         - name: vg1

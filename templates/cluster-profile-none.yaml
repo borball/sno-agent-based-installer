@@ -6,4 +6,4 @@ cluster_tunings: none
 
 pull_secret: ${HOME}/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
-ssh_priv_key: ${HOME}/.ssh/id_rda
+ssh_priv_key: ${HOME}/.ssh/id_rsa

@@ -52,7 +52,7 @@ update_control:
 
 operators:
   example:
-    enabled: true
+    enabled: false
     version: example.v4.18.0-202507211933
     # data will be passed to the manifests(j2 templates) as env variables
     data: 
@@ -158,8 +158,7 @@ operators:
   sriov:
     enabled: true
     version: sriov-network-operator.v4.18.0-202507211933
-    day2:
-      - profile: 
+
   fec:
     enabled: true
     version: sriov-fec.v2.11.1
@@ -180,7 +179,7 @@ operators:
     version: lvm-operator.v4.18.3
     data:
       disks:
-        - disk_by_path: example-to-be-replaced
+        - path: /dev/disk/by-path/example-to-be-replaced
           wipe_table: true
       device_classes:
         - name: vg1
@@ -188,7 +187,8 @@ operators:
           selector:
             paths:
               - /dev/disk/by-path/example-to-be-replaced
-
+    day1:
+      - profile: wipe-disks
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33

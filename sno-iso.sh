@@ -391,8 +391,13 @@ config_operators(){
     if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
       # if day1 files under templates/day1/$key exists, then apply them
       if [[ -d "$templates/day1/$key" ]]; then 
-        info "$key operator: enabling day1"
-        manifest_folders="$templates/day1/$key"
+        # if $templates/day1/$key has any yaml or yaml.j2 file, then apply them
+        if [[ -d "$templates/day1/$key" && -n "$(ls -A $templates/day1/$key/*.yaml $templates/day1/$key/*.yaml.j2 2>/dev/null)" ]]; then
+          manifest_folders="$templates/day1/$key"
+        else
+          manifest_folders=""
+        fi
+      
         # if .operators.$key contains day1, then use it to override manifest_folders
         if [[ $(yq ".operators.$key.day1" $config_file) != "null" ]]; then
           profile_names=$(yq ".operators.$key.day1[].profile" $config_file)
@@ -401,9 +406,15 @@ config_operators(){
           done
         else
           if [[ -d "$templates/day1/$key/default" ]]; then
-            manifest_folders="manifest_folders $templates/day1/$key/default"
+            manifest_folders="$manifest_folders $templates/day1/$key/default"
           fi
         fi
+
+        if [[ -z "$manifest_folders" ]]; then
+          continue
+        fi
+
+        info "$key operator: enabling day1"
 
         info "  └─ manifest_folders" "$manifest_folders" "to be applied"
         for manifest_folder in $manifest_folders; do
@@ -611,7 +622,8 @@ echo
 $basedir/openshift-install --dir $cluster_workspace agent --log-level=${ABI_LOG_LEVEL:-"info"} create image
 
 header "Installation Complete - Summary"
-info "✅ Bootable ISO generated" "$cluster_workspace/agent.${ocp_arch}.iso"
+
+info "✅ Bootable ISO generated" "$(ls $cluster_workspace/agent.*.iso)"
 info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
 info "🔑 Admin password file" "$cluster_workspace/auth/kubeadmin-password"
 info "⚙️  Configuration file" "$config_file"
@@ -622,7 +634,7 @@ separator
 printf "${BOLD}${GREEN}Next Steps:${RESET}\n"
 printf "${CYAN}Option 1 (Manual):${RESET}\n"
 printf "  └─ Boot node from ISO via BMC console:\n"
-printf "     ${YELLOW}$cluster_workspace/agent.${ocp_arch}.iso${RESET}\n\n"
+printf "     ${YELLOW}$(ls $cluster_workspace/agent.*.iso)${RESET}\n\n"
 printf "${CYAN}Option 2 (Automated):${RESET}\n"
 printf "  └─ Run automated installation (requires HTTP server):\n"
 printf "     ${YELLOW}./sno-install.sh $config_file${RESET}\n\n"

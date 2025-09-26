@@ -5,7 +5,7 @@ metadata:
   name: amq-streams
   namespace: openshift-operators
 spec:
-  channel: {{ channel | default('stable') }}
+  channel: {{ channel | default('amq-streams-2.9.x') }}
   name: amq-streams
   source: {{ source | default('redhat-operators') }}
   sourceNamespace: openshift-marketplace

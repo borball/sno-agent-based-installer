@@ -11,6 +11,6 @@ spec:
     storage:
       disks:
         {%- for disk in disks %}
-        - device: /dev/disk/by-path/{{ disk.disk_by_path }}
+        - device: {{ disk.path }}
           wipeTable: {{ disk.wipe_table | lower }}
         {%- endfor %}
