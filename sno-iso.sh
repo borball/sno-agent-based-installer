@@ -176,6 +176,7 @@ fi
 
 config_file="$cluster_workspace/config-resolved.yaml"
 config_file_temp=$cluster_workspace/config-resolved.yaml.tmp
+cluster_profile_file_temp=$cluster_workspace/cluster-profile-resolved.yaml.tmp
 
 if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
   sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input > $config_file_temp
@@ -183,7 +184,13 @@ else
   cp $config_file_input $config_file_temp
 fi
 
-yq '. *=load("'$config_file_temp'")' $cluster_profile_file > $config_file
+if [ $(cat $cluster_profile_file |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $cluster_profile_file > $cluster_profile_file_temp
+else
+  cp $cluster_profile_file $cluster_profile_file_temp
+fi
+
+yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
 info "Configuration resolved" "$config_file"
 info "Will be used by other sno-* scripts" "✓"
 
@@ -478,11 +485,11 @@ copy_platform_config(){
 }
 
 extra_manifests(){
+  step "Processing extra manifest files"
   extra_manifests=$(yq '.extra_manifests.day1' $config_file)
   if [ "$extra_manifests" == "null" ]; then
     warn "Extra manifests" "not configured"
   else
-    step "Processing extra manifest files"
     all_paths_config=$(yq '.extra_manifests.day1|join(" ")' $config_file)
     all_paths=$(eval echo $all_paths_config)
 
@@ -548,71 +555,65 @@ operator_catalog_sources(){
     done
   fi
 
-  #all versions
-  if [ "$(yq '.container_registry.icsp' $config_file)" != "null" ]; then
-    local size=$(yq '.container_registry.icsp|length' $config_file)
-    for ((k=0; k<$size; k++)); do
-      local name=$(yq ".container_registry.icsp[$k]" $config_file)
-      if [ -f "$name" ]; then
-        info "$name" "copy to $cluster_workspace/openshift/"
-        cp $name $cluster_workspace/openshift/
-      else
-        warn "$name" "not a file or not exist"
-      fi
-    done
-  fi
-
 }
 
 mirror_source(){
   if [ "$(yq '.container_registry.image_source' $config_file)" != "null" ]; then 
+    step "Configuring mirror source"
     cat $(yq '.container_registry.image_source' $config_file) >> $cluster_workspace/install-config.yaml
   fi
 
   if [ "$(yq '.container_registry.icsp' $config_file)" != "null" ]; then
+    step "Configuring ICSP"
     local size=$(yq '.container_registry.icsp|length' $config_file)
     for ((k=0; k<$size; k++)); do
       local name=$(yq ".container_registry.icsp[$k]" $config_file)
-      if [ -f "$name" ]; then
+      if [ -f "$basedir/$name" ]; then
         info "$name" "copy to $cluster_workspace/openshift/"
-        cp $name $cluster_workspace/openshift/
+        cp $basedir/$name $cluster_workspace/openshift/
       else
         warn "$name" "not a file or not exist"
       fi
     done
   fi
 }
+
+render_install_configs(){
+  step "Rendering install-config.yaml and agent-config.yaml"
+  pull_secret_input=$(yq '.pull_secret' $config_file)
+  pull_secret_path=$(eval echo $pull_secret_input)
+  export pull_secret=$(cat $pull_secret_path)
+
+  ssh_key_input=$(yq '.ssh_key' $config_file)
+  ssh_key_path=$(eval echo $ssh_key_input)
+  export ssh_key=$(cat $ssh_key_path)
+
+  bundle_file=$(yq '.additional_trust_bundle' $config_file)
+  if [[ "null" != "$bundle_file" ]]; then
+    export additional_trust_bundle=$(cat $bundle_file)
+  fi
+
+  jinja2 $templates/agent-config.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
+  jinja2 $templates/install-config.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
+}
+
+backup_install_configs(){
+  step "Backing up install-config.yaml and agent-config.yaml"
+  cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
+  cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
+  info "install-config.yaml and agent-config.yaml backed up" "✓"
+}
+
+render_install_configs
 cluster_tunings
-
 container_storage
-
 operator_catalog_sources
-
+mirror_source
 install_operators
 config_operators
-
 extra_manifests
+backup_install_configs
 
-pull_secret_input=$(yq '.pull_secret' $config_file)
-pull_secret_path=$(eval echo $pull_secret_input)
-export pull_secret=$(cat $pull_secret_path)
-
-ssh_key_input=$(yq '.ssh_key' $config_file)
-ssh_key_path=$(eval echo $ssh_key_input)
-export ssh_key=$(cat $ssh_key_path)
-
-bundle_file=$(yq '.additional_trust_bundle' $config_file)
-if [[ "null" != "$bundle_file" ]]; then
-  export additional_trust_bundle=$(cat $bundle_file)
-fi
-
-jinja2 $templates/agent-config.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
-jinja2 $templates/install-config.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
-
-mirror_source
-
-cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
-cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
 
 step "Generating bootable ISO image"
 info "Using OpenShift installer" "$($basedir/openshift-install version | head -1)"
@@ -621,7 +622,7 @@ info "Log level" "${ABI_LOG_LEVEL:-info}"
 echo
 $basedir/openshift-install --dir $cluster_workspace agent --log-level=${ABI_LOG_LEVEL:-"info"} create image
 
-header "Installation Complete - Summary"
+header "Complete - Summary"
 
 info "✅ Bootable ISO generated" "$(ls $cluster_workspace/agent.*.iso)"
 info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
