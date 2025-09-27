@@ -24,7 +24,9 @@ operators:
     enabled: true
   talm:
     enabled: true
-
+  cluster-logging:
+    enabled: true
+  
 proxy:
   enabled: false
 

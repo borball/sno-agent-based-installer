@@ -15,7 +15,7 @@ host:
     gateway: 192.168.1.1
     prefix: 24
     machine_network_cidr: 192.168.1.0/24
-  disk: /dev/nvme0n1
+  disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
 
 cpu:
   isolated: 2-31,34-63
@@ -23,8 +23,8 @@ cpu:
 
 container_storage:
   enabled: false
-  device: /dev/nvme0n1
-  startMiB: 250000
+  device: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
+  startMiB: 500000
   sizeMiB: 0
 
 bmc:
@@ -48,9 +48,3 @@ operators:
   local-storage:
     data:
       disk_by_path: pci-0000:03:00.0-nvme-1
-      device_classes:
-        - name: vg1
-          thin_pool_name: thin-pool-1
-          selector:
-            paths:
-              - /dev/disk/by-path/pci-0000:03:00.0-nvme-1

@@ -28,3 +28,8 @@ iso:
   skip_redfish: true
   address: http://192.168.58.15/iso/acm0.iso
 
+operators:
+  amq:
+    enabled: true
+  amq-console:
+    enabled: true

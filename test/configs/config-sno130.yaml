@@ -35,7 +35,6 @@ iso:
 
 operators:
   local-storage:
-    enabled: true
     data:
       disk_by_path: pci-0000:c3:00.0-nvme-1
 

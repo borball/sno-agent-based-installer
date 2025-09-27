@@ -164,6 +164,7 @@ operators:
   lca:
     enabled: true
     version: lifecycle-agent.v4.18.0
+    
   adp:
     enabled: true
     version: oadp-operator.v1.4.5
