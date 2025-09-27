@@ -31,7 +31,7 @@ bmc:
 
 iso:
   address: http://192.168.58.15/iso/sno130.iso
-  deploy: ./test/deploy-iso.sh
+  #deploy: ./test/deploy-iso.sh
 
 operators:
   local-storage:

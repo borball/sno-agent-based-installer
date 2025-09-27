@@ -28,11 +28,10 @@ node_tunings:
     profiles:
     # Dell XR8620t example
     - profile: performance-patch
-      spec:
+      #spec:
         # performance_profile_name: sno-perfprofile
-
     - profile: dell-nmi
-    - profile: dell-microcode
+   #- profile: dell-microcode
     # HPE DL110 Gen 11 example
     # - profile: performance-patch
     #   spec:
