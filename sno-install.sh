@@ -427,42 +427,92 @@ monitor_installation_status(){
 
   assisted_rest=http://$api_fqdn:8090/api/assisted-install/v2/clusters
   
-  # Function to make authenticated API calls
-  monitor_curl() {
-    curl -s -H "Authorization: ${api_token}" "$@"
-  }
+  # Check if SSH private key is configured and exists
+  ssh_priv_key_input=$(yq -r '.ssh_priv_key //""' $config_file)
+  if [[ ! -z "${ssh_priv_key_input}" ]]; then
+    ssh_key_path=$(eval echo $ssh_priv_key_input)
+    if [[ -f "${ssh_key_path}" ]]; then
+      # Use curl over SSH when SSH key exists and is valid
+      info "Connection method" "SSH tunnel via core@$api_fqdn using key: $ssh_key_path"
+      SSH_CMD="ssh -q -oStrictHostKeyChecking=no -i ${ssh_key_path}"
+      REMOTE_CURL="$SSH_CMD core@$api_fqdn curl -s"
+      if [[ ! -z "${api_token}" ]]; then
+        REMOTE_CURL+=" -H 'Authorization: ${api_token}'"
+      fi
+      
+      # Function to make authenticated API calls over SSH
+      monitor_curl() {
+        $REMOTE_CURL "$@"
+      }
+    else
+      # SSH key configured but file doesn't exist, use direct curl
+      warn "SSH key configured but not found" "$ssh_key_path - falling back to direct connection"
+      info "Connection method" "Direct HTTP to $api_fqdn:8090"
+      monitor_curl() {
+        curl -s -H "Authorization: ${api_token}" "$@"
+      }
+    fi
+  else
+    # No SSH key configured, use direct curl
+    info "Connection method" "Direct HTTP to $api_fqdn:8090 (no SSH key configured)"
+    monitor_curl() {
+      curl -s -H "Authorization: ${api_token}" "$@"
+    }
+  fi
 
+  # workaround for https://access.redhat.com/solutions/7120118
+  exec 3>&2
+  exec 2> /dev/null
+
+  info "Waiting for API endpoint" "$assisted_rest"
+  echo -n "Checking API availability"
   while [[ "$(monitor_curl "$assisted_rest" -o /dev/null -w '%{http_code}')" != "200" ]]; do
     echo -n "."
     sleep 10;
   done
 
   echo
-  info "API endpoint available" "starting monitoring"
+  info "✅ API endpoint available" "starting installation monitoring"
+  info "📊 Monitoring cluster status" "waiting for installation to begin"
   while
     echo "-------------------------------"
     _status=$(monitor_curl "$assisted_rest")
+    current_status=$(echo "$_status" |jq -r '.[].status // "unknown"')
+    info "Cluster status" "$current_status"
     echo "$_status"| \
     jq -c '.[] | with_entries(select(.key | contains("name","updated_at","_count","status","validations_info")))|.validations_info|=(.// empty|fromjson|del(.. | .id?))'
     [[ "\"installing\"" != $(echo "$_status" |jq '.[].status') ]]
   do sleep 15; done
 
   echo
+  info "🚀 Installation started" "monitoring progress"
   prev_percentage=""
   echo "-------------------------------"
   while
     total_percentage=$(monitor_curl "$assisted_rest" |jq '.[].progress.total_percentage')
     if [ ! -z $total_percentage ]; then
       if [ "$total_percentage" != "$prev_percentage" ]; then
-        info "Installation progress" "$total_percentage%"
+        info "📈 Installation progress" "$total_percentage%"
         prev_percentage="$total_percentage"
+      else
+        echo -n "."
       fi
+    else
+      echo -n "."
     fi
     sleep 20;
-    [[ "$(monitor_curl "$assisted_rest" -o /dev/null -w '%{http_code}')" == "200" ]]
+    api_status=$(monitor_curl "$assisted_rest" -o /dev/null -w '%{http_code}')
+    if [[ "$api_status" != "200" ]]; then
+      warn "API connection lost" "HTTP $api_status - installation may be completing"
+    fi
+    [[ "$api_status" == "200" ]]
   do true; done
 
+  # restore stderr
+  exec 2>&3
+
   echo
+  info "🎉 API monitoring complete" "installation finished or node rebooted"
   header "Installation Complete - Summary"
   info "✅ Installation completed" "successfully"
   info "📊 Installation progress" "$total_percentage%"
@@ -554,7 +604,7 @@ skip_redfish=$(yq '.iso.skip_redfish' $config_file)
 
 if [ "$skip_redfish" == "true" ]; then
   warn "Skipping Redfish" "ISO image mounted via other methods"
-  #monitor_installation_status
+  monitor_installation_status
 else
   info "Using Redfish" "ISO image will be mounted via Redfish"
   redfish_install
