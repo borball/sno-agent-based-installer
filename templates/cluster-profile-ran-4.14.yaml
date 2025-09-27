@@ -13,7 +13,7 @@ node_tunings:
   performance_profile:
     enabled: true
     profile: ran
-    name: sno-perfprofile
+    # name: sno-perfprofile
     spec:
       cpu:
         isolated: 2-31,34-63
@@ -110,15 +110,12 @@ operators:
 
   ptp:
     enabled: true
-    version: ptp-operator.v4.18.0-202411130434
+    version: ptp-operator.v4.14.0-202411130434
     config:
       manifests:
         - ptpconfig-boundary-clock.yaml.j2
         - ptp-operator-config-for-event.yaml.j2
     data: 
-      #ptpconfig type: choose any of them: disabled|ordinary|boundary
-      #chronyd service will be disabled if ordinary or boundary being selected
-      ptpconfig: boundary
       clock_threshold_tuning:
         hold_over_timeout: 5
         max_offset: 500
@@ -152,7 +149,7 @@ operators:
 
   sriov:
     enabled: true
-    version: sriov-network-operator.v4.18.0-202411130434
+    version: sriov-network-operator.v4.14.0-202411130434
 
   fec:
     enabled: true

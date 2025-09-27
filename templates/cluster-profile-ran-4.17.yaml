@@ -20,60 +20,60 @@ update_control:
   pause_before_update: true
   delay_after_update: 60
   disable_operator_auto_upgrade: false
-  
+
 operators:
-  # example:
-  #   enabled: true
-  #   version: example.v4.18.0-202507211933
-  #   provision:
-  #     # env variables used by the manifests(j2 templates) can be set in the pre-setup.sh
-  #     before:
-  #       - pre-setup.sh
-  #     # if not specified, all the files under templates/day1/example will be used
-  #     manifests:
-  #       - example1.yaml
-  #       - example2.yaml.j2
-  #     data: 
-  #       key1: value1
-  #       key2: value2
-  #       key3: value3
-  #   config:
-  #     # env variables used by the manifests(j2 templates) can be set in the pre-setup.sh
-  #     before:
-  #       - pre-setup.sh
-  #     # if manifests not specified, all the files under templates/day2/example will be applied with order of filename
-  #     manifests:
-  #       - example1.yaml
-  #       - example2.yaml.j2
-  #     # data will be passed to the manifests(j2 templates) as env variables
-  #     data: 
-  #       key1: value1
-  #       key2: value2
-  #       key3: value3
+  example:
+    enabled: false
+    version: example.v4.18.0-202507211933
+    # data will be passed to the manifests(j2 templates) as env variables
+    data: 
+      key1: value1
+      key2: value2
+      key3: value3
+    
+    # day1 configurations
+    # a|b is the folder name under templates/day1/example, 
+    # for example templates/day1/example, profile can be : a or b
+    # if day1 not specified:
+    #   files under templates/day1/example/ and templates/day1/example/default will be applied
+    # if day1 specified, 
+    #   files under templates/day1/example/ directory will be applied
+    #   for each profile in day1, files under templates/day1/example/$profile will be applied
+    # for the case below:
+    #   files under templates/day1/example/ will be applied
+    #   files under templates/day1/example/a will be applied
+    #   files under templates/day1/example/b will be applied
+    # supported file types:
+    #   *.sh (executed before other files)
+    #   *.yaml
+    #   *.yaml.j2
+    day1:
+      - profile: a
+      - profile: b
+
+    # day2 configurations
+    # a|b is the folder name under templates/day2/example, 
+    # for example templates/day2/example, profile can be : a or b
+    # if day2 not specified:
+    #   files under templates/day2/example/ and templates/day2/example/default will be applied
+    # if day2 specified, 
+    #   files under templates/day2/example/ directory will be applied
+    #   for each profile in day2, files under templates/day2/example/$profile will be applied
+    # for the case below:
+    #   files under templates/day2/example/ will be applied
+    #   files under templates/day2/example/a will be applied
+    #   files under templates/day2/example/b will be applied
+    # supported file types:
+    #   *.sh (executed before other files)
+    #   *.yaml
+    #   *.yaml.j2
+    day2:
+      - profile: a
+      - profile: b
 
   local-storage:
     enabled: true
-    #day1
-    provision:
-      before:
-        # env variables used by the manifests(j2 templates) will be set in the pre-setup.sh
-        # option 1: partition, no need pre-setup.sh
-        # option 2: lvs, need pre-setup.sh
-        #- pre-setup.sh
-      # if not specified, the files under templates/day1/local-storage will be used
-      manifests:
-        # option 1: partition
-        - 60-prepare-lso-partition-mc.yaml.j2
-        # option 2: lvs
-        #- 60-create-lvs-mc.yaml.j2
-
-    #day2
-    config:
-      # before:
-      #   - pre-setup.sh
-      manifests:
-        - local-volume-partition.yaml.j2
-    data: 
+    data:
       local_volume:
         name: local-disks
         storageClassName: general
@@ -85,14 +85,14 @@ operators:
 
   ptp:
     enabled: true
-    config:
-      manifests:
-        - ptpconfig-boundary-clock.yaml.j2
-        - ptp-operator-config-for-event.yaml.j2
+    # no need to specify day2
+    # event-notification-api will be under templates/day2/ptp
+    # boundary-clock will be under templates/day2/ptp/default
+    #day2:
+      #- profile: event-notification-api
+      #- profile: boundary-clock
     data: 
-      #ptpconfig type: choose any of them: disabled|ordinary|boundary
-      #chronyd service will be disabled if ordinary or boundary being selected
-      ptpconfig: disabled
+      event_api_version: "2.0"
       clock_threshold_tuning:
         hold_over_timeout: 5
         max_offset: 500
