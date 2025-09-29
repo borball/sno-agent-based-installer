@@ -33,3 +33,19 @@ operators:
     enabled: true
   amq-console:
     enabled: true
+  gitops:
+    enabled: true
+    data:
+      repo:
+        clusters:
+          url: ssh://git@example.com/clusters-repo.git
+          urlBase64: #base64 encoded of the url
+          targetRevision: main
+          path: clusters
+          sshPrivateKey: #base64 encoded of the private key
+        policies:
+          url: ssh://git@example.com/policies-repo.git
+          urlBase64: #base64 encoded of the url
+          targetRevision: main
+          path: policies
+          sshPrivateKey: #base64 encoded of the private key

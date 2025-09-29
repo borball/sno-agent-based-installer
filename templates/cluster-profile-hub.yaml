@@ -22,6 +22,20 @@ operators:
     enabled: true
   gitops:
     enabled: true
+  # data:
+    # repo: 
+    #   clusters:
+    #     url: ssh://git@example.com/clustes-repo.git
+    #     urlBase64: #base64 encoded of the url
+    #     targetRevision: main
+    #     path: clusters
+    #     sshPrivateKey: #base64 encoded of the private key
+    #   policies:
+    #     url: ssh://git@example.com/policies-repo.git
+    #     urlBase64: #base64 encoded of the url
+    #     targetRevision: main
+    #     path: policies
+    #     sshPrivateKey: #base64 encoded of the private key
   talm:
     enabled: true
   cluster-logging:

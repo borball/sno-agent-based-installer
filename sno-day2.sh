@@ -264,7 +264,8 @@ cluster_info(){
     echo ""
     error "Uninstalled subscriptions found" "Manual intervention required"
     echo "${missing_csv}"
-    exit 1
+    #don't block operation if there are uninstalled subscriptions
+    #exit 1
   fi
 
   i=1
@@ -276,7 +277,9 @@ cluster_info(){
       sleep 30
     else
       error "CSV installation timeout" "Manual intervention required"
-      exit 1
+      #don't block operation if there are CSV installation timeout
+      #exit 1
+      return
     fi
     ((i=i+1))
   done
@@ -638,16 +641,17 @@ operator_configs(){
         if ls "$source_dir"/*.yaml >/dev/null 2>&1; then
           safe_copy "$source_dir/*.yaml" "$operator_workspace" "YAML manifests for $key"
         fi
-        
+
+        # Copy shell scripts
+        if ls "$source_dir"/*.sh >/dev/null 2>&1; then
+          safe_copy "$source_dir/*.sh" "$operator_workspace" "Shell scripts for $key"
+        fi
+
         # Copy Jinja2 templates
         if ls "$source_dir"/*.yaml.j2 >/dev/null 2>&1; then
           safe_copy "$source_dir/*.yaml.j2" "$operator_workspace" "Jinja2 templates for $key"
         fi
         
-        # Copy shell scripts
-        if ls "$source_dir"/*.sh >/dev/null 2>&1; then
-          safe_copy "$source_dir/*.sh" "$operator_workspace" "Shell scripts for $key"
-        fi
       fi
       
       # Process manifest folders
@@ -700,15 +704,101 @@ operator_configs(){
       # Process each manifest folder
       local operator_failed=false
       for manifest_folder in $manifest_folders; do
+        
         if [[ ! -d "$manifest_folder" ]]; then
           debug "Manifest folder not found: $manifest_folder"
           continue
         fi
         
         debug "Processing manifest folder: $manifest_folder"
-        
+         # Determine workspace folder for the manifest_folder
+         local workspace=$(basename "$manifest_folder")
+         local workspace_folder
+         
+         # If manifest_folder is the source template directory, use operator_workspace directly
+         if [[ "$manifest_folder" == "$source_dir" ]]; then
+           workspace_folder="$operator_workspace"
+           debug "Using operator workspace directly: $workspace_folder"
+         else
+           # For profile-specific folders (e.g., default, custom profiles)
+           workspace_folder="$operator_workspace/$workspace"
+           debug "Using profile workspace: $workspace_folder"
+         fi
+         
+         if [[ ! -d "$workspace_folder" ]]; then
+           error "Workspace folder not found: $workspace_folder" "ERROR"
+           continue
+         fi
+
+        # if kustomization.yaml exists, then apply it
+        if [[ -f "$workspace_folder/kustomization.yaml" ]]; then
+          info "    └─ applying kustomization.yaml"
+
+          #if any .j2 exists, then render it
+          for f in "$workspace_folder"/*.yaml.j2; do
+            if [[ -f "$f" ]]; then
+              info "    └─ rendering $f"
+              debug "Using custom data for $key template: $f"
+              yq ".operators.$key.data" "$config_file" | jinja2 "$f" > "$workspace_folder/$(basename "$f" .j2)"
+            fi
+          done
+          debug "Applying kustomization.yaml: $workspace_folder"
+          oc apply -k "$workspace_folder"
+        else
+          # Apply YAML files
+          for f in "$workspace_folder"/*.yaml; do
+            if [[ -f "$f" ]]; then
+              local yaml_name=$(basename "$f")
+              info "    └─ applying $yaml_name"
+              local output
+              if output=$(oc apply -f "$f" 2>&1); then
+                debug "  ✓ Successfully applied: $yaml_name"
+                debug "    Output: $output"
+              else
+                warn "  ✗ Failed to apply: $yaml_name" "ERROR"
+                debug "    Error: $output"
+                operator_failed=true
+              fi
+            fi
+          done
+
+          # Apply Jinja2 templates
+          for f in "$workspace_folder"/*.yaml.j2; do
+            if [[ -f "$f" ]]; then
+              local template_name=$(basename "$f")
+              info "    └─ rendering & applying $template_name"
+              
+              # Check if operator has custom data
+              local data_file=$(yq ".operators.$key.data" "$config_file" 2>/dev/null)
+              local output
+              
+              if [[ "$data_file" != "null" ]]; then
+                debug "Using custom data for $key template: $template_name"
+                if output=$(yq ".operators.$key.data" "$config_file" | jinja2 "$f" | oc apply -f - 2>&1); then
+                  debug "  ✓ Successfully rendered & applied with custom data: $template_name"
+                  debug "    Output: $output"
+                else
+                  warn "  ✗ Failed to render/apply with custom data: $template_name" "ERROR"
+                  debug "    Error: $output"
+                  operator_failed=true
+                fi
+              else
+                debug "Using config file for $key template: $template_name"
+                if output=$(jinja2 "$f" "$config_file" | oc apply -f - 2>&1); then
+                  debug "  ✓ Successfully rendered & applied: $template_name"
+                  debug "    Output: $output"
+                else
+                  warn "  ✗ Failed to render/apply: $template_name" "ERROR"
+                  debug "    Error: $output"
+                  operator_failed=true
+                fi
+              fi
+            fi
+          done
+        fi
+
         # Execute shell scripts
-        for f in "$manifest_folder"/*.sh; do
+        for f in "$workspace_folder"/*.sh; do
           if [[ -f "$f" ]]; then
             local script_name=$(basename "$f")
             info "    └─ executing $script_name"
@@ -720,57 +810,6 @@ operator_configs(){
               warn "  ✗ Failed to execute: $script_name" "ERROR"
               debug "    Error: $output"
               operator_failed=true
-            fi
-          fi
-        done
-        
-        # Apply YAML files
-        for f in "$manifest_folder"/*.yaml; do
-          if [[ -f "$f" ]]; then
-            local yaml_name=$(basename "$f")
-            info "    └─ applying $yaml_name"
-            local output
-            if output=$(oc apply -f "$f" 2>&1); then
-              debug "  ✓ Successfully applied: $yaml_name"
-              debug "    Output: $output"
-            else
-              warn "  ✗ Failed to apply: $yaml_name" "ERROR"
-              debug "    Error: $output"
-              operator_failed=true
-            fi
-          fi
-        done
-        
-        # Apply Jinja2 templates
-        for f in "$manifest_folder"/*.yaml.j2; do
-          if [[ -f "$f" ]]; then
-            local template_name=$(basename "$f")
-            info "    └─ rendering & applying $template_name"
-            
-            # Check if operator has custom data
-            local data_file=$(yq ".operators.$key.data" "$config_file" 2>/dev/null)
-            local output
-            
-            if [[ "$data_file" != "null" ]]; then
-              debug "Using custom data for $key template: $template_name"
-              if output=$(yq ".operators.$key.data" "$config_file" | jinja2 "$f" | oc apply -f - 2>&1); then
-                debug "  ✓ Successfully rendered & applied with custom data: $template_name"
-                debug "    Output: $output"
-              else
-                warn "  ✗ Failed to render/apply with custom data: $template_name" "ERROR"
-                debug "    Error: $output"
-                operator_failed=true
-              fi
-            else
-              debug "Using config file for $key template: $template_name"
-              if output=$(jinja2 "$f" "$config_file" | oc apply -f - 2>&1); then
-                debug "  ✓ Successfully rendered & applied: $template_name"
-                debug "    Output: $output"
-              else
-                warn "  ✗ Failed to render/apply: $template_name" "ERROR"
-                debug "    Error: $output"
-                operator_failed=true
-              fi
             fi
           fi
         done

@@ -78,7 +78,7 @@ spec:
               model: virtio
               name: enp1s0
         memory:
-          guest: 24Gi
+          guest: 32Gi
       networks:
         - multus:
             networkName: localnet-network
