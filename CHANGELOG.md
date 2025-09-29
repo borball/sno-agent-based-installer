@@ -1,3 +1,12 @@
+# 2.x Change logs
+
+## 2025-09
+- Redesigned the config.yaml, introduced the deployment profile concept in the config to simlify the config.yaml 
+- Code refacftoring based on the new config design, with AI's assistance.
+
+
+# 1.0 Change Logs
+
 ## 2024-09-19
 - Add day1.extra-manifests and day2.manifests
 

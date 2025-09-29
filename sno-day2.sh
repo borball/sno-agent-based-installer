@@ -797,15 +797,61 @@ operator_configs(){
 }
 
 install_plan_approval(){
+  debug "install_plan_approval: Setting installPlanApproval to '$1'"
+  
   subs=$(oc get subs -A -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}')
+  debug "Raw subscription data: $subs"
+  
   subs=($subs)
   length=${#subs[@]}
+  debug "Found ${#subs[@]} subscription elements (${length} total array elements)"
+  debug "Subscription array: ${subs[*]}"
+  
+  if [[ $length -eq 0 ]]; then
+    debug "No subscriptions found to update"
+    return 0
+  fi
+  
+  local processed_count=0
+  local failed_count=0
+  
   for i in $( seq 0 2 $((length-2)) ); do
     ns=${subs[$i]}
     name=${subs[$i+1]}
+    debug "Processing subscription $((processed_count + 1)): namespace='$ns', name='$name'"
+    
     info "  ├─ $name subscription installPlanApproval" "$1"
-    oc patch subscription -n $ns $name --type='json' -p=["{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}"]
+    
+    local output
+    # Try operators.coreos.com API group first (most common for OpenShift subscriptions)
+    if output=$(oc patch subscription.operators.coreos.com -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
+      debug "  ✓ Successfully updated subscription: $name in namespace: $ns (operators.coreos.com)"
+      debug "    Output: $output"
+      ((processed_count++))
+    else
+      debug "    Failed with operators.coreos.com, trying apps.open-cluster-management.io: $output"
+      # Fallback to open-cluster-management API group
+      if output=$(oc patch subscription.apps.open-cluster-management.io -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
+        debug "  ✓ Successfully updated subscription: $name in namespace: $ns (apps.open-cluster-management.io)"
+        debug "    Output: $output"
+        ((processed_count++))
+      else
+        warn "  ✗ Failed to update subscription: $name in namespace: $ns" "ERROR"
+        debug "    Error (operators.coreos.com): Failed with operators.coreos.com API group"
+        debug "    Error (apps.open-cluster-management.io): $output"
+        ((failed_count++))
+      fi
+    fi
   done
+  
+  debug "install_plan_approval completed: $processed_count succeeded, $failed_count failed"
+  
+  if [[ $failed_count -gt 0 ]]; then
+    warn "Some subscription updates failed" "Check logs above"
+    return 1
+  fi
+  
+  return 0
 }
 
 operator_auto_upgrade(){
@@ -1004,12 +1050,12 @@ header "Day2 Operations Complete - Summary"
 debug "Script execution completed at: $(date)"
 
 # Calculate workspace usage
-local workspace_size="unknown"
+workspace_size="unknown"
 if command -v du >/dev/null 2>&1; then
   workspace_size=$(du -sh "$day2_workspace" 2>/dev/null | cut -f1 || echo "unknown")
 fi
 
-local file_count="unknown"
+file_count="unknown"
 if [[ -d "$day2_workspace" ]]; then
   file_count=$(find "$day2_workspace" -type f 2>/dev/null | wc -l || echo "unknown")
 fi
