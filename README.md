@@ -10,7 +10,32 @@
 
 The SNO Agent-Based Installer is a comprehensive toolkit for deploying and managing Single Node OpenShift (SNO) clusters using the OpenShift Agent-Based Installer. This repository provides automated scripts for ISO generation, cluster deployment, and configuration management, specifically optimized for Telco RAN workloads.
 
-> **Note**: This repository requires OpenShift 4.12 or later. For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
+**Version 2.x** introduces a redesigned configuration system with deployment profiles to simplify configuration management and improve maintainability.
+
+> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.20+). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
+
+## 🆕 What's New in Version 2.x
+
+### Major Configuration Redesign
+- **🎯 Deployment Profiles**: Simplified configuration with predefined profiles (`ran`, `hub`, `none`)
+- **📁 Operator Profiles**: Flexible day1/day2 configuration profiles for operators
+- **🔧 Enhanced Operator Management**: Improved operator version locking and catalog source management
+- **⚙️ Update Control**: New mechanisms to control operator updates and upgrades
+
+### New Operators Support
+- **🌐 MetalLB Operator**: Load balancer support for bare metal environments
+- **🔗 NMState Operator**: Declarative network configuration management
+- **💻 OpenShift Virtualization**: KubeVirt hyperconverged platform support
+- **🔍 Node Feature Discovery**: Hardware feature detection and labeling
+- **🎮 NVIDIA GPU Operator**: GPU workload support
+- **📊 AMQ Streams & Console**: Apache Kafka messaging platform
+- **🏢 Multicluster Global Hub**: Enhanced multi-cluster management
+
+### Enhanced Features
+- **📋 PreGA Catalog Sources**: Support for pre-GA operator testing
+- **🎛️ Hardware Tuning**: Advanced CPU frequency and hardware optimization
+- **🔄 Profile System**: Modular configuration system for operators
+- **📦 Container Storage**: Enhanced container storage partitioning options
 
 ## ✨ Features
 
@@ -20,13 +45,9 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **🔧 Day-2 Operations**: Post-deployment configuration and operator management
 - **✅ Validation Framework**: Comprehensive cluster validation and health checks
 - **🏗️ Telco RAN Ready**: Optimized for vDU applications with performance tunings
-- **🌐 Multi-Platform Support**: Works with HPE, ZT Systems, Dell, and KVM environments
+- **🌐 Multi-Platform Support**: Works with HPE, ZT Systems, Dell, and OpenShift Virtualization environments
 - **🔄 Version Management**: Support for operator version locking and OpenShift version substitution
 - **📋 Custom Manifests**: Support for extra manifests in both Day-1 and Day-2 operations
-- **⚡ Performance Tuning**: Advanced CPU frequency scaling and hardware tuning options
-- **🔗 Network Bonding**: Support for network interface bonding and VLAN configurations
-- **💾 Storage Provisioning**: Automated local storage and LVM volume provisioning
-- **🔐 Container Security**: Support for container storage partitioning and cgroup v2
 
 ## 🏗️ Architecture
 
@@ -38,6 +59,8 @@ The toolkit consists of main components:
 | `sno-install.sh` | Deploy SNO via BMC/Redfish integration | Deployment |
 | `sno-day2.sh` | Apply post-deployment configurations | Post-deployment |
 | `sno-ready.sh` | Validate cluster configuration and health | Validation |
+| `sno-ready2.sh` | Enhanced validation with additional checks | Validation |
+| `fetch-infra-env.sh` | Fetch infrastructure environment information | Utility |
 
 ## 📋 Prerequisites
 
@@ -68,20 +91,23 @@ pip3 install jinja2-cli jinja2-cli[yaml]
 
 ### 1. Configuration
 
-Create a configuration file based on the sample:
+Create a configuration file based on the sample or use a pre-configured profile:
 
 ```bash
+# Option 1: Start with sample configuration
 cp config.yaml.sample config-mysno.yaml
+
+# Option 2: Use a pre-configured profile template
+cp templates/cluster-profile-ran-4.20.yaml config-mysno.yaml
 ```
 
-Edit the configuration file with your environment details:
+**Version 2.x Configuration** - Simplified with deployment profiles:
 
 ```yaml
 cluster:
   domain: example.com
   name: mysno
-  ntps:
-    - pool.ntp.org
+  profile: ran                    # Deployment profile: ran, hub, none(not specify)
 
 host:
   hostname: mysno.example.com
@@ -89,14 +115,13 @@ host:
   mac: b4:96:91:b4:9d:f0
   ipv4:
     enabled: true
-    dhcp: false
     ip: 192.168.1.100
     dns: 
       - 192.168.1.1
     gateway: 192.168.1.1
     prefix: 24
     machine_network_cidr: 192.168.1.0/24
-  disk: /dev/nvme0n1
+  disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
 
 cpu:
   isolated: 2-31,34-63
@@ -104,14 +129,19 @@ cpu:
 
 bmc:
   address: 192.168.1.200
-  username: admin
+  username: Administrator
   password: password
 
 iso:
   address: http://192.168.1.10/iso/mysno.iso
 
-pull_secret: ./pull-secret.json
-ssh_key: /root/.ssh/id_rsa.pub
+pull_secret: ${HOME}/pull-secret.json
+ssh_key: ${HOME}/.ssh/id_rsa.pub
+
+operators:
+  local-storage:
+    data:
+      disk_by_path: pci-0000:03:00.0-nvme-1
 ```
 
 ### 2. Generate ISO
@@ -123,19 +153,19 @@ ssh_key: /root/.ssh/id_rsa.pub
 ### 3. Deploy SNO
 
 ```bash
-./sno-install.sh mysno
+./sno-install.sh
 ```
 
 ### 4. Apply Day-2 Configuration
 
 ```bash
-./sno-day2.sh mysno
+./sno-day2.sh
 ```
 
 ### 5. Validate Deployment
 
 ```bash
-./sno-ready.sh mysno
+./sno-ready.sh
 ```
 
 ## 📖 Detailed Usage
@@ -264,222 +294,190 @@ host:
 
 ### Configuration Structure
 
-The configuration follows a structured approach with separate sections for different aspects:
+The SNO Agent-Based Installer uses a **hierarchical configuration system** with deployment profiles that provide pre-configured templates for different use cases. This system allows you to start with sensible defaults and override only what you need to customize.
+
+#### Configuration Hierarchy
+
+```
+config.yaml (your configuration)
+    ↓ inherits from
+cluster-profile-<profile-name>-<ocp-version>.yaml (template)
+    ↓ provides defaults for
+All configuration sections
+```
+
+#### How Profile Inheritance Works
+
+1. **Profile Selection**: The `cluster.profile` field in your `config.yaml` determines which template to use
+2. **Template Loading**: The system loads `templates/cluster-profile-<profile>-<ocp-version>.yaml`
+3. **Override Mechanism**: Any values you define in `config.yaml` override the template defaults
+4. **Version Fallback**: If version-specific template doesn't exist, falls back to base profile
+
+#### Available Deployment Profiles
+
+| Profile | Template File | Use Case | Key Features |
+|---------|---------------|----------|--------------|
+| `ran` | `cluster-profile-ran-4.20.yaml` | Telco RAN workloads | Performance tuning, RAN operators, workload partitioning |
+| `hub` | `cluster-profile-hub.yaml` | Hub cluster management | RHACM, GitOps, TALM, cluster logging |
+| `none` | `cluster-profile-none.yaml` | Minimal setup | Basic cluster capabilities only |
+| Not specified | No template loaded | Custom configuration | Manual configuration of all settings |
+
+#### Configuration Examples
+
+**Example 1: Using RAN Profile with Minimal Overrides**
 
 ```yaml
+# config-mysno.yaml
 cluster:
   domain: example.com
   name: mysno
-  platform: intel              # intel, amd, arm
-  ntps:
-    - 0.rhel.pool.ntp.org
-    - 1.rhel.pool.ntp.org
-  capabilities:
-    baselineCapabilitySet: None  # None, vCurrent, v4.12, v4.14, etc.
-    additionalEnabledCapabilities:
-      - NodeTuning
-      - OperatorLifecycleManager
-      - Ingress
+  profile: ran                    # Inherits from cluster-profile-ran-<OCP-Y>.yaml
 
-# Cluster-level tunings: none, 4.14, 4.16, 4.18
-cluster_tunings: none
-
-# Node-level tunings
-node_tunings:
-  workload_partitioning:
+host:
+  hostname: mysno.example.com
+  interface: ens1f0
+  mac: b4:96:91:b4:9d:f0
+  ipv4:
     enabled: true
-  performance_profile:
-    enabled: true
-  tuned_profile:
-    enabled: true
+    ip: 192.168.1.100
+    gateway: 192.168.1.1
+    prefix: 24
+    machine_network_cidr: 192.168.1.0/24
+  disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
 
-# Container storage partitioning
-container_storage:
-  enabled: false
-  device: /dev/nvme0n1
-  startMiB: 250000
-  sizeMiB: 0
+operators:
+  local-storage:
+    data:
+      disk_by_path: pci-0000:03:00.0-nvme-1
 
-# Custom manifests for Day-1 and Day-2
-extra_manifests:
-  day1:
-    - ${HOME}/day1-manifests
-    - ${OCP_Y_VERSION}/version-specific
-  day2:
-    - ${HOME}/day2-manifests
-    - ${OCP_Z_VERSION}/patch-specific
+# The RAN profile automatically provides:
+# - Performance tuning (workload partitioning, performance profile)
+# - RAN operators (PTP, SR-IOV, FEC, LCA, OADP)
+# - Cluster tunings for 4.20
+# - Update control settings
+```
 
-# Operators configuration
+**Example 2: Overriding Operator Settings**
+
+```yaml
+# config-mysno.yaml  
+cluster:
+  profile: ran                    # Base RAN configuration
+
+# Override specific operators from the RAN profile
 operators:
   ptp:
-    enabled: true
-    version: ptp-operator.v4.18.0-202507211933  # Optional version lock
-    config:
-      manifests:
-        - ptpconfig-boundary-clock.yaml.j2
-        - ptp-operator-config-for-event.yaml.j2
+    enabled: true                 # Keep PTP enabled (from profile)
     data:
-      ptpconfig: disabled       # disabled, ordinary, boundary
-      clock_threshold_tuning:
-        hold_over_timeout: 5
-        max_offset: 500
-        min_offset: -500
+      boundary_clock:
+        ha_enabled: true          # Override: enable HA boundary clock
+        profiles:
+          - name: custom-bc-profile
+            slave: ens2f0         # Override: use different interface
+            masters: [ens2f1, ens2f2]
   
-  sriov:
-    enabled: true
-    version: sriov-network-operator.v4.18.0-202507211933
-    
   local-storage:
-    enabled: true
-    version: local-storage-operator.v4.18.0-202507211933
-    provision:
-      manifests:
-        - 60-prepare-lso-partition-mc.yaml.j2  # Option 1: partition
-        # - 60-create-lvs-mc.yaml.j2           # Option 2: logical volumes
-    config:
-      manifests:
-        - local-volume-partition.yaml.j2
-    data:
-      local_volume:
-        name: local-disks
-        storageClassName: general
-      disk_by_path: pci-0000:03:00.0-nvme-1
-      partitions:
-        10g: 30
-        
+    enabled: false                # Override: enable local storage
+  
   lvm:
-    enabled: false
-    version: lvm-operator.v4.18.3
-    data:
+    enabled: true                 # Override: enable LVM
+    data:                         # Override: Env specific settings
       disks:
-        - disk_by_path: pci-0000:03:00.0-nvme-1
+        - path: /dev/disk/by-path/pci-0000:c4:00.0-nvme-1
           wipe_table: true
       device_classes:
         - name: vg1
           thin_pool_name: thin-pool-1
           selector:
             paths:
-              - /dev/disk/by-path/pci-0000:03:00.0-nvme-1
-              
-  cluster-logging:
-    enabled: true
-    version: cluster-logging.v6.2.4
-    
-  lca:
-    enabled: true            # Lifecycle Agent
-    version: lifecycle-agent.v4.18.0
-    
-  adp:
-    enabled: true            # OpenShift API for Data Protection (OADP)
-    version: redhat-oadp-operator.v1.4.5
-    
-  fec:
-    enabled: false           # Intel SRIOV-FEC Operator
-    version: sriov-fec.v2.11.1
-    
-  # Hub cluster operators
-  rhacm:
-    enabled: false           # Red Hat Advanced Cluster Management
+              - /dev/disk/by-path/pci-0000:c4:00.0-nvme-1
+```
+
+**Example 3: Hub Profile with Custom GitOps Configuration**
+
+```yaml
+# config-hub.yaml
+cluster:
+  profile: hub                    # Inherits hub cluster settings
+
+# Override GitOps configuration
+operators:
   gitops:
-    enabled: false           # Red Hat OpenShift GitOps  
-  talm:
-    enabled: false           # Topology Aware Lifecycle Manager
+    enabled: true                 # Keep GitOps enabled (from profile)
+    data:
+      repo:
+        clusters:
+          url: ssh://git@github.com/myorg/clusters.git
+          targetRevision: main
+          path: clusters
+        policies:
+          url: ssh://git@github.com/myorg/policies.git
+          targetRevision: main
+          path: policies
 ```
 
-### Additional Configuration Sections
+**Example 4: Custom Hardware Tuning Override**
 
 ```yaml
-# CPU partitioning
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
+# config-mysno.yaml
+cluster:
+  profile: ran
 
-# Authentication
-pull_secret: ${HOME}/pull-secret.json
-ssh_key: ${HOME}/.ssh/id_rsa.pub
-ssh_priv_key: ${HOME}/.ssh/id_rsa
-
-# Catalog sources management
-catalog_sources:
-  create_marketplace_ns: true
-  update_operator_hub: false
-  create_default_catalog_sources: true
-  defaults:
-    - redhat-operators
-    - certified-operators
-  customs:
-    - name: prega
-      display: Red Hat Operators OCP_Y_RELEASE PreGA
-      image: quay.io/prega/prega-operator-index:vOCP_Y_RELEASE
-      publisher: Red Hat
-
-# Container registry and mirroring
-container_registry:
-  image_source: ${HOME}/registry/local-mirror.yaml
-  icsp:
-    - templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
-
-# Proxy configuration
-proxy:
-  enabled: false
-  http: http://proxy.example.com:8080
-  https: https://proxy.example.com:8080
-  noproxy: localhost,127.0.0.1,.example.com
-
-# Additional trust bundle for disconnected environments
-additional_trust_bundle: /root/registry/ca-bundle.crt
-
-# BMC configuration
-bmc:
-  address: 192.168.1.200
-  username: Administrator
-  password: password
-  kvm_uuid: 11111111-1111-1111-1234-000000000000
-
-# ISO configuration
-iso:
-  address: http://192.168.1.10/iso/mysno.iso
-  protocol: skip               # Optional: skip TransferProtocolType for compatibility
-  deploy: ${HOME}/bin/deploy_boot_iso.sh  # Optional deploy script
-
-# Readiness validation
-readiness:
-  default: true
-  extra_checks:
-    - ${HOME}/custom-checks
-    - ${HOME}/validation-scripts
-```
-
-### Performance Tuning
-
-Performance tuning is configured through the `node_tunings` section:
-
-```yaml
+# Override performance tuning from RAN profile
 node_tunings:
-  workload_partitioning:
-    enabled: true
   performance_profile:
     enabled: true
-    name: sno-perfprofile
-    real_time: false
-    net:
-      user_level_networking: true
-    hardwareTuning:
-      isolatedCpuFreq: 2500000
-      reservedCpuFreq: 2800000
-    hugepage:
-      default: 2M
-      pages:
-        - size: 2M
-          count: 32768
-          node: 1
+    spec:
+      cpu:
+        isolated: 4-47,52-95      # Override: different CPU layout
+        reserved: 0-3,48-51
+      hardwareTuning:
+        isolatedCpuFreq: 3000000  # Override: higher frequency
+        reservedCpuFreq: 3200000
   tuned_profile:
-    enabled: true
-    cmdline_pstate: intel_pstate=active  # For passive mode BIOS settings
-    kdump: false
-    sysfs:
-      cpufreq_max_freq: 2500000         # Cap CPU frequency
+    profiles:
+      - profile: performance-patch
+      - profile: hpe-settings     # Override: HPE-specific tuning instead of Dell
 ```
+
+#### Profile Template Structure
+
+Each profile template contains the following sections:
+
+```yaml
+# cluster-profile-ran-4.20.yaml (example)
+cluster:
+  capabilities:                   # Cluster capability settings
+    baselineCapabilitySet: None
+    additionalEnabledCapabilities: [...]
+
+cluster_tunings: 4.20            # Version-specific cluster tunings
+
+node_tunings:                    # Performance and tuning settings
+  workload_partitioning: {...}
+  performance_profile: {...}
+  tuned_profile: {...}
+
+update_control:                  # Operator update control
+  pause_before_update: true
+  disable_operator_auto_upgrade: true
+
+operators:                       # Pre-configured operators
+  ptp: {...}
+  sriov: {...}
+  lvm: {...}
+  # ... other operators
+
+# Additional sections like proxy, readiness, etc.
+```
+
+#### Best Practices
+
+1. **Start with a Profile**: Choose the profile that best matches your use case
+2. **Override Selectively**: Only override the specific settings you need to change
+3. **Use Version-Specific Profiles**: Use the profile that matches your OpenShift version
+4. **Test Overrides**: Validate that your overrides work as expected
+5. **Document Changes**: Comment your overrides to explain why they differ from the profile 
 
 ## 🔧 Advanced Features
 
@@ -505,31 +503,60 @@ extra_manifests:
 - `${OCP_Y_RELEASE}`: Substituted with Y release info
 - `${OCP_Z_RELEASE}`: Substituted with Z release info
 
-### Operator-Specific Manifests
+### Operator-Specific Manifests and Profiles
 
-Operators can include custom manifests and configuration data:
+**Version 2.x** introduces operator profiles for flexible configuration:
 
 ```yaml
 operators:
+  example:
+    enabled: false
+    version: example.v4.20.0-202507211933
+    source: prega              # Catalog source
+    data:                      # Variables passed to templates
+      key1: value1
+      key2: value2
+    
+    # Day-1 configurations with profiles
+    day1:
+      - profile: a             # Uses templates/day1/example/a/
+      - profile: b             # Uses templates/day1/example/b/
+    
+    # Day-2 configurations with profiles  
+    day2:
+      - profile: a             # Uses templates/day2/example/a/
+      - profile: b             # Uses templates/day2/example/b/
+
   local-storage:
-    enabled: true
-    version: local-storage-operator.v4.18.0-202507211933
-    provision:                    # Day-1 manifests
-      before:
-        - pre-setup.sh           # Optional pre-setup script
-      manifests:
-        - 60-prepare-lso-partition-mc.yaml.j2
-    config:                      # Day-2 manifests
-      manifests:
-        - local-volume-partition.yaml.j2
-    data:                        # Variables passed to manifest templates
+    enabled: false
+    source: prega
+    data:
       local_volume:
         name: local-disks
         storageClassName: general
       disk_by_path: pci-0000:03:00.0-nvme-1
       partitions:
         10g: 30
+
+  lvm:
+    enabled: true
+    source: prega
+    data:
+      disks:
+        - path: /dev/disk/by-path/pci-0000:03:00.0-nvme-1
+          wipe_table: true
+      device_classes:
+        - name: vg1
+          thin_pool_name: thin-pool-1
+    day1:
+      - profile: wipe-disks    # Disk preparation profile
 ```
+
+**Profile System:**
+- If no profiles specified: uses `default/` directory
+- Profiles allow multiple configurations per operator
+- Supports `.sh`, `.yaml`, and `.yaml.j2` files
+- Shell scripts execute before other files
 
 ### Profile Templates
 
@@ -544,14 +571,20 @@ The repository includes several pre-configured profile templates:
 
 ### Version-Specific Templates
 
-RAN profiles are available for different OpenShift versions:
+RAN profiles are available for different OpenShift versions with version 2.x enhancements:
 - `cluster-profile-ran-4.14.yaml` - OpenShift 4.14 optimizations
 - `cluster-profile-ran-4.15.yaml` - OpenShift 4.15 optimizations  
 - `cluster-profile-ran-4.16.yaml` - OpenShift 4.16 optimizations
 - `cluster-profile-ran-4.17.yaml` - OpenShift 4.17 optimizations
 - `cluster-profile-ran-4.18.yaml` - OpenShift 4.18 optimizations
 - `cluster-profile-ran-4.19.yaml` - OpenShift 4.19 optimizations
-- `cluster-profile-ran-4.20.yaml` - OpenShift 4.20 optimizations
+- `cluster-profile-ran-4.20.yaml` - **Latest** OpenShift 4.20 optimizations with new features
+
+**New in 4.20 Profile:**
+- Enhanced operator profile system
+- Update control mechanisms
+- PreGA catalog source support
+- Improved hardware tuning options
 
 ## 🧪 Testing
 
@@ -595,13 +628,26 @@ cp samples/config-ipv4.yaml config-mysno.yaml
 
 ## 📊 Validation Checklist
 
-The `sno-ready.sh` and `sno-ready2.sh` scripts validate:
+The `sno-ready.sh` and `sno-ready2.sh` scripts provide comprehensive validation:
 
+### Core Validation (`sno-ready.sh`)
 - ✅ **Cluster Health**: Node status, operator health, pod status
 - ✅ **Machine Configs**: CPU partitioning, kdump, performance settings
 - ✅ **Performance Profile**: Isolated/reserved CPUs, real-time kernel
-- ✅ **Operators**: PTP, SR-IOV, Local Storage, Cluster Logging, MetalLB, NMState
+- ✅ **Operators**: PTP, SR-IOV, Local Storage, Cluster Logging
 - ✅ **Network**: SR-IOV node state, network diagnostics
 - ✅ **System**: Kernel parameters, cgroup configuration, container runtime
-- ✅ **Monitoring**: AlertManager, Prometheus, Telemetry settings
-- ✅ **Storage**: Local storage, LVM storage configurations
+
+### Enhanced Validation (`sno-ready2.sh`)
+- ✅ **Extended Operator Support**: MetalLB, NMState, LVM, LCA, OADP, FEC
+- ✅ **Hub Cluster Features**: RHACM, GitOps, TALM, MCE, MCGH
+- ✅ **Advanced Monitoring**: AlertManager, Prometheus, Telemetry settings
+- ✅ **Storage Validation**: Local storage, LVM storage configurations
+- ✅ **Container Features**: Virtualization, GPU operators
+- ✅ **Update Control**: Operator upgrade policies and pause mechanisms
+
+### Version 2.x Enhancements
+- 🔄 **Profile Validation**: Deployment profile-specific checks
+- 📋 **Operator Profiles**: Validation of day1/day2 profile configurations
+- 🎯 **Catalog Sources**: PreGA and custom catalog source validation
+- ⚙️ **Update Control**: Validation of operator update control settings
