@@ -18,6 +18,16 @@ update_control:
 operators:
   lvm:
     enabled: true
+    data:
+      disks:
+        - path: /dev/disk/by-path/pci-0000:c4:00.0-nvme-1
+          wipe_table: true
+      device_classes:
+        - name: vg1
+          thin_pool_name: thin-pool-1
+          selector:
+            paths:
+              - /dev/disk/by-path/pci-0000:c4:00.0-nvme-1
   rhacm:
     enabled: true
   gitops:

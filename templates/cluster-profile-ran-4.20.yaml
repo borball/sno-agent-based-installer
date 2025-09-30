@@ -95,7 +95,7 @@ operators:
       - profile: b
 
   local-storage:
-    enabled: true
+    enabled: false
     source: prega
     data:
       local_volume:
@@ -179,7 +179,7 @@ operators:
     #version: oadp-operator.v1.4.5
 
   lvm:
-    enabled: false
+    enabled: true
     source: prega
     #Do not lock version in preGA
     #version: lvm-operator.v4.20.0
