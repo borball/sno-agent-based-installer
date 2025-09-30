@@ -241,6 +241,7 @@ cluster:
   name: mysno                  # Cluster name
   ntps:                        # NTP servers (optional)
     - pool.ntp.org
+  profile: ran                 # Profile template
 
 host:
   hostname: mysno.example.com  # Node hostname
