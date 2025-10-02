@@ -334,11 +334,11 @@ cluster_tunings(){
     count=1
     for file in $templates/day1/cluster-tunings/$cluster_tunings/*.yaml; do
       filename=$(basename "$file")
-      if [[ $count -lt $tuning_files ]]; then
-        info "  ├─ $filename" "enabled"
-      else
-        info "  └─ $filename" "enabled"
-      fi 
+      local prefix="  ├─"
+      if [[ $count -eq $tuning_files ]]; then
+         prefix="  └─"
+      fi
+      info "${prefix} $filename" "enabled"
       ((count++))
     done
     cp $templates/day1/cluster-tunings/$cluster_tunings/*.yaml $cluster_workspace/openshift/

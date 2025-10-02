@@ -494,30 +494,30 @@ tuned_profiles(){
   
   # Get all profiles from config
   local profiles
-  profiles=$(yq '.node_tunings.tuned_profile.profiles[].profile' "$config_file" 2>/dev/null)
-  if [[ -z "$profiles" ]]; then
+  readarray -t profiles < <(yq '.node_tunings.tuned_profile|keys[]|select(.!="enabled")' "$config_file" 2>/dev/null)
+  if [[ ${#profiles[@]} -le 0 ]]; then
     warn "No tuned profiles configured" "skipping"
     return 0
   fi
-  
-  debug "Configured tuned profiles: $profiles"
+
+  debug "Configured tuned profiles: ${profiles[@]}"
   local processed_count=0
   local failed_count=0
   
   # Process each profile
-  for profile in $profiles; do
+  for profile in "${profiles[@]}"; do
     debug "Processing tuned profile: $profile"
-    
-    local static_template="$templates/day2/tuned/tuned-$profile.yaml"
-    local jinja_template="$templates/day2/tuned/tuned-$profile.yaml.j2"
+
     local output_file="$tuned_workspace/tuned-$profile.yaml"
     
-    debug "Checking for static template: $static_template"
-    debug "Checking for jinja template: $jinja_template"
-    
-    if [[ -f "$static_template" ]]; then
+    local prefix="  ├─"
+    if [[ $profile ==  ${profiles[-1]} ]]; then
+       prefix="  └─"
+    fi
+    if [[ -f "$templates/day2/tuned/tuned-$profile.yaml" ]]; then
+      local static_tempalte="$templates/day2/tuned/tuned-$profile.yaml"
       # Use static YAML file
-      info "  └─ tuned-$profile.yaml" "copying & applying"
+      info "${prefix} $profile" "copying & applying using $(basename $static_template)"
       if safe_copy "$static_template" "$output_file" "Tuned profile ($profile)"; then
         local output
         if output=$(oc apply -f "$output_file" 2>&1); then
@@ -531,11 +531,16 @@ tuned_profiles(){
       else
         ((failed_count++))
       fi
-    elif [[ -f "$jinja_template" ]]; then
+    else
+      if [[ -f "$templates/day2/tuned/tuned-$profile.yaml.j2" ]]; then
+         jinja_template="$templates/day2/tuned/tuned-$profile.yaml.j2"
+      else
+         jinja_template="$templates/day2/tuned/tuned-generic.yaml.j2"
+      fi
       # Use Jinja2 template
-      info "  └─ tuned-$profile.yaml.j2" "rendering & applying"
+      info "${prefix} $profile" "rendering & applying using $(basename $jinja_template)"
       local output
-      if output=$(yq '.node_tunings.tuned_profile' "$config_file" | jinja2 "$jinja_template" > "$output_file" 2>&1); then
+      if output=$((echo "name: $profile"; yq ".node_tunings.tuned_profile.$profile" "$config_file") | jinja2 "$jinja_template" > "$output_file" 2>&1); then
         debug "  ✓ Successfully rendered tuned profile template: $profile"
         
         if output=$(oc apply -f "$output_file" 2>&1); then
@@ -551,9 +556,6 @@ tuned_profiles(){
         debug "    Error: $output"
         ((failed_count++))
       fi
-    else
-      error "Tuned profile template not found for: $profile" "Missing both $static_template and $jinja_template"
-      ((failed_count++))
     fi
     
     ((processed_count++))
@@ -859,7 +861,11 @@ install_plan_approval(){
     name=${subs[$i+1]}
     debug "Processing subscription $((processed_count + 1)): namespace='$ns', name='$name'"
     
-    info "  ├─ $name subscription installPlanApproval" "$1"
+    local prefix="  ├─"
+    if [[ $i -eq $((length-2)) ]]; then
+      prefix="  └─"
+    fi
+    info "${prefix} $name subscription installPlanApproval" "$1"
     
     local output
     # Try operators.coreos.com API group first (most common for OpenShift subscriptions)
@@ -982,7 +988,7 @@ extra_manifests(){
     
     local dir_processed=0
     local dir_failed=0
-    
+
     for file in "${manifest_files[@]}"; do
       local filename=$(basename "$file")
       debug "Processing extra manifest file: $filename"

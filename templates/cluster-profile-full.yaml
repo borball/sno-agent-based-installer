@@ -103,7 +103,9 @@ node_tunings:
     enabled: false
   tuned_profile:
     enabled: false
-    
+    performance-patch:
+      enabled: false
+      
 update_control:
   pause_before_update: true
   delay_after_update: 60

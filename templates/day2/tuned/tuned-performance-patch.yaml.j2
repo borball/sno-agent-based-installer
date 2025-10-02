@@ -31,7 +31,7 @@ spec:
   recommend:
     - machineConfigLabels:
         machineconfiguration.openshift.io/role: "master"
-      priority: 19
+      priority: {{ (spec and spec.priority) or 19 }}
       profile: performance-patch
 
 
