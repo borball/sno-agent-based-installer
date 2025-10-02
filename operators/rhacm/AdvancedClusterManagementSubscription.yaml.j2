@@ -1,3 +1,7 @@
+{% set default_source='redhat-operators' -%}
+{% for item in customs|select(attribute='provide', value='redhat-operators') -%}
+  {% set default_source=item.name -%}
+{% endfor -%}
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -7,9 +11,9 @@ metadata:
 spec:
   channel: {{ channel | default('release-2.13') }}
   name: advanced-cluster-management
-  source: {{ source | default('redhat-operators') }}
+  source: {{ source | default(default_source) }}
   sourceNamespace: openshift-marketplace
-  {% if version is defined -%}
+  {% if version is not none -%}
   startingCSV: {{ version }}
   installPlanApproval: Manual
   {% else -%}

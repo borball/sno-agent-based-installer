@@ -216,6 +216,7 @@ catalog_sources:
       display: Red Hat Operators OCP_Y_RELEASE PreGA
       image: quay.io/prega/prega-operator-index:vOCP_Y_RELEASE
       publisher: Red Hat
+      provide: redhat-operators
     - name: certified-operators
       display: Certified Operators
       image: registry.redhat.io/redhat/certified-operator-index:v4.19

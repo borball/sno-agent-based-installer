@@ -10,11 +10,11 @@ spec:
       version: 3.2.0
     storage:
       disks:
-        - device: {{ (day1 and day1.container_storage and day1.container_storage.device)  or '/dev/nvme0n1' }}
+        - device: {{ (container_storage and container_storage.device)  or '/dev/nvme0n1' }}
           partitions:
             - label: varlibcontainers
-              startMiB: {{ (day1 and day1.container_storage and day1.container_storage.startMiB)  or 250000 }}
-              sizeMiB: {{ (day1 and day1.container_storage and day1.container_storage.sizeMiB)  or 0 }}
+              startMiB: {{ (container_storage and container_storage.startMiB)  or 250000 }}
+              sizeMiB: {{ (container_storage and container_storage.sizeMiB)  or 0 }}
       filesystems:
         - device: /dev/disk/by-partlabel/varlibcontainers
           format: xfs

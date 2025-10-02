@@ -179,15 +179,15 @@ config_file_temp=$cluster_workspace/config-resolved.yaml.tmp
 cluster_profile_file_temp=$cluster_workspace/cluster-profile-resolved.yaml.tmp
 
 if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input > $config_file_temp
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input| envsubst > $config_file_temp
 else
-  cp $config_file_input $config_file_temp
+  cat $config_file_input| envsubst > $config_file_temp
 fi
 
 if [ $(cat $cluster_profile_file |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $cluster_profile_file > $cluster_profile_file_temp
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $cluster_profile_file | envsubst> $cluster_profile_file_temp
 else
-  cp $cluster_profile_file $cluster_profile_file_temp
+  cat $cluster_profile_file | envsubst > $cluster_profile_file_temp
 fi
 
 yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
@@ -331,9 +331,15 @@ cluster_tunings(){
     step "Enabling cluster tunings for OpenShift $ocp_y_release"
     tuning_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings/*.yaml 2>/dev/null | wc -l)
     info "Cluster tuning files found" "$tuning_files files"
+    count=1
     for file in $templates/day1/cluster-tunings/$cluster_tunings/*.yaml; do
       filename=$(basename "$file")
-      info "  └─ $filename" "enabled"
+      if [[ $count -lt $tuning_files ]]; then
+        info "  ├─ $filename" "enabled"
+      else
+        info "  └─ $filename" "enabled"
+      fi 
+      ((count++))
     done
     cp $templates/day1/cluster-tunings/$cluster_tunings/*.yaml $cluster_workspace/openshift/
   fi
@@ -357,7 +363,7 @@ install_operator(){
   for f in $j2files; do
     tname=$(basename $f)
     fname=${tname//.j2/}
-    yq ".operators.$key" $config_file| jinja2 $f > $cluster_workspace/openshift/$fname
+    (yq ".operators.$key" $config_file; yq '.catalog_sources // ""' $config_file) | jinja2 $f > $cluster_workspace/openshift/$fname
   done
 }
 
@@ -537,9 +543,13 @@ operator_catalog_sources(){
     if [[ "$(yq '.catalog_sources.defaults' $config_file)" != "null" ]]; then
       info "Creating default catalog sources" "enabled"
       local size=$(yq '.catalog_sources.defaults|length' $config_file)
-      for ((k=0; k<$size; k++)); do
-        local name=$(yq ".catalog_sources.defaults[$k]" $config_file)
-        info "  ├─ $name catalog" "created"
+      for ((k=1; k<=$size; k++)); do
+        local name=$(yq ".catalog_sources.defaults[$((k-1))]" $config_file)
+        local lead="  ├─"
+        if [[ $k -ge $size ]]; then
+           lead="  └─"
+        fi
+        info "${lead} $name catalog" "created"
         jinja2 $templates/day1/catalogsource/$name.yaml.j2 > $cluster_workspace/openshift/$name.yaml
       done
     fi
@@ -548,10 +558,15 @@ operator_catalog_sources(){
   if [ "$(yq '.catalog_sources.customs' $config_file)" != "null" ]; then
     local size=$(yq '.catalog_sources.customs|length' $config_file)
     info "Custom catalog sources" "$size configured"
-    for ((k=0; k<$size; k++)); do
-      local custom_name=$(yq ".catalog_sources.customs[$k].name // \"custom-$k\"" $config_file)
-      info "  ├─ $custom_name" "created"
-      yq ".catalog_sources.customs[$k]" $config_file |jinja2 $templates/day1/catalogsource/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
+    for ((k=1; k<=$size; k++)); do
+      local custom_name=$(yq ".catalog_sources.customs[$((k-1))].name // \"custom-$k\"" $config_file)
+      local provide=$(yq ".catalog_sources.customs[$((k-1))].provide // \"$custom_name\"" $config_file)
+      local lead="  ├─"
+      if [[ $k -ge $size ]]; then
+         lead="  └─"
+      fi
+      info "${lead} $custom_name($provide)" "created"
+      yq ".catalog_sources.customs[$((k-1))]" $config_file |jinja2 $templates/day1/catalogsource/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
     done
   fi
 
@@ -566,13 +581,22 @@ mirror_source(){
   if [ "$(yq '.container_registry.icsp' $config_file)" != "null" ]; then
     step "Configuring ICSP"
     local size=$(yq '.container_registry.icsp|length' $config_file)
-    for ((k=0; k<$size; k++)); do
-      local name=$(yq ".container_registry.icsp[$k]" $config_file)
-      if [ -f "$basedir/$name" ]; then
-        info "$name" "copy to $cluster_workspace/openshift/"
+    for ((k=1; k<=$size; k++)); do
+      local name=$(yq ".container_registry.icsp[$((k-1))]" $config_file)
+      local lead="  ├─"
+      if [[ $k -ge $size ]]; then
+         lead="  └─"
+      fi
+      if [ "${name:0:1}" = "/" ]; then
+        if [ -f "$name"  ]; then
+          info "${lead} $name" "copy to $cluster_workspace/openshift/"
+          cp $name $cluster_workspace/openshift/
+        fi
+      elif [ -f "$basedir/$name" ]; then
+        info "${lead} $name" "copy to $cluster_workspace/openshift/"
         cp $basedir/$name $cluster_workspace/openshift/
       else
-        warn "$name" "not a file or not exist"
+        warn "${lead} $name" "not a file or not exist"
       fi
     done
   fi
@@ -638,5 +662,5 @@ printf "  └─ Boot node from ISO via BMC console:\n"
 printf "     ${YELLOW}$(ls $cluster_workspace/agent.*.iso)${RESET}\n\n"
 printf "${CYAN}Option 2 (Automated):${RESET}\n"
 printf "  └─ Run automated installation (requires HTTP server):\n"
-printf "     ${YELLOW}./sno-install.sh $config_file${RESET}\n\n"
+printf "     ${YELLOW}./sno-install.sh $cluster_name${RESET}\n\n"
 printf "${BOLD}${GREEN}🎉 ISO generation completed successfully!${RESET}\n"
