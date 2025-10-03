@@ -12,9 +12,6 @@ spec:
     - vfio_pci.enable_sriov=1
     - vfio_pci.disable_idle_d3=1
     - module_blacklist=irdma
-  cpu:
-    isolated: {{spec.cpu.isolated}}
-    reserved: {{spec.cpu.reserved}}
   hugepages:
     defaultHugepagesSize: 1G
     pages:
@@ -22,12 +19,6 @@ spec:
         count: 32
   machineConfigPoolSelector:
     pools.operator.machineconfiguration.openshift.io/master: ""
-  {% if spec and spec.hardwareTuning -%}
-  hardwareTuning:
-    isolatedCpuFreq: {{ spec.hardwareTuning.isolatedCpuFreq }}
-    reservedCpuFreq: {{ spec.hardwareTuning.reservedCpuFreq }}
-  {% endif -%}
-  userLevelNetworking: true
   nodeSelector:
     node-role.kubernetes.io/master: ""
   numa:

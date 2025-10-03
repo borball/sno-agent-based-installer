@@ -447,37 +447,110 @@ performance_profile(){
     return 1
   fi
   
-  local template_file="$templates/day2/performance-profile/performance-profile-$profile.yaml.j2"
-  local output_file="$perf_workspace/performance-profile-$profile.yaml"
+  local source_template="$templates/day2/performance-profile/performance-profile-$profile.yaml.j2"
+  local profile_default_file="$templates/cluster-profile-${profile}-${ocp_y_version}.yaml"
   
-  debug "Template file: $template_file"
-  debug "Output file: $output_file"
+  debug "Source file: $source_template"
+  debug "Template file: $profile_default_file"
   
-  if [[ ! -f "$template_file" ]]; then
-    error "Performance profile template not found" "$template_file"
+  if [[ ! -f "$source_template" ]]; then
+    error "Performance profile template not found" "$source_template"
     return 1
   fi
   
+  if [[ ! -f "$profile_default_file" ]]; then
+    error "Profile default file not found" "$profile_default_file"
+    return 1
+  fi
+  
+  debug "  Template validation passed"
+  
   info "  └─ performance-profile-$profile.yaml.j2" "rendering & applying"
   
-  # Render template with performance profile data
-  local output
-  if output=$(yq '.node_tunings.performance_profile' "$config_file" | jinja2 "$template_file" > "$output_file" 2>&1); then
-    debug "  ✓ Successfully rendered performance profile template"
-    
-    # Apply the rendered manifest
-    if output=$(oc apply -f "$output_file" 2>&1); then
-      debug "  ✓ Successfully applied performance profile"
-      debug "    Output: $output"
-      info "  └─ Performance profile applied" "success"
-    else
-      error "  ✗ Failed to apply performance profile" "ERROR"
-      debug "    Error: $output"
-      return 1
-    fi
+  local base_spec_file="$perf_workspace/performance-profile-$profile-base-spec.yaml"
+  local profile_default_spec_file="$perf_workspace/performance-profile-${profile}-${ocp_y_version}-spec.yaml"
+  local middle_merged_spec_file="$perf_workspace/performance-profile-$profile-middle-merged-spec.yaml"
+  local user_spec_file="$perf_workspace/performance-profile-user-spec.yaml"
+  local final_spec_file="$perf_workspace/performance-profile-$profile-final-spec.yaml"
+  local output_file="$perf_workspace/performance-profile-final.yaml"
+
+  # Extract spec from template, profile defaults, and user config
+  debug "  Extracting base spec from template: $source_template"
+  if ! jinja2 "$source_template" | yq '.spec' > "$base_spec_file"; then
+    error "Failed to extract base spec from template" "$source_template"
+    return 1
+  fi
+  
+  debug "  Extracting profile defaults from: $profile_default_file"
+  if ! yq '.node_tunings.performance_profile.spec' "$profile_default_file" > "$profile_default_spec_file"; then
+    error "Failed to extract profile defaults" "$profile_default_file"
+    return 1
+  fi
+  
+  debug "  Extracting user overrides from: $config_file"
+  if ! yq '.node_tunings.performance_profile.spec' "$config_file" > "$user_spec_file"; then
+    error "Failed to extract user overrides" "$config_file"
+    return 1
+  fi
+
+  # Merge 3 spec files: base <- profile_defaults <- user_overrides
+  debug "  Merging base spec with profile defaults"
+  if ! yq '. *=load("'$profile_default_spec_file'")' "$base_spec_file" > "$middle_merged_spec_file"; then
+    error "Failed to merge base spec with profile defaults" ""
+    return 1
+  fi
+  
+  debug "  Applying user overrides to merged spec"
+  if ! yq '. *=load("'$user_spec_file'")' "$middle_merged_spec_file" > "$final_spec_file"; then
+    error "Failed to apply user overrides to merged spec" ""
+    return 1
+  fi
+
+  # Generate the final performance profile with user config context
+  debug "  Rendering final performance profile with user config context"
+  if ! yq '.node_tunings.performance_profile' "$config_file" | jinja2 "$source_template" > "$output_file"; then
+    error "Failed to render performance profile template" ""
+    return 1
+  fi
+  
+  # Apply the merged spec to the final output file
+  debug "  Applying merged spec to final output file"
+  local middle_output_file="$perf_workspace/performance-profile-middle.yaml"
+  if ! yq '.spec = load("'$final_spec_file'")' "$output_file" > "$middle_output_file"; then
+    error "Failed to apply merged spec to output file" ""
+    return 1
+  fi
+  
+  if ! cat "$middle_output_file" > "$output_file"; then
+    error "Failed to finalize output file" ""
+    return 1
+  fi
+
+  debug "  ✓ Successfully rendered performance profile template"
+  debug "  Final output file: $output_file"
+  
+  # Validate final output file before applying
+  if [[ ! -f "$output_file" ]]; then
+    error "Final output file not found" "$output_file"
+    return 1
+  fi
+  
+  if ! yq eval '.' "$output_file" >/dev/null 2>&1; then
+    error "Final output file contains invalid YAML" "$output_file"
+    return 1
+  fi
+  
+  debug "  ✓ Final output file validation passed"
+  
+  # Apply the rendered manifest
+  local apply_output
+  if apply_output=$(oc apply -f "$output_file" 2>&1); then
+    debug "  ✓ Successfully applied performance profile"
+    debug "    Output: $apply_output"
+    info "  └─ Performance profile applied" "success"
   else
-    error "  ✗ Failed to render performance profile template" "ERROR"
-    debug "    Error: $output"
+    error "  ✗ Failed to apply performance profile" "ERROR"
+    debug "    Error: $apply_output"
     return 1
   fi
 }

@@ -41,6 +41,13 @@ node_tunings:
     profile: ran
     name: sno-perfprofile
     spec:
+      #realTimeKernel: true
+      #hugepage:
+        #enabled: true
+        #default: 1G
+        #pages:
+          #- size: 1G
+          #  count: 32
       net:
         userLevelNetworking: true
       cpu:
