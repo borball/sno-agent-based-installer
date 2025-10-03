@@ -19,18 +19,6 @@ node_tunings:
     enabled: true
     performance-patch:
       enabled: true
-      #spec:
-        # performance_profile_name: sno-perfprofile
-    # Additional Dell XR8620t setting using generic template
-    #profile: dell-enable-nmi
-      #enabled: true
-      #spec:
-        #include: performance-patch
-        #priority: 18
-        #summary: Support to Dell NMI
-        #data:
-          #sysctl:
-          #- kernel.panic_on_unrecovered_nmi=1
 
 update_control:
   pause_before_update: true

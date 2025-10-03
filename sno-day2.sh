@@ -248,6 +248,10 @@ export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
 cluster_info(){
   oc get clusterversion
+  if [[ $? -ne 0 ]]; then
+    error "Failed to get cluster version"
+    return 1
+  fi
   echo
   oc get nodes
   echo
@@ -462,11 +466,7 @@ performance_profile(){
     error "Profile default file not found" "$profile_default_file"
     return 1
   fi
-  
-  debug "  Template validation passed"
-  
-  info "  └─ performance-profile-$profile.yaml.j2" "rendering & applying"
-  
+    
   local base_spec_file="$perf_workspace/performance-profile-$profile-base-spec.yaml"
   local profile_default_spec_file="$perf_workspace/performance-profile-${profile}-${ocp_y_version}-spec.yaml"
   local middle_merged_spec_file="$perf_workspace/performance-profile-$profile-middle-merged-spec.yaml"
@@ -526,8 +526,8 @@ performance_profile(){
     return 1
   fi
 
-  debug "  ✓ Successfully rendered performance profile template"
-  debug "  Final output file: $output_file"
+  info "  ✓ Successfully rendered performance profile template"
+  info "  Final output file: $output_file"
   
   # Validate final output file before applying
   if [[ ! -f "$output_file" ]]; then

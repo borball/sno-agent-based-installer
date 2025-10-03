@@ -13,11 +13,6 @@ node_tunings:
   performance_profile:
     enabled: true
     profile: ran
-    # name: sno-perfprofile
-    spec:
-      cpu:
-        isolated: 2-31,34-63
-        reserved: 0-1,32-33
 
   tuned_profile:
     enabled: true
@@ -161,11 +156,7 @@ operators:
   fec:
     enabled: true
     version: sriov-fec.v2.9.0
-
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
+    
 proxy:
   enabled: false
 

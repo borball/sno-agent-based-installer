@@ -164,10 +164,6 @@ operators:
     version: 
     config:
 
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
 pull_secret: ${HOME}/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
 ssh_priv_key: ${HOME}/.ssh/id_rsa

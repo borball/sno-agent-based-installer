@@ -14,14 +14,6 @@ node_tunings:
   performance_profile:
     enabled: true
     profile: ran
-    # name: sno-perfprofile
-    spec:
-      cpu:
-        isolated: 2-31,34-63
-        reserved: 0-1,32-33
-      hardwareTuning:
-        isolatedCpuFreq: 2500000
-        reservedCpuFreq: 2500000
 
   tuned_profile:
     enabled: true
@@ -186,9 +178,6 @@ operators:
               - /dev/disk/by-path/example-to-be-replaced
     day1:
       - profile: wipe-disks
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
 
 proxy:
   enabled: false

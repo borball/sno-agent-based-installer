@@ -12,11 +12,6 @@ spec:
     - vfio_pci.enable_sriov=1
     - vfio_pci.disable_idle_d3=1
     - module_blacklist=irdma
-  hugepages:
-    defaultHugepagesSize: 1G
-    pages:
-      - size: 1G
-        count: 32
   machineConfigPoolSelector:
     pools.operator.machineconfiguration.openshift.io/master: ""
   nodeSelector:

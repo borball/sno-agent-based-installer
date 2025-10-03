@@ -134,10 +134,6 @@ operators:
   fec:
     enabled: true
 
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
 proxy:
   enabled: false
 
