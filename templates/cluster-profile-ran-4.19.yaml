@@ -6,7 +6,11 @@ cluster:
       - OperatorLifecycleManager
       - Ingress
       
-cluster_tunings: 4.18
+cluster_tunings: 
+  version: 4.18
+  excludes:
+    # - crun
+    # - sctp
 
 node_tunings:
   workload_partitioning:

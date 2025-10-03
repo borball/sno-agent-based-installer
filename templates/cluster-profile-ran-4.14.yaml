@@ -5,7 +5,11 @@ cluster:
       - NodeTuning
       - marketplace
 
-cluster_tunings: 4.14
+cluster_tunings: 
+  version: 4.14
+  excludes:
+    # - crun
+    # - sctp
 
 node_tunings:
   workload_partitioning:

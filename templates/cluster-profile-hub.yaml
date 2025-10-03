@@ -2,8 +2,6 @@ cluster:
   capabilities:
     baselineCapabilitySet: vCurrent
       
-cluster_tunings: none
-
 node_tunings:
   workload_partitioning:
     enabled: false

@@ -42,6 +42,12 @@ step(){
   printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
 }
 
+debug(){
+  if [[ "${DEBUG:-false}" == "true" ]]; then
+    printf "${MAGENTA}[DEBUG]${RESET} %s\n" "$1"
+  fi
+}
+
 header(){
   echo
   printf "${BOLD}${CYAN}%s${RESET}\n" "$1"
@@ -344,28 +350,67 @@ download_openshift_installer
 platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
 
 cluster_tunings(){
-  cluster_tunings=$(yq '.cluster_tunings' $config_file)
-  if [[ -z "$cluster_tunings" || "$cluster_tunings" == "none" ]]; then
+  cluster_tunings_version=$(yq '.cluster_tunings.version' $config_file)
+  if [[ -z "$cluster_tunings_version" || "$cluster_tunings_version" == "null" ]] || [[ "$cluster_tunings_version" == "none" ]]; then
     warn "Cluster tunings" "disabled"
   else
-    step "Enabling cluster tunings for OpenShift $ocp_y_release"
-    tuning_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings/*.yaml 2>/dev/null | wc -l)
-    info "Cluster tuning files found" "$tuning_files files"
-    count=1
-    for file in $templates/day1/cluster-tunings/$cluster_tunings/*.yaml; do
-      filename=$(basename "$file")
-      local prefix="  ├─"
-      if [[ $count -eq $tuning_files ]]; then
-         prefix="  └─"
+    if [[ -d "$templates/day1/cluster-tunings/$cluster_tunings_version" ]]; then
+      step "Enabling cluster tunings $cluster_tunings_version"
+      
+      # Count total available files
+      tuning_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml 2>/dev/null | wc -l)
+      info "Cluster tuning files found" "$tuning_files"
+      
+      # Copy all files first
+      cp $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml $cluster_workspace/openshift/
+
+      # Process exclusions and show excluded files
+      exclude_patterns=$(yq '.cluster_tunings.excludes[]' $config_file 2>/dev/null)
+      excluded_count=0
+      if [[ -n "$exclude_patterns" && "$exclude_patterns" != "null" ]]; then
+        for pattern in $exclude_patterns; do
+          exclude_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml | grep -E "$pattern")
+          for file in $exclude_files; do
+            excluded_filename=$(basename "$file")
+            rm -f $cluster_workspace/openshift/$excluded_filename
+            warn "  ├─ $excluded_filename" "excluded"
+            ((excluded_count++))
+          done
+        done
       fi
-      info "${prefix} $filename" "enabled"
-      ((count++))
-    done
-    cp $templates/day1/cluster-tunings/$cluster_tunings/*.yaml $cluster_workspace/openshift/
+
+      # Show enabled files with proper tree formatting
+      enabled_count=0
+      for file in $cluster_workspace/openshift/*.yaml; do
+        if [[ -f "$file" ]]; then
+          enabled_filename=$(basename "$file")
+          ((enabled_count++))
+          local prefix="  ├─"
+          # Use └─ for the last enabled file
+          if [[ $enabled_count -eq $((tuning_files - excluded_count)) ]]; then
+            prefix="  └─"
+          fi
+          info "${prefix} $enabled_filename" "enabled"
+        fi
+      done
+      
+      # Summary information
+      if [[ $excluded_count -gt 0 ]]; then
+        warn "Total excluded tuning files" "$excluded_count"
+      fi
+
+      info "Total cluster tuning files" "$enabled_count"
+      
+    else
+      warn "Cluster tunings" "version $cluster_tunings_version not found"
+      return 1
+    fi
   fi
+
 }
 
 container_storage(){
+  step "Configuring container storage"
   if [ "true" = "$(yq '.container_storage.enabled' $config_file)" ]; then
     info "Container storage:" "enabled"
     jinja2 $templates/day1/container-storage-partition/98-var-lib-containers-partitioned.yaml.j2 $config_file > $cluster_workspace/openshift/98-var-lib-containers-partitioned.yaml

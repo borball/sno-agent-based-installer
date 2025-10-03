@@ -33,13 +33,15 @@ iso:
   address: http://192.168.58.15/iso/sno130.iso
   #deploy: ./test/deploy-iso.sh
 
+cluster_tunings:
+  excludes:
+    - crun
+    - sctp
+
 node_tunings:
   workload_partitioning:
     enabled: true
   performance_profile:
-    enabled: true
-    profile: ran
-    #name: sno-perfprofile
     spec:
       net:
         userLevelNetworking: true

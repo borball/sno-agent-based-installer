@@ -95,7 +95,11 @@ container_storage:
   sizeMiB: 0
 
 #cluster_tunings: 4.14, 4.18 | none
-cluster_tunings: none
+cluster_tunings: 
+  version: none
+  excludes:
+    # - crun
+    # - sctp
 node_tunings:
   workload_partitioning:
     enabled: false
