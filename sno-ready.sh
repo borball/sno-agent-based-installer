@@ -17,7 +17,7 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
-SSH="ssh -oStrictHostKeyChecking=no"
+SSH="ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
 usage(){
 	echo "Usage: $0 <cluster-name>"

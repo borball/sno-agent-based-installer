@@ -486,19 +486,26 @@ monitor_installation_status(){
 
   echo
   info "🚀 Installation started" "monitoring progress"
-  prev_percentage=""
+  local prev_percentage=""
+  local dot_count=0
   echo "-------------------------------"
   while
     total_percentage=$(monitor_curl "$assisted_rest" |jq '.[].progress.total_percentage')
     if [ ! -z $total_percentage ]; then
       if [ "$total_percentage" != "$prev_percentage" ]; then
+        if [[ $dot_count -gt 0 ]]; then
+	  echo ""
+	fi
         info "📈 Installation progress" "$total_percentage%"
         prev_percentage="$total_percentage"
+        dot_count=0
       else
         echo -n "."
+	((dot_count++))
       fi
     else
       echo -n "."
+      ((dot_count++))
     fi
     sleep 20;
     api_status=$(monitor_curl "$assisted_rest" -o /dev/null -w '%{http_code}')

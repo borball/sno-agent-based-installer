@@ -24,54 +24,56 @@ update_control:
   disable_operator_auto_upgrade: false
 
 operators:
-  example:
-    enabled: false
-    version: example.v4.18.0-202507211933
-    # data will be passed to the manifests(j2 templates) as env variables
-    data: 
-      key1: value1
-      key2: value2
-      key3: value3
-    
-    # day1 configurations
-    # a|b is the folder name under templates/day1/example, 
-    # for example templates/day1/example, profile can be : a or b
-    # if day1 not specified:
-    #   files under templates/day1/example/ and templates/day1/example/default will be applied
-    # if day1 specified, 
-    #   files under templates/day1/example/ directory will be applied
-    #   for each profile in day1, files under templates/day1/example/$profile will be applied
-    # for the case below:
-    #   files under templates/day1/example/ will be applied
-    #   files under templates/day1/example/a will be applied
-    #   files under templates/day1/example/b will be applied
-    # supported file types:
-    #   *.sh (executed before other files)
-    #   *.yaml
-    #   *.yaml.j2
-    day1:
-      - profile: a
-      - profile: b
-
-    # day2 configurations
-    # a|b is the folder name under templates/day2/example, 
-    # for example templates/day2/example, profile can be : a or b
-    # if day2 not specified:
-    #   files under templates/day2/example/ and templates/day2/example/default will be applied
-    # if day2 specified, 
-    #   files under templates/day2/example/ directory will be applied
-    #   for each profile in day2, files under templates/day2/example/$profile will be applied
-    # for the case below:
-    #   files under templates/day2/example/ will be applied
-    #   files under templates/day2/example/a will be applied
-    #   files under templates/day2/example/b will be applied
-    # supported file types:
-    #   *.sh (executed before other files)
-    #   *.yaml
-    #   *.yaml.j2
-    day2:
-      - profile: a
-      - profile: b
+  ###############################################################################################
+  #example:
+  #  enabled: false
+  #  version: example.v4.18.0-202507211933
+  #  # data will be passed to the manifests(j2 templates) as env variables
+  #  data:
+  #    key1: value1
+  #    key2: value2
+  #    key3: value3
+  #
+  #  # day1 configurations
+  #  # a|b is the folder name under templates/day1/example,
+  #  # for example templates/day1/example, profile can be : a or b
+  #  # if day1 not specified:
+  #  #   files under templates/day1/example/ and templates/day1/example/default will be applied
+  #  # if day1 specified,
+  #  #   files under templates/day1/example/ directory will be applied
+  #  #   for each profile in day1, files under templates/day1/example/$profile will be applied
+  #  # for the case below:
+  #  #   files under templates/day1/example/ will be applied
+  #  #   files under templates/day1/example/a will be applied
+  #  #   files under templates/day1/example/b will be applied
+  #  # supported file types:
+  #  #   *.sh (executed before other files)
+  #  #   *.yaml
+  #  #   *.yaml.j2
+  #  day1:
+  #    - profile: a
+  #    - profile: b
+  #
+  #  # day2 configurations
+  #  # a|b is the folder name under templates/day2/example,
+  #  # for example templates/day2/example, profile can be : a or b
+  #  # if day2 not specified:
+  #  #   files under templates/day2/example/ and templates/day2/example/default will be applied
+  #  # if day2 specified,
+  #  #   files under templates/day2/example/ directory will be applied
+  #  #   for each profile in day2, files under templates/day2/example/$profile will be applied
+  #  # for the case below:
+  #  #   files under templates/day2/example/ will be applied
+  #  #   files under templates/day2/example/a will be applied
+  #  #   files under templates/day2/example/b will be applied
+  #  # supported file types:
+  #  #   *.sh (executed before other files)
+  #  #   *.yaml
+  #  #   *.yaml.j2
+  #  day2:
+  #    - profile: a
+  #    - profile: b
+  ###############################################################################################
 
   local-storage:
     enabled: true

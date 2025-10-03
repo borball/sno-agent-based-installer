@@ -52,6 +52,9 @@ separator(){
   printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
 }
 
+short_path(){
+  echo "$*" | sed -e "s;${basedir};\${basedir};g" -e "s;${HOME};\${HOME};g"
+}
 
 usage(){
   info "Usage: $0 [config file] [ocp version]"
@@ -114,8 +117,9 @@ fi
 
 header "SNO Agent-Based Installer - ISO Generation"
 step "Setting up workspace"
+info "Base directory (basedir)" "${basedir}"
 info "Workspace directory" "${cluster_workspace}"
-info "Configuration file" "$config_file"
+info "Configuration file" "$config_file_input"
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
 
@@ -134,15 +138,20 @@ fetch_archs(){
   fi
 
   ocp_arch=$(yq '.cluster.platform' $config_file_input)
+  if [ -z "$ocp_arch" ] || [ "$ocp_arch" == "null" ]; then
+    ocp_arch=$client_arch
+  fi
+
   if [ "$ocp_arch" == "arm" ]; then
     ocp_arch="arm64"
-  fi
-  if [ "$ocp_arch" == "amd" ] || [ "$ocp_arch" == "intel" ]; then
+  elif [ "$ocp_arch" == "amd" ] || [ "$ocp_arch" == "intel" ]; then
     ocp_arch="amd64"
   fi
 
-  if [ -z "$ocp_arch" ] || [ "$ocp_arch" == "null" ]; then
-    ocp_arch=$client_arch
+  if [ "$ocp_arch" == "arm64" ]; then
+     release_arch="aarch64"
+  elif [ "$ocp_arch" == "amd64" ]; then
+    release_arch="x86_64"
   fi
 }
 
@@ -192,7 +201,7 @@ fi
 
 yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
 info "Configuration resolved" "$config_file"
-info "Will be used by other sno-* scripts" "✓"
+info "" "Will be used by other sno-* scripts"
 
 is_gzipped(){
   if [ $(file $1 -- |grep -E 'gzip|bzip2|xz' |wc -l) -gt 0 ]; then
@@ -252,7 +261,7 @@ download_openshift_installer(){
       local_mirror=$(yq '.container_registry.image_source' $config_file)
       if [[ "${local_mirror}" != "null" ]]; then
         idms_file=${cluster_workspace}/idms-release-0.yaml
-        echo "Using local mirror ${local_mirror}"
+	info "- Local mirror" "$(short_path ${local_mirror})"
         cat << EOF > ${idms_file}
 apiVersion: config.openshift.io/v1
 kind: ImageDigestMirrorSet
@@ -264,38 +273,49 @@ EOF
         
         yq '.imageContentSources' ${local_mirror} |pr -T -o 4 >> ${idms_file}
         OC_OPTION+=" --idms-file=${idms_file}"
+
+        local_ca_file=$(yq '.additional_trust_bundle' $config_file)
+        if [[ "${local_ca_file}" != "null" ]]; then
+          info "- Trust Bundle" "$(short_path ${local_ca_file})"
+          OC_OPTION+=" --certificate-authority=${local_ca_file}"
+        fi
       fi
       
-      local_ca_file=$(yq '.additional_trust_bundle' $config_file)
-      if [[ "${local_ca_file}" != "null" ]]; then
-        echo "Using CA ${local_ca_file}"
-        OC_OPTION+=" --certificate-authority=${local_ca_file}"
-      fi
-
       if [[ -f "$basedir/local_release_info.txt" ]]; then
-        echo "Using local release info: $basedir/local_release_info.txt"
+        info  "- Local release info" "$(short_path $basedir/local_release_info.txt)"
         release_image=$(grep "^$ocp_release=" $basedir/local_release_info.txt|cut -f 2 -d =)
-        echo "Using local release image: $release_image"
+        info "- Local release image" "$release_image"
       fi
 
       if [[ -z "$release_image" ]]; then
         if [[ $ocp_release == *"nightly"* ]] || [[ $ocp_release == *"ci"* ]]; then
-          echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
-          release_image="registry.ci.openshift.org/ocp/release:$ocp_release_version"
+          #echo "Using nightly release image or ci release image: registry.ci.openshift.org/ocp/release:$ocp_release_version"
+          release_image_base="registry.ci.openshift.org/ocp/release"
+          release_image_tag="$ocp_release_version"
         else
+          release_image_base="quay.io/openshift-release-dev/ocp-release"
           # ec release image is only available for x86_64
           if [[ $ocp_release == *"ec"* ]]; then
-            echo "Using ec release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
-            release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
+            #echo "Using ec release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-x86_64"
+            release_image_tag="$ocp_release_version-x86_64"
           else
-            echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
-            release_image="quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${client_arch}"
+            #echo "Using stable release image: quay.io/openshift-release-dev/ocp-release:$ocp_release_version-${release_arch}"
+            release_image_tag="$ocp_release_version-${release_arch}"
           fi
         fi
+        mirror_source=$(yq '.container_registry.image_source' $config_file)
+        if [[ "null" != "$mirror_source" ]]; then
+          mirror_image_base=$(yq ".imageContentSources|filter(.source == \"${release_image_base}\")|.[].mirrors[0]" $mirror_source)
+          if [[ ! -z "${mirror_image_base}" ]]; then
+            release_image_base=$mirror_image_base
+          fi
+        fi
+        release_image="$release_image_base:$release_image_tag"
+        info "Release Image" "$release_image"
       fi
 
-      info "Extracting from release image" "$release_image"
-      info "Platform" "${client_arch}"
+      info "- Extracting from release image" "$release_image"
+      info "- Platform" "${client_arch}"
       oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
         error "Release extraction failed" "Check oc command and connectivity"
         printf "${RED}Failed command:${RESET}\n"
@@ -429,28 +449,28 @@ config_operators(){
 
         info "$key operator: enabling day1"
 
-        info "  └─ manifest_folders" "$manifest_folders" "to be applied"
+        info "  └─ manifest_folders" "$(short_path $manifest_folders) to be applied"
         for manifest_folder in $manifest_folders; do
-          info "    └─ applying $manifest_folder"
+          info "    └─ applying" "$(short_path $manifest_folder)"
           if [[ -d "$manifest_folder" ]]; then
             # execute *.sh files in the manifest_folder
             for f in "$manifest_folder"/*.sh; do
               if [[ -f "$f" ]]; then
-                info "    └─ executing $f"
+                info "    └─ executing $(short_path $f)"
                 "$f" "$config_file"
               fi
             done
             # copy *.yaml files in the manifest_folder to $cluster_workspace/openshift/
             for f in "$manifest_folder"/*.yaml; do
               if [[ -f "$f" ]]; then
-                info "    └─ applying $f"
+                info "    └─ applying" "$(short_path $f)"
                 cp "$f" "$cluster_workspace/openshift/"
               fi
             done
             # apply *.yaml.j2 files in the manifest_folder
             for f in "$manifest_folder"/*.yaml.j2; do
               if [[ -f "$f" ]]; then
-                info "    └─ applying $f"
+                info "    └─ applying" "$(short_path $f)"
                 # if data file exists, then render it
                 data_file=$(yq ".operators.$key.data" $config_file)
                 if [[ "$data_file" != "null" ]]; then
@@ -461,7 +481,7 @@ config_operators(){
               fi
             done
           else
-            info "    └─ $manifest_folder not found"
+            warn "    └─ $manifest_folder" "not found"
             continue
           fi
         done
@@ -589,11 +609,11 @@ mirror_source(){
       fi
       if [ "${name:0:1}" = "/" ]; then
         if [ -f "$name"  ]; then
-          info "${lead} $name" "copy to $cluster_workspace/openshift/"
+          info "${lead} $(short_path $name)" "copy to $(short_path $cluster_workspace/openshift/)"
           cp $name $cluster_workspace/openshift/
         fi
       elif [ -f "$basedir/$name" ]; then
-        info "${lead} $name" "copy to $cluster_workspace/openshift/"
+        info "${lead} $(short_path $name)" "copy to $(short_path $cluster_workspace/openshift/)"
         cp $basedir/$name $cluster_workspace/openshift/
       else
         warn "${lead} $name" "not a file or not exist"
@@ -622,10 +642,11 @@ render_install_configs(){
 }
 
 backup_install_configs(){
-  step "Backing up install-config.yaml and agent-config.yaml"
+  step "Back-up installer configuratino files"
   cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
+  info "File install-config.yaml" "saved as $(short_path $cluster_workspace/agent-config-backup.yaml)"
   cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
-  info "install-config.yaml and agent-config.yaml backed up" "✓"
+  info "File agent-config.yaml" "saved as $(short_path $cluster_workspace/install-config-backup.yaml)"
 }
 
 render_install_configs
@@ -640,7 +661,7 @@ backup_install_configs
 
 
 step "Generating bootable ISO image"
-info "Using OpenShift installer" "$($basedir/openshift-install version | head -1)"
+info "Using OpenShift installer" "$(short_path $($basedir/openshift-install version | head -1))"
 info "Target architecture" "$ocp_arch"
 info "Log level" "${ABI_LOG_LEVEL:-info}"
 echo
