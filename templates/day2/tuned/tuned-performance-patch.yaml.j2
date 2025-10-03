@@ -10,7 +10,7 @@ spec:
       data: |
         [main]
         summary=Configuration changes profile inherited from performance created tuned
-        include=openshift-node-performance-{{ (spec and spec.performance_profile_name)  or 'openshift-node-performance-openshift-node-performance-profile' }}
+        include=openshift-node-performance-{{ (spec and spec.performance_profile_name)  or 'openshift-node-performance-profile' }}
         {% if spec and spec.cmdline_pstate -%}
         [bootloader]
         cmdline_pstate={{ spec.cmdline_pstate }}

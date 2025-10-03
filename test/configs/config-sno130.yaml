@@ -39,7 +39,7 @@ node_tunings:
   performance_profile:
     enabled: true
     profile: ran
-    name: sno-perfprofile
+    #name: sno-perfprofile
     spec:
       net:
         userLevelNetworking: true
