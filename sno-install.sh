@@ -519,6 +519,7 @@ monitor_installation_status(){
   exec 2>&3
 
   echo
+  virtual_media_eject
   info "🎉 API monitoring complete" "installation finished or node rebooted"
   header "Installation Complete - Summary"
   info "✅ Installation completed" "successfully"
@@ -584,8 +585,8 @@ redfish_install(){
   redfish_init
   server_power_off
   sleep 15
+  virtual_media_eject
   virtual_media_insert
-  virtual_media_status
   server_set_boot_once_from_cd
   sleep 15
   server_power_on
