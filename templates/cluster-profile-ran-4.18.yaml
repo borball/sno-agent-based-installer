@@ -83,7 +83,6 @@ operators:
 
   local-storage:
     enabled: true
-    version: local-storage-operator.v4.18.0-202507211933
     data:
       local_volume:
         name: local-disks
@@ -96,7 +95,6 @@ operators:
 
   ptp:
     enabled: true
-    version: ptp-operator.v4.18.0-202507211933
     # no need to specify day2
     # event-notification-api will be under templates/day2/ptp
     # boundary-clock will be under templates/day2/ptp/default
@@ -138,27 +136,21 @@ operators:
 
   sriov:
     enabled: true
-    version: sriov-network-operator.v4.18.0-202507211933
 
   fec:
     enabled: true
-    version: sriov-fec.v2.11.1
 
   cluster-logging:
     enabled: true
-    version: cluster-logging.v6.2.4
     
   lca:
     enabled: true
-    version: lifecycle-agent.v4.18.0
     
   adp:
     enabled: true
-    version: oadp-operator.v1.4.5
 
   lvm:
     enabled: false
-    version: lvm-operator.v4.18.3
     data:
       disks:
         - path: /dev/disk/by-path/example-to-be-replaced

@@ -268,8 +268,6 @@ cluster_info(){
     echo ""
     error "Uninstalled subscriptions found" "Manual intervention required"
     echo "${missing_csv}"
-    #don't block operation if there are uninstalled subscriptions
-    #exit 1
   fi
 
   i=1
@@ -281,8 +279,10 @@ cluster_info(){
       sleep 30
     else
       error "CSV installation timeout" "Manual intervention required"
-      #don't block operation if there are CSV installation timeout
-      #exit 1
+      if [[ $(yq '.update_control.ignore_missing_csv // "false"' $config_file) != "true" ]]; then
+        #don't block operation if there are uninstalled subscriptions
+        exit 1
+      fi
       return
     fi
     ((i=i+1))

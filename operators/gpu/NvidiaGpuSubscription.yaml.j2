@@ -1,7 +1,8 @@
 {% set default_source='certified-operators' -%}
-{% for item in customs|select(attribute='provide', value='certified-operators') -%}
-  {% set default_source=item.name -%}
-{% endfor -%}
+{% set catsrc = customs|selectattr('provide', '==', default_source)|map(attribute='name')|list -%}
+{% if catsrc -%}
+{% set default_source=catsrc[0] -%}
+{% endif -%}
 ---
 # https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html
 apiVersion: operators.coreos.com/v1alpha1

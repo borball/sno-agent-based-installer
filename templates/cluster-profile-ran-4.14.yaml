@@ -83,7 +83,6 @@ operators:
 
   local-storage:
     enabled: true
-    version: local-storage-operator.v4.14.0-202411130434
     #day1
     provision:
       before:
@@ -116,7 +115,6 @@ operators:
 
   ptp:
     enabled: true
-    version: ptp-operator.v4.14.0-202411130434
     config:
       manifests:
         - ptpconfig-boundary-clock.yaml.j2
@@ -155,11 +153,9 @@ operators:
 
   sriov:
     enabled: true
-    version: sriov-network-operator.v4.14.0-202411130434
 
   fec:
     enabled: true
-    version: sriov-fec.v2.9.0
     
 proxy:
   enabled: false
