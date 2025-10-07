@@ -16,10 +16,8 @@ spec:
    phc2sysOpts: -a -r -m -n 24{% if enable_ptp_event %} -N 8 -R 16{% endif %}
    {% endif -%}
    {% endif -%}
-   {% if log_reduce -%}
    ptpSettings:
-     logReduce: "true"
-   {% endif -%}
+     logReduce: "{{ log_reduce | default(true) | lower }}"
    ptp4lConf: |
      [{{ p.slave }}]
      masterOnly 0
@@ -155,9 +153,7 @@ spec:
    {% endif -%}
    ptpSettings:
      haProfiles: "{{ boundary_clock.profiles[0].name }},{{ boundary_clock.profiles[1].name }}"
-     {% if log_reduce -%}
-     logReduce: "true"
-     {%- endif %}
+     logReduce: "{{ log_reduce | default(true) | lower }}"
  {%- endif %}
  recommend:
  {% for p in boundary_clock.profiles -%}

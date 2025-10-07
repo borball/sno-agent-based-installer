@@ -8,7 +8,7 @@ spec:
   daemonNodeSelector:
     node-role.kubernetes.io/master: ""
   ptpEventConfig:
-    enableEventPublisher: true
+    enableEventPublisher: {{ enable_ptp_event | default(false) |lower }}
     {% if event_api_version is defined -%}
     apiVersion: "{{ event_api_version }}"
     {%- endif %}
