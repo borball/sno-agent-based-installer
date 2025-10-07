@@ -1,0 +1,7 @@
+# https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nvidia-gpu-operator
+  labels:
+    openshift.io/cluster-monitoring: "true"

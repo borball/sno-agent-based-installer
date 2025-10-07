@@ -1,0 +1,81 @@
+operators:
+  ptp:
+    name: ptp-operator
+    desc: PTP Operator
+    enabled: true
+  local-storage:
+    name: local-storage-operator
+    desc: Local Storage Operator
+    enabled: true
+  rhacm:
+    name: advanced-cluster-management
+    desc: Red Hat Advanced Cluster Management for Kubernetes
+    enabled: false
+  gitops:
+    name: openshift-gitops-operator
+    desc: Red Hat OpenShift GitOps
+    enabled: false
+  talm:
+    name: topology-aware-lifecycle-manager
+    desc: Topology Aware Lifecycle Manager
+    enabled: false
+  sriov:
+    name: sriov-network-operator
+    desc: SR-IOV Network Operator for Openshift
+    enabled: true
+  lvm:
+    name: lvms-operator
+    desc: Logical Volume Manager Storage Operator
+    enabled: false
+  mce:
+    name: multicluster-engine
+    desc: Multicluster Engine for Kubernetes
+    enabled: false
+  mcgh:
+    name: multicluster-global-hub-operator-rh
+    desc: Multicluster Global Hub Operator
+    enabled: false
+  cluster-logging:
+    name: cluster-logging
+    desc: OpenShift Logging Operator
+    enabled: false
+  fec:
+    name: sriov-fec
+    desc: Intel SRIOV-FEC Operator
+    enabled: false
+  adp:
+    name: redhat-oadp-operator
+    desc: OpenShift API for Data Protection Operator
+    enabled: false
+  lca:
+    name: lifecycle-agent
+    desc: OpenShift Lifecycle Agent Operator
+    enabled: false
+  metallb:
+    name: metallb-operator
+    desc: MetalLB Operator
+    enabled: false
+  nmstate:
+    name: kubernetes-nmstate-operator
+    desc: NMState Operator
+    enabled: false
+  kubevirt-hyperconverged:
+    name: kubevirt-hyperconverged
+    desc: OpenShift Virtualization
+    enabled: false
+  nfd:
+    name: nfd
+    desc: Node Feature Discovery Operator
+    enabled: false
+  gpu:
+    name: gpu
+    desc: NVIDIA GPU Operator
+    enabled: false
+  amq:
+    name: amq-streams
+    desc: AMQ Streams Operator
+    enabled: false
+  amq-console:
+    name: amq-streams-console
+    desc: AMQ Streams Console Operator
+    enabled: false
