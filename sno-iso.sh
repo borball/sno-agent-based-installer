@@ -601,7 +601,7 @@ operator_catalog_sources(){
   
   if [ "true" = "$(yq '.catalog_sources.update_operator_hub' $config_file)" ]; then
     info "Updating OperatorHub configuration" "enabled"
-    cp $templates/day1/catalogsource/operatorhub.yaml.j2 $cluster_workspace/openshift/operatorhub.yaml
+    jinja2 $templates/day1/catalogsource/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
   fi
 
   if [ "true" = "$(yq '.catalog_sources.create_default_catalog_sources' $config_file)" ]; then
