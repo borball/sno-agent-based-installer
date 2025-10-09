@@ -41,8 +41,28 @@ if [ -z "$cluster_name" ]; then
 fi
 
 cluster_workspace=$basedir/instances/$cluster_name
-
 config_file=$cluster_workspace/config-resolved.yaml
+
+day2_workspace=$cluster_workspace/day2
+cluster_tunings_workspace=$day2_workspace/cluster-tunings
+node_tunings_workspace=$day2_workspace/node-tunings
+operators_workspace=$day2_workspace/operators
+operators=$basedir/operators
+templates=$basedir/templates
+
+FILTER_FIELDS='
+del(.metadata.creationTimestamp) |
+del(.metadata.resourceVersion) |
+del(.metadata.annotations) |
+del(.metadata.uid) |
+del(.metadata.generation) |
+del(.status) |
+del(.metadata.finalizers) |
+del(.metadata.ownerReferences) |
+del(.spec.clusterID) |
+del(.metadata.managedFields)
+'
+
 if [ -f "$config_file" ]; then
   echo "Will run cluster config validation towards the cluster $cluster_name with config: $config_file"
 else
@@ -89,6 +109,12 @@ step(){
   printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
 }
 
+debug(){
+  if [[ "${DEBUG:-false}" == "true" ]]; then
+    printf "${MAGENTA}[DEBUG]${RESET} %s\n" "$1"
+  fi
+}
+
 header(){
   echo
   printf "${BOLD}${CYAN}%s${RESET}\n" "$1"
@@ -108,10 +134,6 @@ check_node(){
   fi
 }
 
-export_address(){
-  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}'|awk '{print $1;}')
-}
-
 check_pods(){
   step "Checking all pods"
   if [ $(oc get pods -A |grep -vE "Running|Completed" |wc -l) -gt 1 ]; then
@@ -122,7 +144,7 @@ check_pods(){
   fi
 }
 
-check_co(){
+check_cluster_operators(){
   step "Checking cluster operators"
   for name in $(oc get co -o jsonpath={..metadata.name}); do
     local progressing=$(oc get co $name -o jsonpath='{..conditions[?(@.type=="Progressing")].status}')
@@ -136,115 +158,96 @@ check_co(){
   done
 }
 
-check_mc(){
-  step "Checking required machine configs"
-
-  if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
-    warn "workload_partition is not enabled in $config_file"
+check_workload_partitioning(){
+  step "Checking workload partitioning"
+  if [ "true" = "$(yq '.node_tunings.workload_partitioning.enabled' $config_file)" ]; then
+    warn "workload_partition" "not enabled in $config_file"
   else
-    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
-      if [ $(oc get mc |grep 02-master-workload-partitioning | wc -l) -eq 1 ]; then
-        info "mc 02-master-workload-partitioning" "exists"
-      else
-        warn "mc 02-master-workload-partitioning" "not exist"
-      fi
+    info "workload_partition" "enabled in $config_file"
+    if [ $(oc get mc |grep 01-master-cpu-partitioning | wc -l) -eq 1 ]; then
+      info "mc 01-master-cpu-partitioning" "found"
     else
-      if [ $(oc get mc |grep 01-master-cpu-partitioning | wc -l) -eq 1 ]; then
-        info "mc 01-master-cpu-partitioning" "exists"
-      else
-        warn "mc 01-master-cpu-partitioning" "not exist"
-      fi
-    fi
-
-  fi
-
-  if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
-    warn "kdump service is not enabled in $config_file"
-  else
-    if [ $(oc get mc |grep 06-kdump-enable-master | wc -l) -eq 1 ]; then
-      info "mc 06-kdump-enable-master" "exists"
-    else
-      warn "mc 06-kdump-enable-master" "not exist"
-    fi
-  fi
-
-  #no need this anymore after 4.12.45 and 4.14.9
-#  if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
-#    if [ $(oc get mc |grep 05-kdump-config-master | wc -l) -eq 1 ]; then
-#      info "mc 05-kdump-config-master" "exists"
-#    else
-#      warn "mc 05-kdump-config-master" "not exist"
-#    fi
-#  else
-#    warn "kdump blacklist_ice is not enabled in $config_file"
-#  fi
-
-  if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
-    warn "boot_accelerate is not enabled in $config_file"
-  else
-    if [ $(oc get mc |grep container-mount-namespace-and-kubelet-conf-master | wc -l) -eq 1 ]; then
-      info "mc container-mount-namespace-and-kubelet-conf-master" "exists"
-    else
-      warn "mc container-mount-namespace-and-kubelet-conf-master" "not exist"
-    fi
-
-    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
-      if [ $(oc get mc |grep 04-accelerated-container-startup-master | wc -l) -eq 1 ]; then
-        info "mc 04-accelerated-container-startup-master" "exists"
-      else
-        warn "mc 04-accelerated-container-startup-master" "not exist"
-      fi
-    else
-      if [ $(oc get mc |grep 04-accelerated-container-startup-master | wc -l) -eq 1 ]; then
-        warn "mc 04-accelerated-container-startup-master" "exists"
-      else
-        info "mc 04-accelerated-container-startup-master" "not exist"
-      fi
-    fi
-
-    if [ $(oc get mc |grep 99-crio-disable-wipe-master | wc -l) -eq 1 ]; then
-      info "mc 99-crio-disable-wipe-master" "exists"
-    else
-      warn "mc 99-crio-disable-wipe-master" "not exist"
-    fi
-  fi
-
-  if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
-    sleep 1
-  else
-    if [ "false" = "$(yq '.day1.rcu_normal.enabled' $config_file)" ]; then
-      warn "rcu_normal is not enabled in day1 of $config_file"
-    else
-      if [ $(oc get mc |grep 08-set-rcu-normal-master | wc -l) -eq 1 ]; then
-        info "mc 08-set-rcu-normal-master" "exists"
-      else
-        warn "mc 08-set-rcu-normal-master" "not exist"
-      fi
-    fi
-
-    if [ "false" = "$(yq '.day1.sriov_kernel.enabled' $config_file)" ]; then
-      warn "sriov_kernel is not enabled in day1 of $config_file"
-    else
-      if [ $(oc get mc |grep 07-sriov-related-kernel-args-master | wc -l) -eq 1 ]; then
-        info "mc 07-sriov-related-kernel-args-master" "exists"
-      else
-        warn "mc 07-sriov-related-kernel-args-master" "not exist"
-      fi
-    fi
-
-    if [ "false" = "$(yq '.day1.sync_time_once.enabled' $config_file)" ]; then
-      warn "sync_time_once is not enabled in day1 of $config_file"
-    else
-      if [ $(oc get mc |grep 99-sync-time-once-master | wc -l) -eq 1 ]; then
-        info "mc 99-sync-time-once-master" "exists"
-      else
-        warn "mc 99-sync-time-once-master" "not exist"
-      fi
+      warn "mc 01-master-cpu-partitioning" "not found"
     fi
   fi
 }
 
-check_mcp(){
+should_exclude_machine_config(){
+  local file=$1
+  local exclude_patterns=$(yq -r '.cluster_tunings.excludes[]' $config_file 2>/dev/null)
+
+  if [[ -n "$exclude_patterns" && "$exclude_patterns" != "null" ]]; then
+    for pattern in $exclude_patterns; do
+      if [[ "$file" == *"$pattern"* ]]; then
+        return 0
+      fi
+    done
+  fi
+  return 1
+}
+
+check_machine_config(){
+  local file=$1
+  local status=$2
+  mc_name=$(yq ".metadata.name" $file)
+  if [ "$status" = "included" ]; then
+    if [ $(oc get mc |grep $mc_name | wc -l) -eq 1 ]; then
+      info "  ├─ $(basename $file)" "included in $(basename $config_file) and found"
+    else
+      warn "  ├─ $(basename $file)" "included in $(basename $config_file) but not found"
+    fi
+  fi
+
+  if [ "$status" = "excluded" ]; then
+    if [ $(oc get mc |grep $mc_name | wc -l) -eq 1 ]; then
+      warn "  ├─ $(basename $file)" "excluded in $(basename $config_file) but still found"
+    else
+      info "  ├─ $(basename $file)" "excluded in $(basename $config_file) and not found"
+    fi
+  fi
+  
+}
+
+is_mc_file(){
+  local file=$1
+  if [[ $(yq ".kind" $file) == "MachineConfig" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+check_machine_configs(){
+  step "Checking required machine configs"
+
+  cluster_tunings_version=$(yq '.cluster_tunings.version' $config_file)
+  if [[ -z "$cluster_tunings_version" || "$cluster_tunings_version" == "null" ]] || [[ "$cluster_tunings_version" == "none" ]]; then
+    warn "Cluster tunings" "disabled in $config_file"
+  else
+    if [[ -d "$templates/day1/cluster-tunings/$cluster_tunings_version" ]]; then
+      # Count total available files
+      tuning_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml 2>/dev/null)
+      exclude_patterns=$(yq -r '.cluster_tunings.excludes[]' $config_file 2>/dev/null)
+      debug "Exclude patterns: $exclude_patterns"
+      for file in $tuning_files; do
+        if is_mc_file "$file"; then
+          if should_exclude_machine_config "$file"; then
+            check_machine_config "$file" "excluded"
+            debug "Excluded: $file"
+          else
+            check_machine_config "$file" "included"
+            debug "Included: $file"
+          fi
+        fi
+      done
+    else
+      warn "Cluster tunings" "version $cluster_tunings_version not found"
+      return 1
+    fi
+  fi
+}
+
+check_machine_config_pools(){
   step "Checking machine config pool"
   updated=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Updated")].status}')
   updating=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Updating")].status}')
@@ -256,481 +259,181 @@ check_mcp(){
   fi
 }
 
-check_pp(){
+check_performance_profile(){
   step "Checking required performance profile"
 
-  if [ "false" = "$(yq '.day2.performance_profile.enabled' $config_file)" ]; then
-    warn "performance profile:" "disabled"
-  else
-    pp=$(yq '.day2.performance_profile.name //"openshift-node-performance-profile"' $config_file)
-
-    if [ $(oc get performanceprofiles |grep $pp | wc -l) -eq 1 ]; then
-      info "PerformanceProfile $pp exists."
-      check_pp_detail
-    else
-      warn "PerformanceProfile $pp is not existing."
-    fi
-  fi
-}
-
-check_pp_detail(){
-  if [ $(oc get performanceprofile -o jsonpath={..topologyPolicy}) = "restricted" ]; then
-    info "topologyPolicy is restricted"
-  else
-    warn "topologyPolicy is not restricted"
-  fi
-  if [ $(oc get performanceprofile -o jsonpath={..realTimeKernel.enabled}) = "true" ]; then
-    info "realTimeKernel is enabled"
-  else
-    warn "realTimeKernel is not enabled"
-  fi
-}
-
-
-check_tuned(){
-  step "Checking required tuned"
-
-  if [ "false" = "$(yq '.day2.tuned_profile.enabled' $config_file)" ]; then
-    warn "Tuned performance patch:" "disabled"
-  else
-    if [ $(oc get tuned -n  openshift-cluster-node-tuning-operator performance-patch|grep performance-patch | wc -l) -eq 1 ]; then
-      info "Tuned performance-patch" "exists"
-    else
-      warn "Tuned performance-patch" "not exist"
-    fi
-  fi
-
-  if [ "true" = "$(yq '.day2.tuned_profile.kdump' $config_file)" ]; then
-    if [ $(oc get tuned -n  openshift-cluster-node-tuning-operator performance-patch-kdump-setting|grep performance-patch-kdump-setting | wc -l) -eq 1 ]; then
-      info "Tuned performance-patch-kdump-setting" "exists"
-    else
-      warn "Tuned performance-patch-kdump-setting" "not exist"
-    fi
-  fi
-
-}
-
-check_sriov(){
-  step "Checking SRIOV operator status"
-
-  if [ "false" = "$(yq '.day1.operators.sriov' $config_file)" ]; then
-    warn "SR-IOV operator" "disabled"
-  else
-    if [ $(oc get sriovnetworknodestate -n openshift-sriov-network-operator -o jsonpath={..syncStatus}) = "Succeeded" ]; then
-      info "sriovnetworknodestate sync status" "succeeded"
-    else
-      warn "sriovnetworknodestate sync status" "not succeeded"
-    fi
-  fi
-}
-
-check_ptp(){
-  step "Checking PTP operator status"
-  if [ "false" = "$(yq '.day1.operators.ptp.enabled' $config_file)" ]; then
-    warn "PTP operator" "disabled"
-  else
-    if [ $(oc get daemonset -n openshift-ptp linuxptp-daemon -o jsonpath={.status.numberReady}) -eq 1 ]; then
-      info "Ptp linuxptp-daemon" "ready"
-      check_ptpconfig
-    else
-      warn "Ptp linuxptp-daemon" "not ready"
-    fi
-  fi
-}
-
-check_ptpconfig(){
-  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
-    if [ $(oc get ptpconfig -n openshift-ptp |grep -v NAME |wc -l) -eq 1 ]; then
-      info "PtpConfig" "exists"
-      while IFS=, read -r name policy priority; do
-        if [ $policy = "SCHED_FIFO" ]; then
-          info "PtpConfig profile $name SchedulingPolicy" "SCHED_FIFO"
-        else
-          warn "PtpConfig profile $name SchedulingPolicy $policy" "not SCHED_FIFO"
-        fi
-        if [ "$priority" = "10" ]; then
-          info "PtpConfig profile $name ptpSchedulingPriority" "10"
-        else
-          warn "PtpConfig profile $name  SchedulingPolicy $priority" "not 10"
-        fi
-      done< <(oc get ptpconfig -n openshift-ptp -o jsonpath='{range .items[0].spec.profile[*]}{.name},{.ptpSchedulingPolicy},{.ptpSchedulingPriority}{"\n"}{end}}')
-    else
-      warn "PtpConfig" "not exist"
-    fi
-  fi
-}
-
-check_monitoring(){
-  step "Checking openshift monitoring"
-  if [ "false" = "$(yq '.day2.cluster_monitor_tuning' $config_file)" ]; then
-    warn "cluster_monitor_tuning is not enabled in $config_file"
-  else
-    #common for all ocp versions
-    if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.alertmanagerMain.enabled' -) = "false" ]; then
-      info "AlertManager" "not enabled"
-    else
-      warn "AlertManager" "enabled"
-    fi
-
-    #common for all ocp versions
-    if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.prometheusK8s.retention' -) = "24h" ]; then
-      info "PrometheusK8s retention" "24h"
-    else
-      warn "PrometheusK8s retention" "not 24h"
-    fi
-
-    if [ "4.12" = "$ocp_y_version" ]; then
-      #no additional check
-      sleep 1
-    elif [ "4.13" = "$ocp_y_version" ]; then
-      if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.grafana.enabled' -) = "false" ]; then
-        info "Grafana" "not enabled"
+  if [ "true" = "$(yq '.node_tunings.performance_profile.enabled' $config_file)" ]; then
+    desired_file=$node_tunings_workspace/performance-profile/performance-profile-final.yaml
+    pretty_desired_file=$node_tunings_workspace/performance-profile/performance-profile-pretty.yaml
+    profile_name=$(yq ".metadata.name" $desired_file)
+    if [ $(oc get performanceprofile |grep $profile_name | wc -l) -eq 1 ]; then
+      info "PerformanceProfile $profile_name found"
+      live_file=$node_tunings_workspace/performance-profile/performance-profile-live.yaml
+      yq eval "${FILTER_FIELDS}" $desired_file | yq '... comments=""' | yq -P 'sort_keys(..)' |yq eval --prettyPrint > $pretty_desired_file
+      oc get performanceprofile $profile_name -o yaml | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" |yq eval --prettyPrint > $live_file
+      diff -q $pretty_desired_file $live_file > /dev/null
+      if [ $? -eq 0 ]; then
+        info "PerformanceProfile $profile_name is identical to the desired one."
       else
-        warn "Grafana" "enabled"
+        warn "PerformanceProfile $profile_name is not identical to the desired one."
+        diff --side-by-side $pretty_desired_file $live_file
       fi
     else
-      #4.14+
-      if [ $(oc get configmap -n openshift-monitoring cluster-monitoring-config -o jsonpath={.data.config\\.yaml} |yq e '.telemeterClient.enabled' -) = "false" ]; then
-        info "Telemeter Client" "not enabled"
+      warn "PerformanceProfile $profile_name is not found."
+    fi
+  else
+    warn "Performance profile" "disabled in $config_file"
+  fi
+}
+
+check_tuned_profile(){
+  step "Checking required tuned profile"
+
+  if [ "true" = "$(yq '.node_tunings.tuned_profile.enabled' $config_file)" ]; then
+    profiles=$(yq '.node_tunings.tuned_profile|keys[]|select(.!="enabled")' $config_file 2>/dev/null)
+
+      # Get all profiles from config
+    local profiles
+    readarray -t profiles < <(yq '.node_tunings.tuned_profile|keys[]|select(.!="enabled")' "$config_file" 2>/dev/null)
+    if [[ ${#profiles[@]} -le 0 ]]; then
+      warn "No tuned profiles configured" "skipping"
+      return 0
+    fi
+
+    info "Configured tuned profiles: ${profiles[@]}"
+
+    # Process each profile
+    for profile in "${profiles[@]}"; do
+      desired_file=$node_tunings_workspace/tuned-profiles/tuned-$profile.yaml
+      profile_name=$(yq ".metadata.name" $desired_file)
+      pretty_desired_file=$node_tunings_workspace/tuned-profiles/tuned-$profile-pretty.yaml
+      live_file=$node_tunings_workspace/tuned-profiles/tuned-$profile-live.yaml
+      yq eval "${FILTER_FIELDS}" $desired_file | yq '... comments=""' | yq -P 'sort_keys(..)' |yq eval --prettyPrint > "${pretty_desired_file}" 2>/dev/null;
+      
+      oc get tuned $profile_name -n openshift-cluster-node-tuning-operator -o yaml | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" |yq eval --prettyPrint > $live_file
+      diff -q $pretty_desired_file $live_file > /dev/null
+      if [ $? -eq 0 ]; then
+        info "TunedProfile $profile_name is identical to the desired one."
       else
-        warn "Telemeter Client" "enabled"
+        warn "TunedProfile $profile_name is not identical to the desired one."
+        diff --side-by-side $pretty_desired_file $live_file
       fi
-    fi
-  fi
-}
-
-check_capabilities(){
-  step "Checking openshift capabilities"
-
-  #only check when capabilities are not specified in the config file
-  #for others we assume it is not vDU case, and will skip the check
-  check_co_enabled "node-tuning"
-  check_co_disabled "console"
-  if [ -z "$(yq '.cluster.capabilities // ""' $config_file)" ]; then
-    if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ] || [ "4.14" = "$ocp_y_version" ] || [ "4.15" = "$ocp_y_version" ]; then
-      check_co_enabled "marketplace"
-    else
-      check_co_disabled "marketplace"
-    fi
-  fi
-}
-
-check_co_enabled(){
-  local name=$1
-  oc get co $name 1>/dev/null 2>/dev/null
-
-  if [ $? == 0 ]; then
-    info "(cluster capability)operator $name " "enabled"
+    done
   else
-    warn "(cluster capability)operator $name " "disabled"
+    warn "Tuned profile" "disabled in $config_file"
   fi
 }
 
-check_co_disabled(){
-  local name=$1
-  oc get co $name 1>/dev/null 2>/dev/null
-  if [ $? == 1 ]; then
-    info "(cluster capability)operator $name " "disabled"
+check_operator(){
+  local key=$1
+  local operator_name=$(yq ".operators.$key.name" $operators/operators.yaml)
+  local operator_desc=$(yq ".operators.$key.desc" $operators/operators.yaml)
+  
+  #if has yaml file, then check the namespace
+  if [ -f "operators/$key/*.yaml" ]; then
+    ns=$(yq '. | select(.kind == "Namespace")|.metadata.name' operators/$key/*.yaml)
   else
-    warn "(cluster capability)operator $name " "disabled"
+    ns=$(jinja2 operators/$key/*.yaml.j2 | yq ".metadata.namespace")
   fi
-}
 
+  debug "Operator: $operator_name, Namespace: $ns"
 
-check_network_diagnostics(){
-  step "Checking network diagnostics"
-  if [ "false" = "$(yq '.day2.disable_network_diagnostics' $config_file)" ]; then
-    warn "disable_network_diagnostics is not enabled in $config_file"
+  csv=$(oc get csv -n $ns |grep -E "$operator_name|$key" |wc -l)
+  if [ $csv -eq 1 ]; then
+    info "$operator_desc" "available"
   else
-    if [ $(oc get network.operator.openshift.io cluster -o jsonpath={..disableNetworkDiagnostics}) = "true" ]; then
-      info "Network diagnostics" "disabled"
-    else
-      warn "Network diagnostics" "not disabled"
-    fi
+    warn "$operator_desc" "not available"
   fi
+  #todo, check csv in the namespace of the operator and status of the csv
 }
 
-check_operator_hub(){
-  step "Checking Operator hub"
-  if [ "false" = "$(yq '.day2.operator_hub_tuning' $config_file)" ]; then
-    warn "operator_hub_tuning is not enabled in $config_file"
-  else
-    if [ $(oc get catalogsource -n openshift-marketplace |grep community-operators|wc -l) -eq "0" ]; then
-      info "Catalog community-operators" "disabled"
-    else
-      warn "Catalog community-operators" "not disabled"
-    fi
-    if [ $(oc get catalogsource -n openshift-marketplace |grep redhat-marketplace|wc -l) -eq "0" ]; then
-      info "Catalog redhat-marketplace" "disabled"
-    else
-      warn "Catalog redhat-marketplace" "not disabled"
-    fi
-  fi
-}
-
-check_cmdline(){
-  step "Checking /proc/cmdline"
-  export cmdline_arguments=$($SSH core@$address cat /proc/cmdline)
-  check_cpuset
-}
-
-check_kernel(){
-  step "Checking RHCOS kernel"
-  kernel_version=$($SSH core@$address uname -r)
-  if [ $(echo $kernel_version |grep rt | wc -l ) -eq 1 ]; then
-    info "Node kernel" "realtime"
-  else
-    warn "Node kernel" "not realtime"
-  fi
-}
-
-check_cpuset(){
-  for argument in $cmdline_arguments; do
-    if [[ "$argument" == *"cpu_affinity"* ]]; then
-      cpu_affinity=$argument
-    fi
-    if [[ "$argument" == *"isolcpus"* ]]; then
-      isolcpus=$argument
+check_operators(){
+  step "Checking operators"
+  readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
+  
+  for ((k=0; k<${#keys[@]}; k++)); do
+    key="${keys[$k]}"
+    if [ "true" = "$(yq ".operators.$key.enabled" $config_file)" ]; then
+      check_operator $key
     fi
   done
-
-  if [ -z $cpu_affinity ]; then
-    warn "systemd.cpu_affinity not present."
-  else
-    info "systemd.cpu_affinity presents: $cpu_affinity"
-  fi
-  if [ -z $isolcpus ]; then
-    warn "isolcpus not present."
-  else
-    info "isolcpus presents: $isolcpus"
-  fi
-
-  cpu_affinity="${cpu_affinity/systemd.cpu_affinity=/}"
-  isolcpus="${isolcpus/isolcpus=/}"
-  isolcpus="${isolcpus/managed_irq,/}"
-
-  isolcpus_pp=$(oc get performanceprofiles.performance.openshift.io -o jsonpath={..spec.cpu.isolated})
-  reservedcpus_pp=$(oc get performanceprofiles.performance.openshift.io -o jsonpath={..spec.cpu.reserved})
-
-  cmd_cpu_affinity=()
-  cmd_isolated_cpus=()
-
-  pp_isolated_cpus=()
-  pp_reserved_cpus=()
-
-  for n1 in $(echo $cpu_affinity | awk '/-/{for (i=$1; i<=$2; i++)printf "%s%s",i,ORS;next} 1' RS=, FS=-)
-  do
-    cmd_cpu_affinity+=($n1)
-  done
-
-  for n2 in $(echo $isolcpus | awk '/-/{for (i=$1; i<=$2; i++)printf "%s%s",i,ORS;next} 1' RS=, FS=-)
-  do
-    cmd_isolated_cpus+=("$n2")
-  done
-
-  for n3 in $(echo $isolcpus_pp | awk '/-/{for (i=$1; i<=$2; i++)printf "%s%s",i,ORS;next} 1' RS=, FS=-)
-  do
-    pp_isolated_cpus+=("$n3")
-  done
-
-  for n4 in $(echo $reservedcpus_pp | awk '/-/{for (i=$1; i<=$2; i++)printf "%s%s",i,ORS;next} 1' RS=, FS=-)
-  do
-    pp_reserved_cpus+=("$n4")
-  done
-
-  isolated_cpu_match1=1
-  isolated_cpu_match2=1
-  reserved_cpu_match1=1
-  reserved_cpu_match2=1
-
-  for v1 in "${cmd_cpu_affinity[@]}"
-  do
-    if [[ ! " ${pp_reserved_cpus[*]} " =~ " ${v1} " ]]; then
-      reserved_cpu_match1=0
-      break
-    fi
-  done
-
-  for v2 in "${cmd_isolated_cpus[@]}"
-  do
-    if [[ ! " ${pp_isolated_cpus[*]} " =~ " ${v2} " ]]; then
-      isolated_cpu_match1=0
-      break
-    fi
-  done
-
-  for v1 in "${pp_reserved_cpus[@]}"
-  do
-    if [[ ! " ${cmd_cpu_affinity[*]} " =~ " ${v1} " ]]; then
-      reserved_cpu_match2=0
-      break
-    fi
-  done
-
-  for v2 in "${pp_isolated_cpus[@]}"
-  do
-    if [[ ! " ${cmd_isolated_cpus[*]} " =~ " ${v2} " ]]; then
-      isolated_cpu_match2=0
-      break
-    fi
-  done
-
-  if [[ $isolated_cpu_match1 == 1 && $isolated_cpu_match2 == 1 ]]; then
-    info "Isolated cpu in cmdline: $isolcpus matches with the ones in performance profile: $isolcpus_pp"
-  else
-    warn "Isolated cpu in cmdline: $isolcpus not match with the ones in performance profile: $isolcpus_pp"
-  fi
-
-  if [[ $reserved_cpu_match1 == 1 && $reserved_cpu_match2 == 1 ]]; then
-    info "Reserved cpu in cmdline: $cpu_affinity matches with the ones in performance profile: $reservedcpus_pp"
-  else
-    warn "Reserved cpu in cmdline: $cpu_affinity not match with the ones in performance profile: $reservedcpus_pp"
-  fi
-
 }
 
-check_kdump(){
-  step "Checking kdump.service"
-  if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
-    warn "kdump is not enabled in $config_file"
-  else
-    if [[ $($SSH core@$address systemctl is-active kdump) = 'active' ]]; then
-      info "kdump service" "active"
-    else
-      warn "kdump service" "not active"
-    fi
+check_cluster_capabilities(){
+  step "Checking cluster capabilities"
+  
+  baseline_capability=$(yq -r ".cluster.capabilities.baselineCapabilitySet" $config_file)
+  debug "Baseline capability: ${baseline_capability}"
 
-    if [[ $($SSH core@$address systemctl is-enabled kdump) = 'enabled' ]]; then
-      info "kdump service" "enabled"
-    else
-      warn "kdump service" "not enabled"
-    fi
+  if [ "$baseline_capability" = "None" ]; then
+    info "Baseline capability" "None"
+
+    enabled_capabilities=$(oc get clusterversion version -o yaml |yq -r ".status.capabilities.enabledCapabilities[]")
+    config_capabilities=$(yq -r ".cluster.capabilities.additionalEnabledCapabilities[]" $config_file)
+    debug "Enabled capabilities: ${enabled_capabilities[@]}"
+    debug "Config capabilities: ${config_capabilities[@]}"
+
+    for capability in ${config_capabilities[@]}; do
+      if [ $(echo ${enabled_capabilities[@]} |grep $capability |wc -l) -eq 1 ]; then
+        info "(Additional capability) $capability " "enabled"
+      else
+        warn "(Additional capability) $capability " "not enabled"
+      fi
+    done
+
+    for capability in ${enabled_capabilities[@]}; do
+      if [ $(echo ${config_capabilities[@]} |grep $capability |wc -l) -eq 1 ]; then
+        sleep 1
+      else
+        warn "(Additional capability) $capability " "enabled but not needed"
+      fi
+    done
+  else
+    warn "Baseline capability" "${baseline_capability}"
   fi
 }
 
-check_chronyd(){
-  step "Checking chronyd.service"
-  if [ "ordinary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ] || [ "boundary" = "$(yq '.day2.ptp.ptpconfig' $config_file )" ]; then
-    if [[ $($SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
-      info "chronyd service" "inactive"
-    else
-      warn "chronyd service" "active"
-    fi
+check_catalog_sources(){
+  step "Checking Catalog sources"
 
-    if [[ $($SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
-      warn "chronyd service" "enabled"
+  if [ "true" = "$(yq '.catalog_sources.create_marketplace_ns' $config_file)" ]; then
+    if [ $(oc get namespace openshift-marketplace |wc -l) -eq "0" ]; then
+      warn "Namespace openshift-marketplace" "configured but not found"
     else
-      info "chronyd service" "not enabled"
+      info "Namespace openshift-marketplace" "found"
     fi
-  else
-    warn "ptpconfig is not enabled in $config_file."
-    if [[ $($SSH core@$address systemctl is-active chronyd) = 'inactive' ]]; then
-      warn "chronyd service" "inactive"
-    else
-      info "chronyd service" "active"
-    fi
+  fi
 
-    if [[ $($SSH core@$address systemctl is-enabled chronyd) = 'enabled' ]]; then
-      info "chronyd service" "enabled"
-    else
-      warn "chronyd service" "not enabled"
-    fi
+  if [ "true" = "$(yq '.catalog_sources.update_operator_hub' $config_file)" ]; then
+    for source in $(yq -r '.catalog_sources.defaults[]' $config_file); do
+      disabled=$(oc get operatorhubs cluster -o yaml | yq '.spec.sources[] | select(.name == "'$source'") | .disabled // false')
+      debug "OperatorHub $source disabled: $disabled"
+      if [ "$disabled" = "true" ]; then
+        warn "OperatorHub $source" "should not be disabled but disabled"
+      else
+        info "OperatorHub $source" "not disabled as needed"
+      fi
+    done
+  fi
+  
+  if [ "true" = "$(yq '.catalog_sources.create_default_catalog_sources' $config_file)" ]; then
+    for source in $(yq -r '.catalog_sources.defaults[]' $config_file); do
+      if [ $(oc get catalogsource -n openshift-marketplace |grep $source|wc -l) -eq "0" ]; then
+        warn "Catalog $source" "not created"
+      else
+        info "Catalog $source" "created"
+      fi
+    done
   fi
 }
 
-check_ip(){
+check_installplans(){
   step "Checking InstallPlans"
   if [ $(oc get installplans.operators.coreos.com -A |grep false |wc -l) -gt 0 ]; then
     warn "InstallPlans below are not approved yet."
     oc get installplans.operators.coreos.com -A |grep false
   else
     info "All InstallPlans have been approved or auto-approved."
-  fi
-}
-
-check_container_runtime(){
-  step "Checking container runtime"
-  local search=$($SSH core@$address grep -rv "^#" /etc/crio/crio.conf.d |grep 'default_runtime = "crun"'|wc -l)
-  local container_runtime="runc"
-  if [ $search -ge 1 ]; then
-    container_runtime="crun"
-  fi
-
-  if [ "4.12" = "$ocp_y_version" ] || [ "false" = "$(yq '.day1.crun' $config_file )" ] ; then
-    if [ "runc" = "$container_runtime" ]; then
-      info "Container runtime" "runc"
-    else
-      warn "Container runtime" "crun"
-    fi
-  else
-    if [ "runc" = "$container_runtime" ]; then
-      warn "Container runtime" "runc"
-    else
-      info "Container runtime" "crun"
-    fi
-  fi
-}
-
-check_olm_pprof(){
-  if [ "4.12" = "$ocp_y_version" ] || [ "4.13" = "$ocp_y_version" ]; then
-    echo
-  else
-    if [ "false" = "$(yq '.day2.disable_olm_pprof' $config_file)" ]; then
-      warn "disable_olm_pprof is false in $config_file"
-    else
-      v=$(oc get cm -n openshift-operator-lifecycle-manager collect-profiles-config -o jsonpath="{.data.pprof-config\.yaml}")
-      if [ "disabled: True" = "$v" ]; then
-        info "olm collect-profiles-config: disabled" "true"
-      else
-        warn "olm collect-profiles-config: disabled" "false"
-      fi
-    fi
-  fi
-}
-
-cg_should_be_v1(){
-  if [[ $($SSH core@$address stat -fc %T /sys/fs/cgroup/) = 'tmpfs' ]]; then
-    info "cgroup" "v1"
-  else
-    warn "cgroup" "not v1"
-  fi
-}
-
-cg_should_be_v2(){
-  if [[ $($SSH core@$address stat -fc %T /sys/fs/cgroup/) = 'cgroup2fs' ]]; then
-    info "cgroup" "v2"
-  else
-    warn "cgroup" "not v2"
-  fi
-}
-
-check_cgv1(){
-  if [ "4.12" = "$ocp_y_release" ] ||  [ "4.13" = "$ocp_y_release"  ]; then
-    cg_should_be_v1
-  elif [ "4.14" = "$ocp_y_release"  ] ||  [ "4.15" = "$ocp_y_release"  ]; then
-    if [ "false" = "$(yq '.day1.cgv1' $config_file)" ]; then
-      cg_should_be_v2
-    else
-      cg_should_be_v1
-    fi
-  else
-    #4.16+
-    if [ "true" = "$(yq '.day1.cgv1' $config_file)" ]; then
-      cg_should_be_v1
-    else
-      cg_should_be_v2
-    fi
-  fi
-}
-
-check_lvm(){
-  if [ "true" = "$(yq '.day1.operators.lvm.enabled' $config_file)" ]; then
-    step "Checking LVM storage"
-    if [ "true" = "$(oc -n openshift-storage get lvmcluster -o jsonpath='{.items[0].status.ready}')" ]; then
-      info "LVM cluster ready" "true"
-    else
-      warn "LVM cluster ready" "false"
-    fi
   fi
 }
 
@@ -788,34 +491,22 @@ check_extra_readiness(){
 header "SNO Agent-Based Installer - Readiness Validation"
 step "Gathering cluster information"
 oc get clusterversion
-echo
-oc get node
-echo
-oc get operator
+if [ $? -ne 0 ]; then
+  warn "Cluster is not reachable"
+fi
 
 check_node
-check_co
+check_cluster_operators
 export_address
 check_pods
-check_mc
-check_mcp
-check_pp
-check_tuned
-check_sriov
-check_ptp
-check_chronyd
-check_monitoring
-check_capabilities
-check_network_diagnostics
-check_operator_hub
-check_cmdline
-check_kernel
-check_kdump
-check_olm_pprof
-check_ip
-check_container_runtime
-check_cgv1
-check_lvm
+check_machine_config_pools
+check_machine_configs
+check_performance_profile
+check_tuned_profile
+check_operators
+check_cluster_capabilities
+check_catalog_sources
+check_installplans
 check_extra_readiness
 
 header "SNO Readiness Check Complete - Summary"
