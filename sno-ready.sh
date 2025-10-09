@@ -127,6 +127,61 @@ export_address(){
   export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}'|awk '{print $1;}')
 }
 
+# Display formatted diff with proper headers and limited output
+show_config_diff(){
+  local desired_file="$1"
+  local live_file="$2" 
+  local resource_name="$3"
+  local max_lines="${4:-6}"
+  local indent="${5:-      }"
+  
+  echo
+  printf "%s${BOLD}${CYAN}Configuration Differences:${RESET}\n" "$indent"
+  printf "%s${RED}[-] Desired Config${RESET}  ${GREEN}[+] Live Cluster${RESET}\n" "$indent"
+  printf "%s${CYAN}%s${RESET}\n" "$indent" "$(printf '%.0s─' {1..60})"
+  
+  # Use a more compact unified diff format
+  local diff_output
+  diff_output=$(diff -u "$desired_file" "$live_file" 2>/dev/null | tail -n +3)
+  
+  if [ -n "$diff_output" ]; then
+    local line_count=0
+    echo "$diff_output" | while IFS= read -r line; do
+      if [ $line_count -ge $max_lines ]; then
+        break
+      fi
+      
+      # Color code the diff lines
+      case "${line:0:1}" in
+        "+")
+          printf "%s${GREEN}%s${RESET}\n" "$indent" "$line"
+          ;;
+        "-")
+          printf "%s${RED}%s${RESET}\n" "$indent" "$line"
+          ;;
+        "@")
+          printf "%s${BLUE}%s${RESET}\n" "$indent" "$line"
+          ;;
+        *)
+          printf "%s%s\n" "$indent" "$line"
+          ;;
+      esac
+      line_count=$((line_count + 1))
+    done
+    
+    local total_lines
+    total_lines=$(echo "$diff_output" | wc -l)
+    if [ "$total_lines" -gt "$max_lines" ]; then
+      printf "%s${MAGENTA}... (%d more lines)${RESET}\n" "$indent" $((total_lines - max_lines))
+    fi
+  else
+    printf "%s${GREEN}✓ No differences found${RESET}\n" "$indent"
+  fi
+  
+  echo
+  printf "%s${BLUE}💡 Full diff: ${YELLOW}oc diff -f $resource_name${RESET}\n" "$indent"
+}
+
 # Validate environment and dependencies
 validate_environment(){
   debug "Validating environment and dependencies"
@@ -295,6 +350,7 @@ check_performance_profile(){
   step "Checking required performance profile"
 
   if [ "true" = "$(yq '.node_tunings.performance_profile.enabled' $config_file)" ]; then
+    info "Legend" "${RED}[-] Desired Config${RESET}  ${GREEN}[+] Live Cluster${RESET}"
     desired_file=$node_tunings_workspace/performance-profile/performance-profile-final.yaml
     if [ ! -f "$desired_file" ]; then
       error "Performance profile" "not found in $desired_file"
@@ -310,12 +366,10 @@ check_performance_profile(){
       diff -q $pretty_desired_file $live_file > /dev/null
       if [ $? -eq 0 ]; then
         info "PerformanceProfile $profile_name is identical to the desired one."
-      else
-        warn "PerformanceProfile $profile_name is not identical to the desired one."
-        warn "desired settings" "live settings"
-        diff --color=always --suppress-common-lines --side-by-side $pretty_desired_file $live_file
-        warn "More details please run: oc diff -f $desired_file"
-      fi
+        else
+          warn "PerformanceProfile $profile_name" "configuration drift detected"
+          show_config_diff "$pretty_desired_file" "$live_file" "$desired_file" 8 "    "
+        fi
     else
       warn "PerformanceProfile $profile_name is not found."
     fi
@@ -328,6 +382,7 @@ check_tuned_profile(){
   step "Checking required tuned profile"
 
   if [ "true" = "$(yq '.node_tunings.tuned_profile.enabled' $config_file)" ]; then
+    info "Legend" "${RED}[-] Desired Config${RESET}  ${GREEN}[+] Live Cluster${RESET}"
     profiles=$(yq '.node_tunings.tuned_profile|keys[]|select(.!="enabled")' $config_file 2>/dev/null)
 
       # Get all profiles from config
@@ -352,12 +407,10 @@ check_tuned_profile(){
       diff -q $pretty_desired_file $live_file > /dev/null
       if [ $? -eq 0 ]; then
         info "TunedProfile $profile_name is identical to the desired one."
-      else
-        warn "TunedProfile $profile_name is not identical to the desired one."
-        warn "desired settings" "live settings"
-        diff --color=always --suppress-common-lines --side-by-side $pretty_desired_file $live_file
-        warn "More details please run: oc diff -f $desired_file"
-      fi
+        else
+          warn "TunedProfile $profile_name" "configuration drift detected"
+          show_config_diff "$pretty_desired_file" "$live_file" "$desired_file" 8 "    "
+        fi
     done
   else
     warn "Tuned profile" "disabled in $config_file"
@@ -410,10 +463,8 @@ diff_custom_resource(){
   if diff -q "$desired_pretty_file" "$live_pretty_file" >/dev/null 2>&1; then
     info "  ├─ $(basename "$file")" "identical to cluster"
   else
-    warn "  ├─ $(basename "$file")" "differs from cluster"
-    warn "desired settings" "live settings"
-    diff --color=always --suppress-common-lines --side-by-side "$desired_pretty_file" "$live_pretty_file" | head -20
-    echo "    (showing first 20 lines, run 'oc diff -f $file' for full diff)"
+    warn "  ├─ $(basename "$file")" "configuration drift detected"
+    show_config_diff "$desired_pretty_file" "$live_pretty_file" "$file" 6 "  │   "
   fi
 }
 
@@ -495,6 +546,8 @@ check_operator(){
 
 check_operators(){
   step "Checking operators"
+  info "Legend" "${RED}[-] Desired Config${RESET}  ${GREEN}[+] Live Cluster${RESET}  ${BLUE}[@] Context${RESET}"
+  
   readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
   
   for ((k=0; k<${#keys[@]}; k++)); do
