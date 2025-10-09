@@ -38,6 +38,7 @@ cluster_name=$1; shift
 
 if [ -z "$cluster_name" ]; then
   cluster_name=$(ls -t $basedir/instances |head -1)
+  debug "Auto-selected cluster: $cluster_name"
 fi
 
 cluster_workspace=$basedir/instances/$cluster_name
@@ -62,13 +63,6 @@ del(.metadata.ownerReferences) |
 del(.spec.clusterID) |
 del(.metadata.managedFields)
 '
-
-if [ -f "$config_file" ]; then
-  echo "Will run cluster config validation towards the cluster $cluster_name with config: $config_file"
-else
-  "Config file $config_file not exist, please check."
-  exit -1
-fi
 
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 
@@ -125,6 +119,44 @@ separator(){
   printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
 }
 
+short_path(){
+  echo "$*" | sed -e "s;${basedir};\${basedir};g" -e "s;${HOME};\${HOME};g"
+}
+
+export_address(){
+  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}'|awk '{print $1;}')
+}
+
+# Validate environment and dependencies
+validate_environment(){
+  debug "Validating environment and dependencies"
+  local validation_failed=false
+  
+  # Check required commands
+  local required_commands=("yq" "jinja2" "oc")
+  for cmd in "${required_commands[@]}"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      error "Required command not found: $cmd" "Please install $cmd"
+      validation_failed=true
+    else
+      debug "  ✓ Found command: $cmd"
+    fi
+  done
+  
+  # Check if KUBECONFIG will be valid
+  if [[ -n "$KUBECONFIG" ]]; then
+    debug "KUBECONFIG environment variable set to: $KUBECONFIG"
+  fi
+  
+  if $validation_failed; then
+    error "Environment validation failed" "Cannot continue"
+    return 1
+  fi
+  
+  debug "Environment validation passed"
+  return 0
+}
+
 check_node(){
   step "Checking node status"
   if [ $(oc get node -o jsonpath='{..conditions[?(@.type=="Ready")].status}') = "True" ]; then
@@ -161,14 +193,14 @@ check_cluster_operators(){
 check_workload_partitioning(){
   step "Checking workload partitioning"
   if [ "true" = "$(yq '.node_tunings.workload_partitioning.enabled' $config_file)" ]; then
-    warn "workload_partition" "not enabled in $config_file"
-  else
     info "workload_partition" "enabled in $config_file"
     if [ $(oc get mc |grep 01-master-cpu-partitioning | wc -l) -eq 1 ]; then
       info "mc 01-master-cpu-partitioning" "found"
     else
       warn "mc 01-master-cpu-partitioning" "not found"
     fi
+  else
+    warn "workload_partition" "not enabled in $config_file"
   fi
 }
 
@@ -264,6 +296,10 @@ check_performance_profile(){
 
   if [ "true" = "$(yq '.node_tunings.performance_profile.enabled' $config_file)" ]; then
     desired_file=$node_tunings_workspace/performance-profile/performance-profile-final.yaml
+    if [ ! -f "$desired_file" ]; then
+      error "Performance profile" "not found in $desired_file"
+      return 0
+    fi
     pretty_desired_file=$node_tunings_workspace/performance-profile/performance-profile-pretty.yaml
     profile_name=$(yq ".metadata.name" $desired_file)
     if [ $(oc get performanceprofile |grep $profile_name | wc -l) -eq 1 ]; then
@@ -276,7 +312,7 @@ check_performance_profile(){
         info "PerformanceProfile $profile_name is identical to the desired one."
       else
         warn "PerformanceProfile $profile_name is not identical to the desired one."
-        diff --side-by-side $pretty_desired_file $live_file
+        diff --suppress-common-lines --side-by-side $pretty_desired_file $live_file
       fi
     else
       warn "PerformanceProfile $profile_name is not found."
@@ -316,7 +352,8 @@ check_tuned_profile(){
         info "TunedProfile $profile_name is identical to the desired one."
       else
         warn "TunedProfile $profile_name is not identical to the desired one."
-        diff --side-by-side $pretty_desired_file $live_file
+        diff --suppress-common-lines --side-by-side $pretty_desired_file $live_file
+        warn "More details: oc apply -f $desired_file --dry-run=client"
       fi
     done
   else
@@ -489,11 +526,40 @@ check_extra_readiness(){
 }
 
 header "SNO Agent-Based Installer - Readiness Validation"
-step "Gathering cluster information"
-oc get clusterversion
-if [ $? -ne 0 ]; then
-  warn "Cluster is not reachable"
+
+# Validate configuration file
+if [ -f "$config_file" ]; then
+  info "Configuration file" "$(short_path $config_file)"
+  info "Target cluster" "$cluster_name"
+else
+  error "Config file not found" "$(short_path $config_file)"
+  exit 1
 fi
+
+# Validate environment before proceeding
+if ! validate_environment; then
+  exit 1
+fi
+
+# Show debug status
+if [[ "${DEBUG:-false}" == "true" ]]; then
+  info "Debug mode" "ENABLED (set DEBUG=false to disable)"
+else
+  info "Debug mode" "disabled (set DEBUG=true to enable detailed logging)"
+fi
+
+debug "Script execution started at: $(date)"
+debug "Configuration file: $config_file"
+debug "Target cluster: $cluster_name"
+debug "OpenShift version: ${ocp_release:-unknown}"
+
+step "Gathering cluster information"
+if ! oc get clusterversion >/dev/null 2>&1; then
+  error "Cluster is not reachable" "Check KUBECONFIG and connectivity"
+  printf "${RED}KUBECONFIG: ${YELLOW}%s${RESET}\n" "${KUBECONFIG:-not set}"
+  exit 1
+fi
+oc get clusterversion
 
 check_node
 check_cluster_operators
@@ -510,6 +576,16 @@ check_installplans
 check_extra_readiness
 
 header "SNO Readiness Check Complete - Summary"
+
+debug "Script execution completed at: $(date)"
+
 info "✅ All checks completed" "successfully"
+info "📁 Kubeconfig location" "$(short_path $cluster_workspace/auth/kubeconfig)"
+info "⚙️  Configuration file" "$(short_path $config_file)"
+info "🎯 Target cluster" "$cluster_name"
+info "🔧 OpenShift version" "$ocp_release"
 separator
 printf "${BOLD}${GREEN}🎉 SNO readiness validation completed!${RESET}\n"
+if [[ "${DEBUG:-false}" != "true" ]]; then
+  printf "${CYAN}For detailed debugging, run with: ${YELLOW}DEBUG=true %s${RESET}\n" "$0"
+fi
