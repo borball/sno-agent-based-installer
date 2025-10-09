@@ -313,6 +313,7 @@ check_performance_profile(){
       else
         warn "PerformanceProfile $profile_name is not identical to the desired one."
         diff --suppress-common-lines --side-by-side $pretty_desired_file $live_file
+        warn "More details please run: oc diff -f $desired_file"
       fi
     else
       warn "PerformanceProfile $profile_name is not found."
@@ -353,7 +354,7 @@ check_tuned_profile(){
       else
         warn "TunedProfile $profile_name is not identical to the desired one."
         diff --suppress-common-lines --side-by-side $pretty_desired_file $live_file
-        warn "More details: oc apply -f $desired_file --dry-run=client"
+        warn "More details please run: oc diff -f $desired_file"
       fi
     done
   else
