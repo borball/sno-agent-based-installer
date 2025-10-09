@@ -850,6 +850,7 @@ operator_configs(){
               if [[ "$data_file" != "null" ]]; then
                 debug "Using custom data for $key template: $template_name"
                 if output=$(yq ".operators.$key.data" "$config_file" | jinja2 "$f" | oc apply -f - 2>&1); then
+                  yq ".operators.$key.data" "$config_file" | jinja2 "$f" > "$workspace_folder/$(basename "$f" .j2)"
                   debug "  ✓ Successfully rendered & applied with custom data: $template_name"
                   debug "    Output: $output"
                 else
@@ -860,6 +861,7 @@ operator_configs(){
               else
                 debug "Using config file for $key template: $template_name"
                 if output=$(jinja2 "$f" "$config_file" | oc apply -f - 2>&1); then
+                  jinja2 "$f" "$config_file" > "$workspace_folder/$(basename "$f" .j2)"
                   debug "  ✓ Successfully rendered & applied: $template_name"
                   debug "    Output: $output"
                 else

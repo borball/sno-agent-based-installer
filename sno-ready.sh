@@ -312,7 +312,8 @@ check_performance_profile(){
         info "PerformanceProfile $profile_name is identical to the desired one."
       else
         warn "PerformanceProfile $profile_name is not identical to the desired one."
-        diff --suppress-common-lines --side-by-side $pretty_desired_file $live_file
+        warn "desired settings" "live settings"
+        diff --color=always --suppress-common-lines --side-by-side $pretty_desired_file $live_file
         warn "More details please run: oc diff -f $desired_file"
       fi
     else
@@ -353,12 +354,119 @@ check_tuned_profile(){
         info "TunedProfile $profile_name is identical to the desired one."
       else
         warn "TunedProfile $profile_name is not identical to the desired one."
-        diff --suppress-common-lines --side-by-side $pretty_desired_file $live_file
+        warn "desired settings" "live settings"
+        diff --color=always --suppress-common-lines --side-by-side $pretty_desired_file $live_file
         warn "More details please run: oc diff -f $desired_file"
       fi
     done
   else
     warn "Tuned profile" "disabled in $config_file"
+  fi
+}
+
+diff_custom_resource(){
+  local file=$1
+  if [ ! -f "$file" ]; then
+    debug "File not found: $file"
+    return 1
+  fi
+  
+  # Extract resource information with error handling
+  local kind name ns
+  kind=$(yq ".kind" "$file" 2>/dev/null)
+  name=$(yq ".metadata.name" "$file" 2>/dev/null)
+  ns=$(yq ".metadata.namespace // \"\"" "$file" 2>/dev/null)
+  
+  if [ -z "$kind" ] || [ -z "$name" ]; then
+    warn "  ├─ $(basename "$file")" "invalid YAML (missing kind or name)"
+    return 1
+  fi
+  
+  debug "Checking $kind/$name in namespace: ${ns:-default}"
+  
+  # Generate file names for comparison
+  local desired_pretty_file live_pretty_file
+  desired_pretty_file=$(echo "$file" | sed 's/\.yaml$/-pretty.yaml/')
+  live_pretty_file=$(echo "$file" | sed 's/\.yaml$/-live-pretty.yaml/')
+
+  # Create pretty version of desired file
+  if ! yq eval "${FILTER_FIELDS}" "$file" | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval --prettyPrint > "$desired_pretty_file" 2>/dev/null; then
+    warn "  ├─ $(basename "$file")" "failed to process desired file"
+    return 1
+  fi
+
+  # Get live resource and create pretty version
+  local oc_cmd="oc get $kind $name"
+  if [ -n "$ns" ] && [ "$ns" != "null" ]; then
+    oc_cmd="$oc_cmd -n $ns"
+  fi
+  
+  if ! $oc_cmd -o yaml 2>/dev/null | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_pretty_file" 2>/dev/null; then
+    warn "  ├─ $(basename "$file")" "resource not found in cluster"
+    return 1
+  fi
+
+  # Compare files
+  if diff -q "$desired_pretty_file" "$live_pretty_file" >/dev/null 2>&1; then
+    info "  ├─ $(basename "$file")" "identical to cluster"
+  else
+    warn "  ├─ $(basename "$file")" "differs from cluster"
+    warn "desired settings" "live settings"
+    diff --color=always --suppress-common-lines --side-by-side "$desired_pretty_file" "$live_pretty_file" | head -20
+    echo "    (showing first 20 lines, run 'oc diff -f $file' for full diff)"
+  fi
+}
+
+check_operator_day2(){
+  local key=$1
+  local operator_workspace=$day2_workspace/operators/$key
+  
+  debug "Checking operator day2 configs for: $key"
+  debug "Operator workspace: $operator_workspace"
+  
+  # Check if operator workspace exists
+  if [ ! -d "$operator_workspace" ]; then
+    debug "No day2 workspace found for operator: $key"
+    return 0
+  fi
+  
+  # Check base operator files
+  if ls "$operator_workspace"/*.yaml >/dev/null 2>&1; then
+    for file in "$operator_workspace"/*.yaml; do
+      # Skip generated pretty files and live files
+      if [ -f "$file" ] && [[ ! "$(basename "$file")" =~ -pretty\.yaml$ ]] && [[ ! "$(basename "$file")" =~ -live-pretty\.yaml$ ]]; then
+        diff_custom_resource "$file"
+      fi
+    done
+  fi
+
+  # Check profile-specific files
+  local profiles
+  profiles=$(yq ".operators.$key.day2[].profile" "$config_file" 2>/dev/null)
+  if [ -n "$profiles" ] && [ "$profiles" != "null" ]; then
+    for profile in $profiles; do
+      local profile_workspace="$operator_workspace/$profile"
+      debug "Checking profile workspace: $profile_workspace"
+      if [ -d "$profile_workspace" ] && ls "$profile_workspace"/*.yaml >/dev/null 2>&1; then
+        for file in "$profile_workspace"/*.yaml; do
+          # Skip generated pretty files and live files
+          if [ -f "$file" ] && [[ ! "$(basename "$file")" =~ -pretty\.yaml$ ]] && [[ ! "$(basename "$file")" =~ -live-pretty\.yaml$ ]]; then
+            diff_custom_resource "$file"
+          fi
+        done
+      fi
+    done
+  else
+    # Check default profile
+    local default_workspace="$operator_workspace/default"
+    if [ -d "$default_workspace" ] && ls "$default_workspace"/*.yaml >/dev/null 2>&1; then
+      for file in "$default_workspace"/*.yaml; do
+        # Skip generated pretty files and live files
+        if [ -f "$file" ] && [[ ! "$(basename "$file")" =~ -pretty\.yaml$ ]] && [[ ! "$(basename "$file")" =~ -live-pretty\.yaml$ ]]; then
+          diff_custom_resource "$file"
+        fi
+      done
+    fi
   fi
 }
 
@@ -379,10 +487,10 @@ check_operator(){
   csv=$(oc get csv -n $ns |grep -E "$operator_name|$key" |wc -l)
   if [ $csv -eq 1 ]; then
     info "$operator_desc" "available"
+    check_operator_day2 $key
   else
     warn "$operator_desc" "not available"
   fi
-  #todo, check csv in the namespace of the operator and status of the csv
 }
 
 check_operators(){
@@ -566,14 +674,14 @@ check_node
 check_cluster_operators
 export_address
 check_pods
+check_cluster_capabilities
+check_catalog_sources
+check_installplans
 check_machine_config_pools
 check_machine_configs
 check_performance_profile
 check_tuned_profile
 check_operators
-check_cluster_capabilities
-check_catalog_sources
-check_installplans
 check_extra_readiness
 
 header "SNO Readiness Check Complete - Summary"

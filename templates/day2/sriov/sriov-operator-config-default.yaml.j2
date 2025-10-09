@@ -23,7 +23,7 @@ spec:
   #        requests:
   #          openshift.io/<resource_name>:  "1"
   # Disable drain is needed for Single Node Openshift
-  disableDrain: {{ (day2 and day2.sriov and day2.sriov.disable_drain) or true }}
-  enableInjector: {{ (day2 and day2.sriov and day2.sriov.enable_injector) or false }}
-  enableOperatorWebhook: {{ (day2 and day2.sriov and day2.sriov.enable_webhook) or false }}
+  disableDrain: {{ (day2 and day2.sriov and day2.sriov.disable_drain) or true | lower }}
+  enableInjector: {{ (day2 and day2.sriov and day2.sriov.enable_injector) or false | lower }}
+  enableOperatorWebhook: {{ (day2 and day2.sriov and day2.sriov.enable_webhook) or false | lower }}
   logLevel: 0
