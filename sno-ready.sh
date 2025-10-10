@@ -88,19 +88,69 @@ RESET=$(tput sgr0)
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  # Calculate display length accounting for multi-byte characters
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
   
 warn(){
-  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
+}
+
+# Tree-structured output with proper alignment
+tree_info(){
+  local prefix="$1"
+  local name="$2" 
+  local status="$3"
+  local msg1="$prefix $name"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$status"
+}
+
+tree_warn(){
+  local prefix="$1"
+  local name="$2"
+  local status="$3"
+  local msg1="$prefix $name"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$status"
+}
+
+tree_error(){
+  local prefix="$1"
+  local name="$2"
+  local status="$3"
+  local msg1="$prefix $name"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$status"
 }
 
 step(){
-  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+  printf "\n${BOLD}${BLUE}▶%s${RESET}\n" "$1"
 }
 
 debug(){
@@ -279,17 +329,17 @@ check_machine_config(){
   mc_name=$(yq ".metadata.name" $file)
   if [ "$status" = "included" ]; then
     if [ $(oc get mc |grep $mc_name | wc -l) -eq 1 ]; then
-      info "  ├─ $(basename $file)" "included in $(basename $config_file) and found"
+      tree_info "  ├─" "$(basename $file)" "included and created"
     else
-      warn "  ├─ $(basename $file)" "included in $(basename $config_file) but not found"
+      tree_error "  ├─" "$(basename $file)" "included but not created"
     fi
   fi
 
   if [ "$status" = "excluded" ]; then
     if [ $(oc get mc |grep $mc_name | wc -l) -eq 1 ]; then
-      warn "  ├─ $(basename $file)" "excluded in $(basename $config_file) but still found"
+      tree_error "  ├─" "$(basename $file)" "excluded but still found"
     else
-      info "  ├─ $(basename $file)" "excluded in $(basename $config_file) and not found"
+      tree_info "  ├─" "$(basename $file)" "excluded and not found"
     fi
   fi
   
@@ -431,7 +481,7 @@ diff_custom_resource(){
   ns=$(yq ".metadata.namespace // \"\"" "$file" 2>/dev/null)
   
   if [ -z "$kind" ] || [ -z "$name" ]; then
-    warn "  ├─ $(basename "$file")" "invalid YAML (missing kind or name)"
+    tree_warn "  ├─" "$(basename "$file")" "invalid YAML (missing kind or name)"
     return 1
   fi
   
@@ -444,7 +494,7 @@ diff_custom_resource(){
 
   # Create pretty version of desired file
   if ! yq eval "${FILTER_FIELDS}" "$file" | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval --prettyPrint > "$desired_pretty_file" 2>/dev/null; then
-    warn "  ├─ $(basename "$file")" "failed to process desired file"
+    tree_warn "  ├─" "$(basename "$file")" "failed to process desired file"
     return 1
   fi
 
@@ -455,15 +505,15 @@ diff_custom_resource(){
   fi
   
   if ! $oc_cmd -o yaml 2>/dev/null | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_pretty_file" 2>/dev/null; then
-    warn "  ├─ $(basename "$file")" "resource not found in cluster"
+    tree_warn "  ├─" "$(basename "$file")" "resource not found in cluster"
     return 1
   fi
 
   # Compare files
   if diff -q "$desired_pretty_file" "$live_pretty_file" >/dev/null 2>&1; then
-    info "  ├─ $(basename "$file")" "identical to cluster"
+    tree_info "  ├─" "$(basename "$file")" "identical to cluster"
   else
-    warn "  ├─ $(basename "$file")" "configuration drift detected"
+    tree_warn "  ├─" "$(basename "$file")" "configuration drift detected"
     show_config_diff "$desired_pretty_file" "$live_pretty_file" "$file" 6 "  │   "
   fi
 }
@@ -691,6 +741,7 @@ header "SNO Agent-Based Installer - Readiness Validation"
 
 # Validate configuration file
 if [ -f "$config_file" ]; then
+  info "basedir" "$basedir"
   info "Configuration file" "$(short_path $config_file)"
   info "Target cluster" "$cluster_name"
 else
@@ -743,7 +794,7 @@ debug "Script execution completed at: $(date)"
 
 info "✅ All checks completed" "successfully"
 info "📁 Kubeconfig location" "$(short_path $cluster_workspace/auth/kubeconfig)"
-info "⚙️  Configuration file" "$(short_path $config_file)"
+info "⚙️ Configuration file" "$(short_path $config_file)"
 info "🎯 Target cluster" "$cluster_name"
 info "🔧 OpenShift version" "$ocp_release"
 separator

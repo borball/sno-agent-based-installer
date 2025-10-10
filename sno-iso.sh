@@ -27,15 +27,31 @@ RESET=$(tput sgr0)
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  # Calculate display length accounting for multi-byte characters
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
   
 warn(){
-  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 step(){
@@ -671,14 +687,27 @@ render_install_configs(){
   step "Rendering install-config.yaml and agent-config.yaml"
   pull_secret_input=$(yq '.pull_secret' $config_file)
   pull_secret_path=$(eval echo $pull_secret_input)
+  if [[ -z "$pull_secret_path" ]] || [[ ! -f "$pull_secret_path" ]]; then
+    error "Pull secret not found" "$(short_path $pull_secret_path)"
+    exit 1
+  fi
+
   export pull_secret=$(cat $pull_secret_path)
 
   ssh_key_input=$(yq '.ssh_key' $config_file)
   ssh_key_path=$(eval echo $ssh_key_input)
+  if [[ -z "$ssh_key_path" ]] || [[ ! -f "$ssh_key_path" ]]; then
+    error "SSH key not found" "$(short_path $ssh_key_path)"
+    exit 1
+  fi
   export ssh_key=$(cat $ssh_key_path)
 
   bundle_file=$(yq '.additional_trust_bundle' $config_file)
   if [[ "null" != "$bundle_file" ]]; then
+    if [[ -z "$bundle_file" ]] || [[ ! -f "$bundle_file" ]]; then
+      error "Additional trust bundle not found" "$(short_path $bundle_file)"
+      exit 1
+    fi
     export additional_trust_bundle=$(cat $bundle_file)
   fi
 
@@ -714,12 +743,12 @@ $basedir/openshift-install --dir $cluster_workspace agent --log-level=${ABI_LOG_
 
 header "Complete - Summary"
 
-info "✅ Bootable ISO generated" "$(ls $cluster_workspace/agent.*.iso)"
-info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
-info "🔑 Admin password file" "$cluster_workspace/auth/kubeadmin-password"
-info "⚙️  Configuration file" "$config_file"
-info "🏗️  OpenShift version" "$ocp_release_version"
-info "💻 Target architecture" "$ocp_arch"
+info "Bootable ISO generated" "$(ls $cluster_workspace/agent.*.iso)"
+info "Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
+info "Admin password file" "$cluster_workspace/auth/kubeadmin-password"
+info "Configuration file" "$config_file"
+info "OpenShift version" "$ocp_release_version"
+info "Target architecture" "$ocp_arch"
 
 separator
 printf "${BOLD}${GREEN}Next Steps:${RESET}\n"

@@ -2,15 +2,31 @@
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  # Calculate display length accounting for multi-byte characters
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
   
 warn(){
-  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 step(){

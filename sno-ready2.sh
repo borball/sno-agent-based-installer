@@ -27,11 +27,21 @@ ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 NC='\033[0m' # No Color
 
 info(){
-  printf  $(tput setaf 2)"%-62s %-10s"$(tput sgr0)"\n" "[+]""$@"
+  local msg1="[+]$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "$(tput setaf 2)%s%*s%s$(tput sgr0)\n" "$msg1" "$padding" "" "$msg2"
 }
 
 warn(){
-  printf  $(tput setaf 3)"%-62s %-10s"$(tput sgr0)"\n" "[-]""$@"
+  local msg1="[-]$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "$(tput setaf 3)%s%*s%s$(tput sgr0)\n" "$msg1" "$padding" "" "$msg2"
 }
 
 check_node(){

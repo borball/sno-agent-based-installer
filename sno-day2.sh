@@ -44,19 +44,35 @@ fi
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  # Calculate display length accounting for multi-byte characters
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
   
 warn(){
-  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 step(){
-  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+  printf "\n${BOLD}${BLUE}▶%s${RESET}\n" "$1"
 }
 
 header(){
@@ -142,6 +158,10 @@ safe_copy(){
   return $failed_count
 }
 
+short_path(){
+  echo "$*" | sed -e "s;${basedir};\${basedir};g" -e "s;${HOME};\${HOME};g"
+}
+
 # Enhanced directory preparation function
 prepare_workspace(){
   local workspace_path="$1"
@@ -163,7 +183,6 @@ prepare_workspace(){
       debug "  Cleaning $file_count existing files from: $workspace_path"
       rm -rf "$workspace_path"/*
     fi
-    info "$description directory" "prepared ($workspace_path)"
   fi
   
   return 0
@@ -225,10 +244,11 @@ fi
 cluster_workspace=$basedir/instances/$cluster_name
 day2_workspace=$cluster_workspace/day2
 
-# Initialize day2 workspace with enhanced logging
-debug "Initializing day2 workspace for cluster: $cluster_name"
-debug "Cluster workspace: $cluster_workspace"
-debug "Day2 workspace: $day2_workspace"
+header "SNO Day2 Operations - General Information"
+info "Target cluster" "$cluster_name"
+info "basedir" "$basedir"
+info "Cluster workspace" "$cluster_workspace"
+info "Day2 workspace" "$day2_workspace"
 
 if ! prepare_workspace "$day2_workspace" "Day2 workspace"; then
   error "Failed to initialize day2 workspace" "$day2_workspace"
@@ -237,11 +257,17 @@ fi
 
 config_file=$cluster_workspace/config-resolved.yaml
 if [ -f "$config_file" ]; then
-  info "Configuration file" "$config_file"
-  info "Target cluster" "$cluster_name"
+  info "Configuration file" "$(short_path $config_file)"
 else
   error "Config file not found" "$config_file"
   exit -1
+fi
+
+# Show debug status
+if [[ "${DEBUG:-false}" == "true" ]]; then
+  info "Debug mode" "ENABLED (set DEBUG=false to disable)"
+else
+  info "Debug mode" "disabled (set DEBUG=true to enable detailed logging)"
 fi
 
 export KUBECONFIG=$cluster_workspace/auth/kubeconfig
@@ -527,16 +553,16 @@ performance_profile(){
   fi
 
   info "  ✓ Successfully rendered performance profile template"
-  info "  Final output file: $output_file"
+  info "  Final output file: $(short_path $output_file)"
   
   # Validate final output file before applying
   if [[ ! -f "$output_file" ]]; then
-    error "Final output file not found" "$output_file"
+    error "Final output file not found" "$(short_path $output_file)"
     return 1
   fi
   
   if ! yq eval '.' "$output_file" >/dev/null 2>&1; then
-    error "Final output file contains invalid YAML" "$output_file"
+    error "Final output file contains invalid YAML" "$(short_path $output_file)"
     return 1
   fi
   
@@ -774,7 +800,7 @@ operator_configs(){
       fi
       
       debug "Manifest folders for $key: $manifest_folders"
-      info "  └─ manifest_folders" "$manifest_folders"
+      info "  └─ manifest_folders" "$(short_path $manifest_folders)"
       
       # Process each manifest folder
       local operator_failed=false
@@ -978,7 +1004,7 @@ operator_auto_upgrade(){
   step "Configuring operator auto-upgrade policy"
   case "$(yq '.update_control.disable_operator_auto_upgrade' $config_file)" in
     true)
-      warn "Operator auto-upgrade" "disabled (manual approval)"
+      info "Operator auto-upgrade" "disabled (manual approval)"
       install_plan_approval "Manual"
       ;;
     false)
@@ -1138,13 +1164,6 @@ extra_manifests(){
 
 header "SNO Day2 Operations - Cluster Configuration"
 
-# Show debug status
-if [[ "${DEBUG:-false}" == "true" ]]; then
-  info "Debug mode" "ENABLED (set DEBUG=false to disable)"
-else
-  info "Debug mode" "disabled (set DEBUG=true to enable detailed logging)"
-fi
-
 debug "Script execution started at: $(date)"
 debug "Day2 workspace location: $day2_workspace"
 debug "Templates directory: $templates"
@@ -1155,7 +1174,7 @@ step "Gathering cluster information"
 cluster_info
 
 separator
-step "Applying day2 operations"
+header "SNO Day2 Operations - Applying day2 operations"
 
 pause_mcp_update
 cluster_tunings
@@ -1182,7 +1201,7 @@ fi
 
 info "✅ Day2 configuration applied" "successfully"
 info "📁 Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
-info "⚙️  Configuration file" "$config_file"
+info "⚙️ Configuration file" "$config_file"
 info "🎯 Target cluster" "$cluster_name"
 info "🔧 OpenShift version" "$ocp_release"
 info "📂 Workspace location" "$day2_workspace"
@@ -1191,15 +1210,4 @@ info "📊 Workspace size" "$workspace_size ($file_count files)"
 debug "Final workspace contents:"
 if [[ "${DEBUG:-false}" == "true" ]] && command -v tree >/dev/null 2>&1; then
   tree "$day2_workspace" 2>/dev/null || find "$day2_workspace" -type f 2>/dev/null | head -20
-fi
-
-separator
-printf "${BOLD}${GREEN}🎉 Day2 operations completed successfully!${RESET}\n"
-printf "${CYAN}Next Steps:${RESET}\n"
-printf "  └─ Monitor cluster operators and workloads\n"
-printf "  └─ Verify performance and tuning configurations\n"
-printf "  └─ Check application deployments\n"
-printf "  └─ Review backup files in: ${YELLOW}%s${RESET}\n" "$day2_workspace"
-if [[ "${DEBUG:-false}" != "true" ]]; then
-  printf "  └─ For detailed debugging, run with: ${YELLOW}DEBUG=true %s${RESET}\n" "$0"
 fi

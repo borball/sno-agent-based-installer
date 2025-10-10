@@ -31,19 +31,35 @@ RESET=$(tput sgr0)
 
 # Enhanced output functions
 info(){
-  printf "${GREEN}✓${RESET} %-64s ${GREEN}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  # Calculate display length accounting for multi-byte characters
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
   
 warn(){
-  printf "${YELLOW}⚠${RESET} %-64s ${YELLOW}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 error(){
-  printf "${RED}✗${RESET} %-64s ${RED}%-10s${RESET}\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
 step(){
-  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+  printf "\n${BOLD}${BLUE}▶%s${RESET}\n" "$1"
 }
 
 header(){
@@ -73,6 +89,8 @@ if [ -z "$cluster_name" ]; then
 fi
 
 cluster_workspace=$basedir/instances/$cluster_name
+
+header "SNO Install Operations - General Information"
 
 config_file=$cluster_workspace/config-resolved.yaml
 if [ -f "$config_file" ]; then
@@ -472,8 +490,8 @@ monitor_installation_status(){
   done
 
   echo
-  info "✅ API endpoint available" "starting installation monitoring"
-  info "📊 Monitoring cluster status" "waiting for installation to begin"
+  info "API endpoint available" "starting installation monitoring"
+  info "Monitoring cluster status" "waiting for installation to begin"
   while
     echo "-------------------------------"
     _status=$(monitor_curl "$assisted_rest")
@@ -520,10 +538,10 @@ monitor_installation_status(){
 
   echo
   virtual_media_eject
-  info "🎉 API monitoring complete" "installation finished or node rebooted"
+  info "API monitoring complete" "installation finished or node rebooted"
   header "Installation Complete - Summary"
-  info "✅ Installation completed" "successfully"
-  info "📊 Installation progress" "$total_percentage%"
+  info "Installation completed" "successfully"
+  info "Installation progress" "$total_percentage%"
 }
 
 approve_pending_install_plans(){
