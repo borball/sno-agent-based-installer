@@ -9,7 +9,7 @@ root_path="$( cd "$(dirname "$0")/.." >/dev/null 2>&1 ; pwd -P )"
 iso_cmd="$root_path"/sno-iso.sh
 sno_workspace="$root_path"/instances/"$cluster"
 install_cmd="$root_path"/sno-install.sh
-config="$basedir"/configs/config-"$cluster".yaml
+config="$basedir"/configs/config-"$cluster"-420.yaml
 day2_cmd="$root_path"/sno-day2.sh
 
 iso(){

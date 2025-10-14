@@ -83,7 +83,6 @@ operators:
 
   local-storage:
     enabled: false
-    source: prega
     data:
       local_volume:
         name: local-disks
@@ -96,7 +95,6 @@ operators:
 
   ptp:
     enabled: true
-    source: prega
     # no need to specify day2
     # event-notification-api will be under templates/day2/ptp
     # boundary-clock will be under templates/day2/ptp/default
@@ -138,7 +136,6 @@ operators:
 
   sriov:
     enabled: true
-    source: prega
     #Do not lock version in preGA
     #version: sriov-network-operator.v4.20.0-202507211933
 
@@ -149,17 +146,14 @@ operators:
 
   cluster-logging:
     enabled: true
-    source: prega
     #Do not lock version in preGA
     #version: cluster-logging.v6.2.4
     
   lca:
     enabled: true
-    source: prega
     #Do not lock version in preGA
     #version: lifecycle-agent.v4.20.0
   adp:
-    source: prega
     enabled: true
     channel: stable
     #Do not lock version in preGA
@@ -167,7 +161,6 @@ operators:
 
   lvm:
     enabled: true
-    source: prega
     #Do not lock version in preGA
     #version: lvm-operator.v4.20.0
     # data:
