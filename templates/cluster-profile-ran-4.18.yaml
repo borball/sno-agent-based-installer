@@ -124,14 +124,14 @@ operators:
             - ens1f3
           ptp4lConf:
             boundary_clock_jbod: 0
-        - name: bc-profile-nic2
-          slave: ens2f0
-          masters:
-            - ens2f1
-            - ens2f2
-            - ens2f3
-          ptp4lConf:
-            boundary_clock_jbod: 0
+        # - name: bc-profile-nic2
+        #   slave: ens2f0
+        #   masters:
+        #     - ens2f1
+        #     - ens2f2
+        #     - ens2f3
+        #   ptp4lConf:
+        #     boundary_clock_jbod: 0
 
 
   sriov:
