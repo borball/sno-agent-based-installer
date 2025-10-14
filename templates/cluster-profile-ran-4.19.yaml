@@ -150,16 +150,16 @@ operators:
 
   lvm:
     enabled: false
-    data:
-      disks:
-        - path: /dev/disk/by-path/example-to-be-replaced
-          wipe_table: true
-      device_classes:
-        - name: vg1
-          thin_pool_name: thin-pool-1
-          selector:
-            paths:
-              - /dev/disk/by-path/example-to-be-replaced
+    # data:
+    #   disks:
+    #     - path: /dev/disk/by-path/example-to-be-replaced
+    #       wipe_table: true
+    #   device_classes:
+    #     - name: vg1
+    #       thin_pool_name: thin-pool-1
+    #       selector:
+    #         paths:
+    #           - /dev/disk/by-path/example-to-be-replaced
     day1:
       - profile: wipe-disks
 
