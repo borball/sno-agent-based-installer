@@ -82,16 +82,16 @@ operators:
   ###############################################################################################
 
   local-storage:
-    enabled: true
-    data:
-      local_volume:
-        name: local-disks
-        storageClassName: general
-      fs_type: ext4
-      #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
-      disk_by_path: example-to-be-replaced
-      partitions:
-        10g: 30
+    enabled: false
+    # data:
+    #   local_volume:
+    #     name: local-disks
+    #     storageClassName: general
+    #   fs_type: ext4
+    #   #Get the ID with command: udevadm info -q property --property=ID_PATH /dev/nvme1n1
+    #   disk_by_path: example-to-be-replaced
+    #   partitions:
+    #     10g: 30
 
   ptp:
     enabled: true
@@ -149,7 +149,7 @@ operators:
     enabled: true
 
   lvm:
-    enabled: false
+    enabled: true
     # data:
     #   disks:
     #     - path: /dev/disk/by-path/example-to-be-replaced
