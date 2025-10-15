@@ -14,7 +14,7 @@ spec:
   name: multicluster-engine
   source: {{ source | default(default_source) }}
   sourceNamespace: openshift-marketplace
-  {% if version is not none -%}
+  {% if version is defined and version is not none -%}
   startingCSV: {{ version }}
   installPlanApproval: Manual
   {% else -%}
