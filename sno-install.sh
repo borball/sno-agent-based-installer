@@ -205,7 +205,20 @@ redfish_init(){
     fi
   fi
 
-  virtual_medias=$($redfish_curl_cmd $manager/VirtualMedia | jq -r '.Members[]."@odata.id"' )
+  set +e
+  virtual_media_root=$manager/VirtualMedia
+  virtual_media_path=""
+  virtual_medias=$($redfish_curl_cmd $virtual_media_root | jq '.Members[]."@odata.id"'  2>/dev/null)
+  if [[ -z "$virtual_medias" ]]; then
+    virtual_media_root=$system/VirtualMedia
+    virtual_medias=$($redfish_curl_cmd $virtual_media_root | jq -r '.Members[]."@odata.id"' 2>/dev/null)
+    if [[ -z "$virtual_medias" ]]; then
+      echo "Failed to get virtual media"
+      exit -1
+    fi
+  fi
+  set -e
+
   for vm in $virtual_medias; do
     if [ $($redfish_curl_cmd https://$bmc_address$vm | jq -r '.MediaTypes[]' |grep -ciE 'CD|DVD|cdrom') -gt 0 ]; then
       virtual_media=$vm
