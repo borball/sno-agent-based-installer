@@ -5,11 +5,11 @@ version=${1:-stable-4.18}
 cluster=sno130
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-root_path="$( cd "$(dirname "$0")/.." >/dev/null 2>&1 ; pwd -P )"
+root_path="$( cd "$(dirname "$0")/../.." >/dev/null 2>&1 ; pwd -P )"
 iso_cmd="$root_path"/sno-iso.sh
 sno_workspace="$root_path"/instances/"$cluster"
 install_cmd="$root_path"/sno-install.sh
-config="$basedir"/configs/config-"$cluster"-418.yaml
+config="$basedir"/tests/sno130/config-"$cluster"-418.yaml
 day2_cmd="$root_path"/sno-day2.sh
 
 iso(){

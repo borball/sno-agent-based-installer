@@ -33,21 +33,16 @@ iso:
   address: http://192.168.58.15/iso/sno130.iso
   #deploy: ./test/deploy-iso.sh
 
+cluster_tunings:
+  excludes:
+    - crun
+    - sctp
+
 node_tunings:
   workload_partitioning:
     enabled: true
   performance_profile:
-    enabled: true
-    profile: ran
-    name: sno-perfprofile
     spec:
-      #realTimeKernel: true
-      #hugepage:
-        #enabled: true
-        #default: 1G
-        #pages:
-          #- size: 1G
-          #  count: 32
       net:
         userLevelNetworking: true
       cpu:
@@ -57,7 +52,17 @@ node_tunings:
         isolatedCpuFreq: 2500000
         reservedCpuFreq: 2500000
 operators:
-  local-storage:
+  lvm:
     data:
-      disk_by_path: pci-0000:c3:00.0-nvme-1
+      disks:
+        - path: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+          wipe_table: true
+      device_classes:
+        - name: vg1
+          thin_pool_name: thin-pool-1
+          selector:
+            paths:
+              - /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+    day1:
+      - profile: wipe-disks
 

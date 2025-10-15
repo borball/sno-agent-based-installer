@@ -5,17 +5,17 @@ version=${1:-stable-4.18}
 cluster=acm0
 
 basedir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-root_path="$( cd "$(dirname "$0")/.." >/dev/null 2>&1 ; pwd -P )"
+root_path="$( cd "$(dirname "$0")/../.." >/dev/null 2>&1 ; pwd -P )"
 iso_cmd="$root_path"/sno-iso.sh
 sno_workspace="$root_path"/instances/"$cluster"
 install_cmd="$root_path"/sno-install.sh
-config="$basedir"/configs/config-"$cluster".yaml
+config="$basedir"/tests/acm0/config-"$cluster".yaml
 day2_cmd="$root_path"/sno-day2.sh
 
 
 create_vm(){
   echo "Create VM"
-  oc apply -k $basedir/virtual-machines/$cluster
+  oc apply -k $basedir/tests/acm0/vm/$cluster
 }
 
 delete_vm(){
