@@ -315,7 +315,12 @@ cluster_info(){
   done
 }
 
-ocp_release=$(oc version -o json|jq -r '.openshiftVersion')
+ocp_release=$(oc version --client=false -o json|jq -r '.openshiftVersion')
+if [ -z "$ocp_release" ]; then
+  error "Failed to get cluster version"
+  return 1
+fi
+
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
 export OCP_Y_VERSION=$ocp_y_release
 export OCP_Z_VERSION=$ocp_release
