@@ -208,7 +208,7 @@ redfish_init(){
   set +e
   virtual_media_root=$manager/VirtualMedia
   virtual_media_path=""
-  virtual_medias=$($redfish_curl_cmd $virtual_media_root | jq '.Members[]."@odata.id"'  2>/dev/null)
+  virtual_medias=$($redfish_curl_cmd $virtual_media_root | jq -r '.Members[]."@odata.id"'  2>/dev/null)
   if [[ -z "$virtual_medias" ]]; then
     virtual_media_root=$system/VirtualMedia
     virtual_medias=$($redfish_curl_cmd $virtual_media_root | jq -r '.Members[]."@odata.id"' 2>/dev/null)
@@ -226,7 +226,7 @@ redfish_init(){
     fi
   done
 
-  if [ $virtual_media == "null" ] || [ -z $virtual_media ]; then
+  if [ "$virtual_media" == "null" ] || [ -z "$virtual_media" ]; then
     error "Virtual media path not found" "Cannot start deployment"
     exit -1
   else
