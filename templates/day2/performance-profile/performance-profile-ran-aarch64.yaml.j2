@@ -1,0 +1,30 @@
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  name: {{ name or 'openshift-node-performance-profile' }}
+  annotations:
+    ran.openshift.io/ztp-deploy-wave: "10"
+    ran.openshift.io/reference-configuration: "ran-du.redhat.com"
+spec:
+  additionalKernelArgs:
+    - rcupdate.rcu_normal_after_boot=0
+    - efi=runtime
+    - acpi_power_meter.force_cap_on=y
+    - console=ttyAMA0,115200n8
+    - earlycon
+    - module_blacklist=nouveau
+    - pci=realloc=off
+    - pci=pcie_bus_safe
+  kernelPageSize: 64k
+  machineConfigPoolSelector:
+    pools.operator.machineconfiguration.openshift.io/master: ""
+  nodeSelector:
+    node-role.kubernetes.io/master: ""
+  numa:
+    topologyPolicy: none
+  realTimeKernel:
+    enabled: false
+  workloadHints:
+    realTime: true
+    highPowerConsumption: false
+    perPodPowerManagement: false

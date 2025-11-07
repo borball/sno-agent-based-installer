@@ -482,7 +482,15 @@ performance_profile(){
     return 1
   fi
   
-  local source_template="$templates/day2/performance-profile/performance-profile-$profile.yaml.j2"
+  # for x86_64 use performance-profile-ran-x86_64.yaml.j2, for aarch64 use performance-profile-ran-aarch64.yaml.j2
+  # platform is detected in config file
+  local platform=$(yq '.cluster.platform // "x86_64"' $config_file)
+  if [[ $platform == "arm" ]] ; then
+    local source_template="$templates/day2/performance-profile/performance-profile-ran-aarch64.yaml.j2"
+  else
+    local source_template="$templates/day2/performance-profile/performance-profile-ran-x86_64.yaml.j2"
+  fi
+
   local profile_default_file="$templates/cluster-profile-${profile}-${ocp_y_version}.yaml"
   
   debug "Source file: $source_template"
