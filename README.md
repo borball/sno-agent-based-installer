@@ -30,6 +30,10 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **🎮 NVIDIA GPU Operator**: GPU workload support
 - **📊 AMQ Streams & Console**: Apache Kafka messaging platform
 - **🏢 Multicluster Global Hub**: Enhanced multi-cluster management
+- **🔧 Multicluster Engine (MCE)**: Multi-cluster infrastructure management
+- **🛡️ OADP (ADP)**: OpenShift API for Data Protection and backup
+- **⚡ Intel FEC Operator**: Forward Error Correction acceleration
+- **🔄 Lifecycle Agent (LCA)**: Image-based cluster lifecycle management
 
 ### Enhanced Features
 - **📋 PreGA Catalog Sources**: Support for pre-GA operator testing
@@ -61,6 +65,53 @@ The toolkit consists of main components:
 | `sno-ready.sh` | Validate cluster configuration and health | Validation |
 | `sno-ready2.sh` | Enhanced validation with additional checks | Validation |
 | `fetch-infra-env.sh` | Fetch infrastructure environment information | Utility |
+
+### Directory Structure
+
+```
+sno-agent-based-installer/
+├── sno-*.sh                    # Main deployment scripts
+├── config.yaml.sample         # Sample configuration file
+├── CHANGELOG.md               # Version history and changes
+├── operators/                 # Operator subscription templates
+│   ├── adp/                  # OADP (OpenShift API for Data Protection)
+│   ├── amq/                  # AMQ Streams (Apache Kafka)
+│   ├── amq-console/          # AMQ Streams Console
+│   ├── cluster-logging/      # OpenShift Logging
+│   ├── fec/                  # Intel FEC (Forward Error Correction)
+│   ├── gitops/               # Red Hat OpenShift GitOps
+│   ├── gpu/                  # NVIDIA GPU Operator
+│   ├── kubevirt-hyperconverged/ # OpenShift Virtualization
+│   ├── lca/                  # Lifecycle Agent
+│   ├── local-storage/        # Local Storage Operator
+│   ├── lvm/                  # LVM Storage
+│   ├── mce/                  # Multicluster Engine
+│   ├── mcgh/                 # Multicluster Global Hub
+│   ├── metallb/              # MetalLB Load Balancer
+│   ├── nfd/                  # Node Feature Discovery
+│   ├── nmstate/              # NMState Network Configuration
+│   ├── operators/            # Nested operators directory (alternative structure)
+│   ├── ptp/                  # Precision Time Protocol
+│   ├── rhacm/                # Red Hat Advanced Cluster Management
+│   ├── sriov/                # SR-IOV Network Operator
+│   └── talm/                 # Topology Aware Lifecycle Manager
+├── templates/                 # Configuration templates and profiles
+│   ├── cluster-profile-*.yaml # Deployment profile templates
+│   ├── day1/                 # Day-1 (installation-time) configurations
+│   │   ├── catalogsource/    # Custom catalog sources
+│   │   ├── cluster-tunings/  # Version-specific cluster tunings
+│   │   ├── icsp/             # Image Content Source Policies
+│   │   └── */                # Operator-specific day-1 configs
+│   └── day2/                 # Day-2 (post-installation) configurations
+│       ├── performance-profile/ # Performance tuning profiles
+│       ├── ptp/              # PTP configurations
+│       ├── sriov/            # SR-IOV configurations
+│       └── */                # Operator-specific day-2 configs
+├── samples/                   # Sample configuration files
+├── test/                      # Test scripts and configurations
+├── mirror/                    # Mirroring scripts for disconnected environments
+└── instances/                 # Generated cluster instances (created during deployment)
+```
 
 ## 📋 Prerequisites
 
@@ -595,14 +646,9 @@ The repository includes comprehensive test configurations:
 # Run basic test
 ./test/test.sh
 
-# Test specific configuration
-./test/test-sno130.sh
-
-# Test KVM environment
-./test/test-kvm.sh
-
-# Test hub cluster
-./test/test-hub.sh
+# Hub cluster test
+./test/test-acm0.sh                     # RHACM hub test
+                  # Virtual machine deployment
 ```
 
 ## 📁 Sample Configurations

@@ -782,6 +782,7 @@ if ! oc get clusterversion >/dev/null 2>&1; then
 fi
 oc get clusterversion
 
+validate_config
 check_node
 check_cluster_operators
 export_address

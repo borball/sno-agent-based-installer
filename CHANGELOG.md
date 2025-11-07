@@ -1,8 +1,18 @@
 # 2.x Change logs
 
-## 2025-09
-- Redesigned the config.yaml, introduced the deployment profile concept in the config to simlify the config.yaml 
-- Code refacftoring based on the new config design, with AI's assistance.
+## 2025-09 and 2025-10
+- **📋 Configuration Management**:
+  - Redesigned the config.yaml, introduced the deployment profile concept in the config to simplify the config.yaml 
+  - Code refactoring based on the new config design, with AI's assistance
+  - Updated CHANGELOG.md formatting and fixed typos
+  - Improved documentation structure and operator descriptions
+  - Enhanced template system with better error handling
+
+- **⚙️ Profile System Enhancements**:
+  - Modular operator configuration system with day1/day2 profiles
+  - Flexible profile selection for operators (e.g., `profile: a`, `profile: b`)
+  - Support for shell scripts (`.sh`), YAML (`.yaml`), and Jinja2 templates (`.yaml.j2`)
+  - Enhanced operator version locking and catalog source management
 
 
 # 1.0 Change Logs
