@@ -148,7 +148,8 @@ operators:
     
   adp:
     enabled: true
-
+    channel: stable-1.4
+    
   lvm:
     enabled: false
     data:

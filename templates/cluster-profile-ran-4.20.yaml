@@ -187,20 +187,9 @@ catalog_sources:
   create_marketplace_ns: true
   update_operator_hub: false
   create_default_catalog_sources: true
-  defaults: []
-  customs: 
-    - name: prega
-      display: Red Hat Operators OCP_Y_RELEASE PreGA
-      image: quay.io/prega/prega-operator-index:vOCP_Y_RELEASE
-      publisher: Red Hat
-      provide: redhat-operators
-    - name: certified-operators
-      display: Certified Operators
-      image: registry.redhat.io/redhat/certified-operator-index:v4.19
-      publisher: Red Hat
-container_registry:
-  icsp:
-    - templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
+  defaults:
+    - redhat-operators
+    - certified-operators
 
 readiness:
   default: true
