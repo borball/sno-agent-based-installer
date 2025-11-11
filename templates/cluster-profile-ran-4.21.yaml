@@ -175,7 +175,10 @@ operators:
     #           - /dev/disk/by-path/example-to-be-replaced
     day1:
       - profile: wipe-disks
-
+    readiness:
+      - name: lvmcluster shall be ready
+        variable: "oc get lvmclusters.lvm.topolvm.io -n openshift-storage singlenode -o jsonpath='{.status.state}'"
+        expected: "Ready"
 proxy:
   enabled: false
 

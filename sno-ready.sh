@@ -129,6 +129,7 @@ tree_info(){
   local name="$2" 
   local status="$3"
   local msg1="$prefix $name"
+  # Use byte length like other functions for consistency
   local len=${#msg1}
   local padding=$((80 - len))
   if [ $padding -lt 0 ]; then padding=1; fi
@@ -140,6 +141,7 @@ tree_warn(){
   local name="$2"
   local status="$3"
   local msg1="$prefix $name"
+  # Use byte length like other functions for consistency
   local len=${#msg1}
   local padding=$((80 - len))
   if [ $padding -lt 0 ]; then padding=1; fi
@@ -187,7 +189,6 @@ show_config_diff(){
   local max_lines="${4:-6}"
   local indent="${5:-      }"
   
-  echo
   printf "%s${BOLD}${CYAN}Configuration Differences:${RESET}\n" "$indent"
   printf "%s${RED}[-] Desired Config${RESET}  ${GREEN}[+] Live Cluster${RESET}\n" "$indent"
   printf "%s${CYAN}%s${RESET}\n" "$indent" "$(printf '%.0s─' {1..60})"
@@ -332,17 +333,17 @@ check_machine_config(){
   mc_name=$(yq ".metadata.name" "$file")
   if [ "$status" = "included" ]; then
     if [ "$(oc get mc | grep "$mc_name" | wc -l)" -eq 1 ]; then
-      tree_info "  ├─" "$(basename "$file")" "included and created"
+      tree_info " ├─" "$(basename "$file")" "included and created"
     else
-      tree_error "  ├─" "$(basename "$file")" "included but not created"
+      tree_error " ├─" "$(basename "$file")" "included but not created"
     fi
   fi
 
   if [ "$status" = "excluded" ]; then
     if [ "$(oc get mc | grep "$mc_name" | wc -l)" -eq 1 ]; then
-      tree_error "  ├─" "$(basename "$file")" "excluded but still found"
+      tree_error " ├─" "$(basename "$file")" "excluded but still found"
     else
-      tree_info "  ├─" "$(basename "$file")" "excluded and not found"
+      tree_info " ├─" "$(basename "$file")" "excluded and not found"
     fi
   fi
   
@@ -483,7 +484,7 @@ diff_custom_resource(){
   ns=$(yq ".metadata.namespace // \"\"" "$file" 2>/dev/null)
   
   if [ -z "$kind" ] || [ -z "$name" ]; then
-    tree_warn "  ├─" "$(basename "$file")" "invalid YAML (missing kind or name)"
+    tree_warn " ├─" "$(basename "$file")" "invalid YAML (missing kind or name)"
     return 1
   fi
   
@@ -496,7 +497,7 @@ diff_custom_resource(){
 
   # Create pretty version of desired file
   if ! yq eval "${FILTER_FIELDS}" "$file" | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval --prettyPrint > "$desired_pretty_file" 2>/dev/null; then
-    tree_warn "  ├─" "$(basename "$file")" "failed to process desired file"
+    tree_warn " ├─" "$(basename "$file")" "failed to process desired file"
     return 1
   fi
 
@@ -507,16 +508,16 @@ diff_custom_resource(){
   fi
   
   if ! $oc_cmd -o yaml 2>/dev/null | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_pretty_file" 2>/dev/null; then
-    tree_warn "  ├─" "$(basename "$file")" "resource not found in cluster"
+    tree_warn " ├─" "$(basename "$file")" "resource not found in cluster"
     return 1
   fi
 
   # Compare files
   if diff -q "$desired_pretty_file" "$live_pretty_file" >/dev/null 2>&1; then
-    tree_info "  ├─" "$(basename "$file")" "identical to cluster"
+    tree_info " ├─" "$(basename "$file")" "identical to cluster"
   else
-    tree_warn "  ├─" "$(basename "$file")" "configuration drift detected"
-    show_config_diff "$desired_pretty_file" "$live_pretty_file" "$file" 6 "  │   "
+    tree_warn " ├─" "$(basename "$file")" "configuration drift detected"
+    show_config_diff "$desired_pretty_file" "$live_pretty_file" "$file" 6 "      │     "
   fi
 }
 
@@ -571,6 +572,7 @@ check_operator_day2(){
       done
     fi
   fi
+  
 }
 
 check_operator(){
@@ -592,8 +594,39 @@ check_operator(){
   if [ "$csv" -eq 1 ]; then
     info "$operator_desc" "available"
     check_operator_day2 "$key"
+    check_operator_readiness "$key"
   else
     warn "$operator_desc" "not available"
+  fi
+
+}
+
+check_operator_readiness(){
+  local key=$1
+  #if the operator has readiness, then check the readiness one by one
+  local readiness_checks
+  readarray -t readiness_checks < <(yq ".operators.$key.readiness[].name" "$config_file" 2>/dev/null)
+  if [[ ${#readiness_checks[@]} -gt 0 ]]; then
+    local total=${#readiness_checks[@]}
+    local idx=0
+    for readiness_name in "${readiness_checks[@]}"; do
+      idx=$((idx + 1))
+      local variable=$(yq ".operators.$key.readiness[] | select(.name == \"$readiness_name\") | .variable" "$config_file" 2>/dev/null)
+      local expected=$(yq ".operators.$key.readiness[] | select(.name == \"$readiness_name\") | .expected" "$config_file" 2>/dev/null)
+      local status=$(eval "$variable")
+      
+      # Use └─ for last item, ├─ for others
+      local prefix=" ├─"
+      if [ $idx -eq $total ]; then
+        prefix=" └─"
+      fi
+      
+      if [ "$status" = "$expected" ]; then
+        tree_info "$prefix" "$readiness_name" "passed"
+      else
+        tree_warn "$prefix" "$readiness_name" "failed"
+      fi
+    done
   fi
 }
 
