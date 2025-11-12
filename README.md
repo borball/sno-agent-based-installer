@@ -1,9 +1,10 @@
 # SNO Agent-Based Installer
 
 <p align="center">
-<img src="https://img.shields.io/badge/OpenShift-4.14+-red?style=flat-square&logo=redhat">
+<img src="https://img.shields.io/badge/OpenShift-4.14--4.21-red?style=flat-square&logo=redhat">
 <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square">
 <img src="https://img.shields.io/badge/Platform-Single%20Node%20OpenShift-orange?style=flat-square">
+<img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20ARM64-blue?style=flat-square">
 </p>
 
 ## Overview
@@ -12,7 +13,7 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 
 **Version 2.x** introduces a redesigned configuration system with deployment profiles to simplify configuration management and improve maintainability.
 
-> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.20+). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
+> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.21). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
 
 ## 🆕 What's New in Version 2.x
 
@@ -21,6 +22,13 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **📁 Operator Profiles**: Flexible day1/day2 configuration profiles for operators
 - **🔧 Enhanced Operator Management**: Improved operator version locking and catalog source management
 - **⚙️ Update Control**: New mechanisms to control operator updates and upgrades
+
+### Latest Updates (November 2025)
+- **🚀 OpenShift 4.21 Support**: New RAN profile template for OpenShift 4.21
+- **🔧 ARM64/AArch64 Architecture**: Full support for ARM64-based deployments with dedicated performance profiles
+- **⚡ Power Saving Mode**: New tuned profile for power-efficient configurations
+- **✅ Enhanced Day2 Validation**: Improved operator readiness checks in `sno-ready.sh`
+- **📊 4.20 RAN RDS Enhancements**: Updated kdump, performance profiles, and tuned settings for 4.20
 
 ### New Operators Support
 - **🌐 MetalLB Operator**: Load balancer support for bare metal environments
@@ -40,6 +48,8 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **🎛️ Hardware Tuning**: Advanced CPU frequency and hardware optimization
 - **🔄 Profile System**: Modular configuration system for operators
 - **📦 Container Storage**: Enhanced container storage partitioning options
+- **💚 Power Saving Mode**: Configurable power management for reduced energy consumption
+- **🏗️ Multi-Architecture**: Support for x86_64 and ARM64/AArch64 platforms
 
 ## ✨ Features
 
@@ -50,6 +60,7 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **✅ Validation Framework**: Comprehensive cluster validation and health checks
 - **🏗️ Telco RAN Ready**: Optimized for vDU applications with performance tunings
 - **🌐 Multi-Platform Support**: Works with HPE, ZT Systems, Dell, and OpenShift Virtualization environments
+- **🏗️ Multi-Architecture Support**: Supports both x86_64 and ARM64/AArch64 architectures
 - **🔄 Version Management**: Support for operator version locking and OpenShift version substitution
 - **📋 Custom Manifests**: Support for extra manifests in both Day-1 and Day-2 operations
 
@@ -63,7 +74,6 @@ The toolkit consists of main components:
 | `sno-install.sh` | Deploy SNO via BMC/Redfish integration | Deployment |
 | `sno-day2.sh` | Apply post-deployment configurations | Post-deployment |
 | `sno-ready.sh` | Validate cluster configuration and health | Validation |
-| `sno-ready2.sh` | Enhanced validation with additional checks | Validation |
 | `fetch-infra-env.sh` | Fetch infrastructure environment information | Utility |
 
 ### Directory Structure
@@ -116,8 +126,8 @@ sno-agent-based-installer/
 ## 📋 Prerequisites
 
 ### System Requirements
-- OpenShift 4.14 or later (tested up to 4.20+)
-- Linux system with internet access
+- OpenShift 4.14 or later (tested up to 4.21)
+- Linux system with internet access (x86_64 or ARM64/AArch64)
 - BMC/Redfish access to target hardware
 - HTTP server for ISO hosting
 - Minimum 16GB RAM, 120GB disk space for SNO node
@@ -492,6 +502,51 @@ node_tunings:
       - profile: hpe-settings     # Override: HPE-specific tuning instead of Dell
 ```
 
+**Example 5: Power Saving Mode Configuration**
+
+```yaml
+# config-mysno.yaml
+cluster:
+  profile: ran
+
+# Enable power saving mode for reduced energy consumption
+node_tunings:
+  performance_profile:
+    enabled: true
+    workloadHints:
+      realTime: true
+      highPowerConsumption: false      # Enable power saving
+      perPodPowerManagement: false
+  tuned_profile:
+    enabled: true
+    power-saving:                      # Enable power saving tuned profile
+      enabled: true
+      cpufreq_max_perf_percent: 70    # Limit CPU to 70% max performance
+      cpufreq_governor: powersave      # Use powersave governor
+```
+
+**Example 6: ARM64/AArch64 Configuration**
+
+```yaml
+# config-mysno.yaml
+cluster:
+  profile: ran
+  domain: example.com
+  name: mysno-arm
+
+host:
+  hostname: mysno-arm.example.com
+  interface: eth0
+  mac: 00:11:22:33:44:55
+  disk: /dev/nvme0n1
+
+node_tunings:
+  performance_profile:
+    enabled: true
+    profile: ran-aarch64          # Use ARM64-specific performance profile
+    kernelPageSize: 64k           # ARM64-specific page size
+```
+
 #### Profile Template Structure
 
 Each profile template contains the following sections:
@@ -630,13 +685,17 @@ RAN profiles are available for different OpenShift versions with version 2.x enh
 - `cluster-profile-ran-4.17.yaml` - OpenShift 4.17 optimizations
 - `cluster-profile-ran-4.18.yaml` - OpenShift 4.18 optimizations
 - `cluster-profile-ran-4.19.yaml` - OpenShift 4.19 optimizations
-- `cluster-profile-ran-4.20.yaml` - **Latest** OpenShift 4.20 optimizations with new features
+- `cluster-profile-ran-4.20.yaml` - OpenShift 4.20 optimizations with new features
+- `cluster-profile-ran-4.21.yaml` - **Latest** OpenShift 4.21 optimizations
 
-**New in 4.20 Profile:**
+**New in 4.20/4.21 Profiles:**
 - Enhanced operator profile system
 - Update control mechanisms
 - PreGA catalog source support
 - Improved hardware tuning options
+- ARM64/AArch64 architecture support
+- Power saving mode configurations
+- Enhanced day2 operator validation
 
 ## 🧪 Testing
 
@@ -675,26 +734,36 @@ cp samples/config-ipv4.yaml config-mysno.yaml
 
 ## 📊 Validation Checklist
 
-The `sno-ready.sh` and `sno-ready2.sh` scripts provide comprehensive validation:
+The `sno-ready.sh` script provides comprehensive validation:
 
-### Core Validation (`sno-ready.sh`)
+### Core Validation
 - ✅ **Cluster Health**: Node status, operator health, pod status
 - ✅ **Machine Configs**: CPU partitioning, kdump, performance settings
 - ✅ **Performance Profile**: Isolated/reserved CPUs, real-time kernel
-- ✅ **Operators**: PTP, SR-IOV, Local Storage, Cluster Logging
 - ✅ **Network**: SR-IOV node state, network diagnostics
 - ✅ **System**: Kernel parameters, cgroup configuration, container runtime
 
-### Enhanced Validation (`sno-ready2.sh`)
-- ✅ **Extended Operator Support**: MetalLB, NMState, LVM, LCA, OADP, FEC
+### Operator Validation
+- ✅ **Day1 Operators**: PTP, SR-IOV, Local Storage, LVM, Cluster Logging
+- ✅ **Day2 Operator Readiness**: Comprehensive checks for all configured operators
+  - MetalLB load balancer status
+  - NMState network configuration
+  - LCA (Lifecycle Agent) readiness
+  - OADP (OpenShift API for Data Protection) backup capability
+  - Intel FEC operator acceleration
+  - GPU operator functionality
+  - OpenShift Virtualization (KubeVirt) hyperconverged status
 - ✅ **Hub Cluster Features**: RHACM, GitOps, TALM, MCE, MCGH
-- ✅ **Advanced Monitoring**: AlertManager, Prometheus, Telemetry settings
-- ✅ **Storage Validation**: Local storage, LVM storage configurations
-- ✅ **Container Features**: Virtualization, GPU operators
-- ✅ **Update Control**: Operator upgrade policies and pause mechanisms
 
-### Version 2.x Enhancements
+### Advanced Validation
+- ✅ **Monitoring**: AlertManager, Prometheus, Telemetry settings
+- ✅ **Storage**: Local storage, LVM storage configurations and readiness
+- ✅ **Update Control**: Operator upgrade policies and pause mechanisms
+- ✅ **Architecture Support**: Validation for both x86_64 and ARM64 platforms
+
+### Version 2.x Enhancements (November 2025)
 - 🔄 **Profile Validation**: Deployment profile-specific checks
 - 📋 **Operator Profiles**: Validation of day1/day2 profile configurations
 - 🎯 **Catalog Sources**: PreGA and custom catalog source validation
-- ⚙️ **Update Control**: Validation of operator update control settings
+- ⚙️ **Day2 Readiness**: Enhanced operator day2 configuration validation
+- 💚 **Power Management**: Validation of power saving tuned profiles

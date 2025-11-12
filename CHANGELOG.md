@@ -1,6 +1,37 @@
 # 2.x Change logs
 
-## 2025-09 and 2025-10
+## 2025-11 (November)
+- **🚀 OpenShift 4.21 Support**:
+  - Added `cluster-profile-ran-4.21.yaml` template with latest optimizations
+  - Updated RAN RDS configurations for 4.21
+
+- **🔧 ARM64/AArch64 Architecture Support**:
+  - New performance profile template for ARM64: `performance-profile-ran-aarch64.yaml.j2`
+  - Support for 64k kernel page size on ARM64 platforms
+  - Architecture-specific optimizations and configurations
+
+- **⚡ Power Saving Mode**:
+  - New `tuned-power-saving.yaml` profile for power-efficient configurations
+  - Configurable CPU frequency governors and maximum performance percentages
+  - Support for `highPowerConsumption: false` in performance profiles
+
+- **✅ Enhanced Validation**:
+  - Improved operator day2 readiness checks in `sno-ready.sh`
+  - Added validation for MetalLB, NMState, LVM, LCA, OADP, FEC, GPU, and KubeVirt operators
+  - Enhanced storage validation and readiness checks
+
+- **📊 4.20 RAN RDS Enhancements**:
+  - Updated kdump configurations for 4.20
+  - New `tuned-performance-patch-420.yaml.j2` for 4.20-specific tunings
+  - Improvements to performance profiles and hardware tuning
+
+- **🐛 Bug Fixes**:
+  - Fixed operator subscription templates
+  - Resolved virtual_media and iDRAC12 issues
+  - Fixed shell script issues in sno-ready.sh
+  - Added null checks in sno-day2.sh
+
+## 2025-09 and 2025-10 (September-October)
 - **📋 Configuration Management**:
   - Redesigned the config.yaml, introduced the deployment profile concept in the config to simplify the config.yaml 
   - Code refactoring based on the new config design, with AI's assistance

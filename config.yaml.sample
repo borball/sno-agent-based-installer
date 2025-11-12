@@ -15,15 +15,15 @@ host:
     gateway: 192.168.1.1
     prefix: 24
     machine_network_cidr: 192.168.1.0/24
-  disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
+  disk: /dev/disk/by-path/TO-BE-CHANGED
 
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
 
 container_storage:
-  enabled: false
-  device: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
+  enabled: true
+  device: /dev/disk/by-path/TO-BE-CHANGED
   startMiB: 500000
   sizeMiB: 0
 
@@ -44,7 +44,33 @@ proxy:
   https:
   noproxy:
 
+cluster_tunings:
+  excludes:
+    - crun
+    - sctp
+
+node_tunings:
+  performance_profile:
+    spec:
+      net:
+        userLevelNetworking: true
+      cpu:
+        isolated: 2-31,34-63
+        reserved: 0-1,32-33
+      hardwareTuning:
+        isolatedCpuFreq: 2500000
+        reservedCpuFreq: 2500000
+
 operators:
-  local-storage:
+  lvm:
     data:
-      disk_by_path: pci-0000:03:00.0-nvme-1
+      disks:
+        - path: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+          wipe_table: true
+      device_classes:
+        - name: vg1
+          thin_pool_name: thin-pool-1
+          selector:
+            paths:
+              - /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+
