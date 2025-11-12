@@ -1,0 +1,58 @@
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: sno130
+  profile: ran
+
+host:
+  interface: ens1f0
+  hostname: sno130.outbound.vz.bos2.lab
+  mac: b4:96:91:da:5a:ec
+  ipv4:
+    enabled: true
+    ip: 192.168.14.29
+    dns:
+      - 192.168.58.15
+    gateway: 192.168.14.1
+    prefix: 27
+    machine_network_cidr: 192.168.14.0/27
+  disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
+
+container_storage:
+  enabled: true
+  device: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
+  startMiB: 500000
+  sizeMiB: 0
+  
+bmc:
+  address: 192.168.14.130
+  username: Administrator
+  password: Redhat123!
+  node_uuid:
+
+iso:
+  address: http://192.168.58.15/iso/sno130.iso
+  #deploy: ./test/deploy-iso.sh
+
+cluster_tunings:
+  excludes:
+    - crun
+    - sctp
+
+node_tunings:
+  workload_partitioning:
+    enabled: true
+  performance_profile:
+    spec:
+      net:
+        userLevelNetworking: true
+      cpu:
+        isolated: 2-31,34-63
+        reserved: 0-1,32-33
+      hardwareTuning:
+        isolatedCpuFreq: 2500000
+        reservedCpuFreq: 2500000
+operators:
+  local-storage:
+    data:
+      disk_by_path: pci-0000:c3:00.0-nvme-1
+

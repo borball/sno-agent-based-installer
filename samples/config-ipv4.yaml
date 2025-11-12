@@ -1,6 +1,8 @@
 cluster:
   domain: outbound.vz.bos2.lab
   name: sno148
+  profile: ran
+  
 host:
   hostname: sno148.outbound.vz.bos2.lab
   interface: ens1f0
@@ -16,18 +18,4 @@ host:
     machine_network_cidr: 192.168.58.0/25
   disk: /dev/nvme0n1
 
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
-pull_secret: ./pull-secret.json
-ssh_key: /root/.ssh/id_rsa.pub
-
-bmc:
-  address: 192.168.13.148
-  username: Administrator
-  password: dummy
-  kvm_uuid:
-  
-iso:
-  address: http://192.168.58.15/iso/sno148.iso
+# omit for other settings, refer to templates/cluster-profile-full.yaml for all settings

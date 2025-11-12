@@ -1,0 +1,16 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: master
+  name: 98-prepare-lvm-disk
+spec:
+  config:
+    ignition:
+      version: 3.2.0
+    storage:
+      disks:
+        {%- for disk in disks %}
+        - device: {{ disk.path }}
+          wipeTable: {{ disk.wipe_table | lower }}
+        {%- endfor %}

@@ -1,0 +1,51 @@
+cluster:
+  domain: outbound.vz.bos2.lab
+  name: acm0
+  profile: hub
+
+host:
+  interface: ens1f0
+  hostname: acm0.outbound.vz.bos2.lab
+  mac: de:ad:be:ee:aa:00
+  ipv4:
+    enabled: true
+    dhcp: false
+    ip: 192.168.58.75
+    dns:
+      - 192.168.58.15
+    gateway: 192.168.58.1
+    prefix: 25
+    machine_network_cidr: 192.168.58.0/25
+  disk: /dev/vda
+
+bmc:
+  address: kubevirt-redfish-default.apps.vhub.outbound.vz.bos2.lab
+  username: admin
+  password: admin123
+  node_uuid: acm0
+
+iso:
+  skip_redfish: true
+  address: http://192.168.58.15/iso/acm0.iso
+
+operators:
+  amq:
+    enabled: true
+  amq-console:
+    enabled: true
+  gitops:
+    enabled: true
+    data:
+      repo:
+        clusters:
+          url: ssh://git@example.com/clusters-repo.git
+          urlBase64: #base64 encoded of the url
+          targetRevision: main
+          path: clusters
+          sshPrivateKey: #base64 encoded of the private key
+        policies:
+          url: ssh://git@example.com/policies-repo.git
+          urlBase64: #base64 encoded of the url
+          targetRevision: main
+          path: policies
+          sshPrivateKey: #base64 encoded of the private key

@@ -1,0 +1,14 @@
+apiVersion: config.openshift.io/v1
+kind: OperatorHub
+metadata:
+  name: cluster
+spec:
+  sources:
+  - disabled: {% if catalog_sources is defined and 'redhat-marketplace' not in catalog_sources.defaults %}true{% else %}false{% endif %}
+    name: redhat-marketplace
+  - disabled: {% if catalog_sources is defined and 'community-operators' not in catalog_sources.defaults %}true{% else %}false{% endif %}
+    name: community-operators
+  - disabled: {% if catalog_sources is defined and 'redhat-operators' not in catalog_sources.defaults %}true{% else %}false{% endif %}
+    name: redhat-operators
+  - disabled: {% if catalog_sources is defined and 'certified-operators' not in catalog_sources.defaults %}true{% else %}false{% endif %}
+    name: certified-operators

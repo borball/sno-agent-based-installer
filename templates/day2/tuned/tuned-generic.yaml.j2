@@ -1,0 +1,24 @@
+---
+apiVersion: tuned.openshift.io/v1
+kind: Tuned
+metadata:
+  name: {{ name }}
+  namespace: openshift-cluster-node-tuning-operator
+spec:
+  profile:
+    - name: {{ name }}
+      data: |
+        [main]
+        summary={{ spec.summary }}
+        include={{ spec.include }}
+        {%- for key, settings in spec.data.items() %}
+        [{{key}}]
+        {%- for s in settings %}
+        {{ s }}
+        {%- endfor %}
+        {%- endfor %}
+  recommend:
+    - machineConfigLabels:
+        machineconfiguration.openshift.io/role: master
+      profile: {{ name }}
+      priority: {{ spec.priority }}

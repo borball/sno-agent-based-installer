@@ -1,0 +1,12 @@
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  name: {{ name or 'openshift-node-performance-profile' }}
+  annotations:
+    ran.openshift.io/ztp-deploy-wave: "10"
+    ran.openshift.io/reference-configuration: "ran-du.redhat.com"
+spec:
+  machineConfigPoolSelector:
+    pools.operator.machineconfiguration.openshift.io/master: ""
+  nodeSelector:
+    node-role.kubernetes.io/master: ""

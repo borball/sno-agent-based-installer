@@ -1,0 +1,16 @@
+apiVersion: local.storage.openshift.io/v1
+kind: LocalVolume
+metadata:
+  name: {{ local_volume.name or 'local-disks' }}
+  namespace: openshift-local-storage
+spec:
+  logLevel: Normal
+  managementState: Managed
+  storageClassDevices:
+    - devicePaths:
+        {% for n in range(environ('TOTAL_LVS')|int) -%}
+        - /dev/autopart/lv_{{ n+1 }}
+        {% endfor %}
+      volumeMode: Filesystem
+      fsType: {{ environ('FS_TYPE') }}
+      storageClassName: {{ day2 and day2.local_storage and day2.local_storage.local_volume and day2.local_storage.local_volume.storageClassName or 'general' }}

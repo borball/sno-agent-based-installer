@@ -1,0 +1,1 @@
+echo "example-a-0.sh"

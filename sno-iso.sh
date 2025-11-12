@@ -14,14 +14,69 @@ if ! type "jinja2" > /dev/null; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
+# Color codes for better output
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+MAGENTA=$(tput setaf 5)
+CYAN=$(tput setaf 6)
+WHITE=$(tput setaf 7)
+BOLD=$(tput bold)
+RESET=$(tput sgr0)
+
+# Enhanced output functions
 info(){
-  printf  $(tput setaf 2)"%-56s %-10s"$(tput sgr0)"\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  # Calculate display length accounting for multi-byte characters
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${GREEN}✓${RESET} %s%*s${GREEN}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
-
+  
 warn(){
-  printf  $(tput setaf 3)"%-56s %-10s"$(tput sgr0)"\n" "$@"
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${YELLOW}⚠${RESET} %s%*s${YELLOW}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
 }
 
+error(){
+  local msg1="$1"
+  local msg2="$2"
+  local len=${#msg1}
+  local padding=$((80 - len))
+  if [ $padding -lt 0 ]; then padding=1; fi
+  printf "${RED}✗${RESET} %s%*s${RED}%s${RESET}\n" "$msg1" "$padding" "" "$msg2"
+}
+
+step(){
+  printf "\n${BOLD}${BLUE}▶${RESET} ${BOLD}%s${RESET}\n" "$1"
+}
+
+debug(){
+  if [[ "${DEBUG:-false}" == "true" ]]; then
+    printf "${MAGENTA}[DEBUG]${RESET} %s\n" "$1"
+  fi
+}
+
+header(){
+  echo
+  printf "${BOLD}${CYAN}%s${RESET}\n" "$1"
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s=' {1..60})"
+}
+
+separator(){
+  printf "${CYAN}%s${RESET}\n" "$(printf '%.0s-' {1..60})"
+}
+
+short_path(){
+  echo "$*" | sed -e "s;${basedir};\${basedir};g" -e "s;${HOME};\${HOME};g"
+}
 
 usage(){
   info "Usage: $0 [config file] [ocp version]"
@@ -65,14 +120,28 @@ then
 fi
 
 cluster_name=$(yq '.cluster.name' $config_file_input)
+cluster_profile=$(yq '.cluster.profile' $config_file_input)
+if [ -z "$cluster_profile" ]
+then
+  cluster_profile="none"
+fi
+
+
+
 cluster_workspace=$basedir/instances/$cluster_name
 
 if [[ -d "${cluster_workspace}" ]]; then
-  echo "${cluster_workspace} already exists, please delete the folder ${cluster_workspace} and re-run the script."
-  exit -1
+  error "Workspace already exists" "${cluster_workspace}"
+  printf "${RED}Please delete the existing workspace and re-run the script:${RESET}\n"
+  printf "${YELLOW}rm -rf ${cluster_workspace}${RESET}\n"
+  exit 1
 fi
 
-echo "Creating workspace: ${cluster_workspace}."
+header "SNO Agent-Based Installer - ISO Generation"
+step "Setting up workspace"
+info "Base directory (basedir)" "${basedir}"
+info "Workspace directory" "${cluster_workspace}"
+info "Configuration file" "$config_file_input"
 mkdir -p $cluster_workspace
 mkdir -p $cluster_workspace/openshift
 
@@ -125,13 +194,36 @@ export ocp_y_release=$(echo $ocp_release_version |cut -d. -f1-2)
 export OCP_Y_VERSION=$ocp_y_release
 export OCP_Z_VERSION=$ocp_release_version
 
+cluster_profile_file=$templates/cluster-profile-$cluster_profile.yaml
+if [ ! -f "$cluster_profile_file" ]; then
+  cluster_profile_file=$templates/cluster-profile-$cluster_profile-$OCP_Y_VERSION.yaml
+  if [ ! -f "$cluster_profile_file" ]; then
+    error "Cluster profile file not found" "$cluster_profile"
+    printf "${RED}Available profiles:${RESET}\n"
+    ls -1 $templates/cluster-profile-*.yaml 2>/dev/null | sed 's/.*cluster-profile-//;s/\.yaml$//' | sed 's/^/  - /'
+    exit 1
+  fi
+fi
+
 config_file="$cluster_workspace/config-resolved.yaml"
+config_file_temp=$cluster_workspace/config-resolved.yaml.tmp
+cluster_profile_file_temp=$cluster_workspace/cluster-profile-resolved.yaml.tmp
 
 if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input > $config_file
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input| envsubst > $config_file_temp
 else
-  cp $config_file_input $config_file
+  cat $config_file_input| envsubst > $config_file_temp
 fi
+
+if [ $(cat $cluster_profile_file |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $cluster_profile_file | envsubst> $cluster_profile_file_temp
+else
+  cat $cluster_profile_file | envsubst > $cluster_profile_file_temp
+fi
+
+yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
+info "Configuration resolved" "$config_file"
+info "" "Will be used by other sno-* scripts"
 
 is_gzipped(){
   if [ $(file $1 -- |grep -E 'gzip|bzip2|xz' |wc -l) -gt 0 ]; then
@@ -141,10 +233,8 @@ is_gzipped(){
   fi
 }
 
-echo "Will use $config_file as the configuration in other sno-* scripts."
-
 download_openshift_installer(){
-
+  step "Obtaining OpenShift installer binary"
   # check to see if we can re-use the current binary
   if [[ -x $basedir/openshift-install ]]; then
     if [[ -z $($basedir/openshift-install version |grep -E "^.* $ocp_release_version$") ]]; then
@@ -152,9 +242,9 @@ download_openshift_installer(){
     elif [[ -z $($basedir/openshift-install version |grep -E "^release architecture ${ocp_arch}$") ]]; then
        echo "Ignore existing openshift-install: release architecture does not matching"
     else
-      echo "Reusing existing openshift-install binary"
-      $basedir/openshift-install version
-      return
+    info "Reusing existing openshift-install binary" "✓"
+    echo "${GREEN}$($basedir/openshift-install version)${RESET}"
+    return
     fi
   fi
 
@@ -162,7 +252,9 @@ download_openshift_installer(){
   openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}
 
   if [ ! -f $basedir/$openshift_install_tar_file ]; then
-    echo "You are going to download OpenShift installer $ocp_release: ${ocp_release_version} on ${client_arch} platform, target cluster platform is ${ocp_arch}"
+    info "Downloading OpenShift installer" "$ocp_release_version"
+    info "Client architecture" "$client_arch"
+    info "Target architecture" "$ocp_arch"
 
     status_code=$(curl --connect-timeout 10 -s -o /dev/null -w "%{http_code}" $openshift_mirror_path/)
     if [ $status_code = "200" ]; then
@@ -170,17 +262,17 @@ download_openshift_installer(){
       curl -L ${openshift_mirror_path}/openshift-install-linux-${client_arch}.tar.gz -o $basedir/$openshift_install_tar_file
       
       if [[ $(is_gzipped $basedir/$openshift_install_tar_file) -eq 1 ]]; then
-        echo "Downloaded openshift-install tar file from ${openshift_mirror_path}/openshift-install-linux-${client_arch}.tar.gz "
+        info "Downloaded installer" "openshift-install-linux-${client_arch}.tar.gz"
       else
         rm -f $basedir/$openshift_install_tar_file
         #if not found, try to download the default linux file
         curl -L ${openshift_mirror_path}/openshift-install-linux.tar.gz -o $basedir/$openshift_install_tar_file
         if [[ $(is_gzipped $basedir/$openshift_install_tar_file) -eq 1 ]]; then
-          echo "Downloaded openshift-install tar file from ${openshift_mirror_path}/openshift-install-linux.tar.gz "
+          info "Downloaded installer" "openshift-install-linux.tar.gz"
         else
           rm -f $basedir/$openshift_install_tar_file
-          echo "Error: download failed: could not download openshift-install-linux-${client_arch}.tar.gz or openshift-install-linux.tar.gz from ${openshift_mirror_path}"
-          exit -1
+          error "Download failed" "Could not download installer from ${openshift_mirror_path}"
+          exit 1
         fi
       fi
 
@@ -191,7 +283,7 @@ download_openshift_installer(){
       local_mirror=$(yq '.container_registry.image_source' $config_file)
       if [[ "${local_mirror}" != "null" ]]; then
         idms_file=${cluster_workspace}/idms-release-0.yaml
-        echo "Using local mirror ${local_mirror}"
+	info "- Local mirror" "$(short_path ${local_mirror})"
         cat << EOF > ${idms_file}
 apiVersion: config.openshift.io/v1
 kind: ImageDigestMirrorSet
@@ -203,17 +295,18 @@ EOF
         
         yq '.imageContentSources' ${local_mirror} |pr -T -o 4 >> ${idms_file}
         OC_OPTION+=" --idms-file=${idms_file}"
+
+        local_ca_file=$(yq '.additional_trust_bundle' $config_file)
+        if [[ "${local_ca_file}" != "null" ]]; then
+          info "- Trust Bundle" "$(short_path ${local_ca_file})"
+          OC_OPTION+=" --certificate-authority=${local_ca_file}"
+        fi
       fi
       
-      local_ca_file=$(yq '.additional_trust_bundle' $config_file)
-      if [[ "${local_ca_file}" != "null" ]]; then
-        echo "Using CA ${local_ca_file}"
-        OC_OPTION+=" --certificate-authority=${local_ca_file}"
-      fi
-
       if [[ -f "$basedir/local_release_info.txt" ]]; then
-        echo "Using local release info: $basedir/local_release_info.txt"
+        info  "- Local release info" "$(short_path $basedir/local_release_info.txt)"
         release_image=$(grep "^$ocp_release=" $basedir/local_release_info.txt|cut -f 2 -d =)
+        info "- Local release image" "$release_image"
       fi
 
       if [[ -z "$release_image" ]]; then
@@ -240,25 +333,30 @@ EOF
           fi
         fi
         release_image="$release_image_base:$release_image_tag"
-        echo "Using release image: $release_image"
+        info "Release Image" "$release_image"
       fi
 
-      echo "Extracting openshift-install from release image: $release_image on ${client_arch} platform"
+      info "- Extracting from release image" "$release_image"
+      info "- Platform" "${client_arch}"
       oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
-        echo "Error: adm release extract failed: oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} "
+        error "Release extraction failed" "Check oc command and connectivity"
+        printf "${RED}Failed command:${RESET}\n"
+        printf "${YELLOW}oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION}${RESET}\n"
         exit 1
       }
     fi
   else
-
-    echo "You are going to reuse the local OpenShift installer $ocp_release: ${ocp_release_version} on ${client_arch} platform, target cluster platform is ${ocp_arch}"
+    info "Reusing local installer" "$ocp_release_version"
+    info "Client platform" "$client_arch"
+    info "Target platform" "$ocp_arch"
     tar zxf $basedir/$openshift_install_tar_file -C $basedir openshift-install
   fi
 
   if [[ ! -x $basedir/openshift-install ]]; then
-    echo "Failed to obtain openshift-install, for disconnected install, populate local_release_info.txt with missing"
-    echo "<release>=<image>"
-    exit -1
+    error "Failed to obtain openshift-install binary" "Check connectivity"
+    printf "${RED}For disconnected installations:${RESET}\n"
+    printf "${YELLOW}Create local_release_info.txt with format: <release>=<image>${RESET}\n"
+    exit 1
   fi
   
 }
@@ -267,114 +365,74 @@ download_openshift_installer
 
 platform_arch=$(yq '.cluster.platform // "intel"' $config_file)
 
-day1_config(){
-  if [ "false" = "$(yq '.day1.workload_partition' $config_file)" ]; then
-    warn "Workload partitioning:" "disabled"
+cluster_tunings(){
+  cluster_tunings_version=$(yq '.cluster_tunings.version' $config_file)
+  if [[ -z "$cluster_tunings_version" || "$cluster_tunings_version" == "null" ]] || [[ "$cluster_tunings_version" == "none" ]]; then
+    warn "Cluster tunings" "disabled"
   else
-    if [ "4.12" = "$ocp_y_release" ] || [ "4.13" = "$ocp_y_release" ]; then
-      info "Workload partitioning:" "enabled"
-      export crio_wp=$(jinja2 $templates/day1/workload-partition/crio.conf $config_file |base64 -w0)
-      export k8s_wp=$(jinja2 $templates/day1/workload-partition/kubelet.conf $config_file |base64 -w0)
-      jinja2 $templates/day1/workload-partition/02-master-workload-partitioning.yaml.j2 $config_file > $cluster_workspace/openshift/02-master-workload-partitioning.yaml
-    else
-      info "Workload partitioning:" "enabled(through install-config)"
-    fi
-  fi
+    if [[ -d "$templates/day1/cluster-tunings/$cluster_tunings_version" ]]; then
+      step "Enabling cluster tunings $cluster_tunings_version"
+      
+      # Count total available files
+      tuning_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml 2>/dev/null | wc -l)
+      info "Cluster tuning files found" "$tuning_files"
+      
+      # Copy all files first
+      cp $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml $cluster_workspace/openshift/
 
-  if [ "false" = "$(yq '.day1.boot_accelerate' $config_file)" ]; then
-    warn "SNO boot accelerate:" "disabled"
-  else
-    info "SNO boot accelerate:" "enabled"
-    cp $templates/day1/accelerate/*.yaml $cluster_workspace/openshift/
-
-    if [ "4.12" = "$ocp_y_release" ] || [ "4.13" = "$ocp_y_release" ]; then
-      cp $templates/day1/accelerate/$ocp_y_release/*.yaml $cluster_workspace/openshift/
-    else
-      cp $templates/day1/accelerate/4.14-above/*.yaml $cluster_workspace/openshift/
-    fi
-  fi
-
-  if [ "false" = "$(yq '.day1.kdump.enabled' $config_file)" ]; then
-    warn "kdump service:" "disabled"
-  else
-    cp $templates/day1/kdump/06-kdump-master.yaml $cluster_workspace/openshift/
-  fi
-
-  if [ "true" = "$(yq '.day1.kdump.blacklist_ice' $config_file)" ]; then
-    info "kdump, blacklist_ice(for HPE):" "enabled"
-    cp $templates/day1/kdump/05-kdump-config-master.yaml $cluster_workspace/openshift/
-  else
-    warn "kdump, blacklist_ice(for HPE):" "disabled"
-  fi
-
-  if [ "4.12" = $ocp_y_release ]; then
-    warn "Container runtime crun(4.12):" "disabled"
-  else
-    if [ "4.13" = $ocp_y_release ] || [ "4.14" = $ocp_y_release ] || [ "4.15" = $ocp_y_release ] || [ "4.16" = $ocp_y_release ] || [ "4.17" = $ocp_y_release ]; then
-      #4.13+ by default enabled.
-      if [ "false" = "$(yq '.day1.crun' $config_file)" ]; then
-        warn "Container runtime crun(4.13-4.17):" "disabled"
-      else
-        info "Container runtime crun(4.13-4.17):" "enabled"
-        cp $templates/day1/crun/*.yaml $cluster_workspace/openshift/
+      # Process exclusions and show excluded files
+      exclude_patterns=$(yq '.cluster_tunings.excludes[]' $config_file 2>/dev/null)
+      excluded_count=0
+      if [[ -n "$exclude_patterns" && "$exclude_patterns" != "null" ]]; then
+        for pattern in $exclude_patterns; do
+          exclude_files=$(ls $templates/day1/cluster-tunings/$cluster_tunings_version/*.yaml | grep -E "$pattern")
+          for file in $exclude_files; do
+            excluded_filename=$(basename "$file")
+            rm -f $cluster_workspace/openshift/$excluded_filename
+            warn "  ├─ $excluded_filename" "excluded"
+            ((excluded_count++))
+          done
+        done
       fi
+
+      # Show enabled files with proper tree formatting
+      enabled_count=0
+      for file in $cluster_workspace/openshift/*.yaml; do
+        if [[ -f "$file" ]]; then
+          enabled_filename=$(basename "$file")
+          ((enabled_count++))
+          local prefix="  ├─"
+          # Use └─ for the last enabled file
+          if [[ $enabled_count -eq $((tuning_files - excluded_count)) ]]; then
+            prefix="  └─"
+          fi
+          info "${prefix} $enabled_filename" "enabled"
+        fi
+      done
+      
+      # Summary information
+      if [[ $excluded_count -gt 0 ]]; then
+        warn "Total excluded tuning files" "$excluded_count"
+      fi
+
+      info "Total cluster tuning files" "$enabled_count"
+      
     else
-      info "Container runtime crun(4.18+):" "default"
+      warn "Cluster tunings" "version $cluster_tunings_version not found"
+      return 1
     fi
   fi
 
-  # 4.14+ specific
-  if [ "4.12" = $ocp_y_release ] ||  [ "4.13" = $ocp_y_release ]; then
-    #do nothing
-    sleep 1
-  else
-    if [ "false" = "$(yq '.day1.sriov_kernel' $config_file)" ]; then
-      warn "SR-IOV kernel(${platform_arch} iommu):" "disabled"
-    else
-      info "SR-IOV kernel(${platform_arch} iommu):" "enabled"
-      copy_platform_config $templates/day1/sriov-kernel/ $cluster_workspace/openshift/
-    fi
+}
 
-    if [ "false" = "$(yq '.day1.rcu_normal' $config_file)" ]; then
-      warn "Set rcu_normal=1 after node reboot:" "disabled"
-    else
-      info "Set rcu_normal=1 after node reboot:" "enabled"
-      cp $templates/day1/rcu-normal/*.yaml $cluster_workspace/openshift/
-    fi
-
-    if [ "false" = "$(yq '.day1.sync_time_once' $config_file)" ]; then
-      warn "Sync time once after node reboot:" "disabled"
-    else
-      info "Sync time once after node reboot:" "enabled"
-      cp $templates/day1/sync-time-once/*.yaml $cluster_workspace/openshift/
-    fi
-
-    #4.14 or 4.15, cgv1 is the default
-    if [ "4.14" = $ocp_y_release ] ||  [ "4.15" = $ocp_y_release ]; then
-      if [ "false" = "$(yq '.day1.cgv1' $config_file)" ]; then
-        warn "enable cgroup v1:" "false"
-      else
-        info "enable cgroup v1:" "true"
-        cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
-      fi
-    else
-      #4.16+
-      if [ "true" = "$(yq '.day1.cgv1' $config_file)" ]; then
-        warn "default cgv2, enable cgroup v1:" "true"
-        cp $templates/day1/cgroupv1/*.yaml $cluster_workspace/openshift/
-      else
-        info "default cgv2, enable cgroup v1:" "false"
-      fi
-    fi
-  fi
-
-  if [ "true" = "$(yq '.day1.container_storage.enabled' $config_file)" ]; then
-    info "Container storage partition:" "enabled"
+container_storage(){
+  step "Configuring container storage"
+  if [ "true" = "$(yq '.container_storage.enabled' $config_file)" ]; then
+    info "Container storage:" "enabled"
     jinja2 $templates/day1/container-storage-partition/98-var-lib-containers-partitioned.yaml.j2 $config_file > $cluster_workspace/openshift/98-var-lib-containers-partitioned.yaml
   else
-    warn "Container storage partition:" "disabled"
+    warn "Container storage:" "disabled"
   fi
-
 }
 
 install_operator(){
@@ -386,99 +444,114 @@ install_operator(){
   for f in $j2files; do
     tname=$(basename $f)
     fname=${tname//.j2/}
-    yq ".day1.operators.$key" $config_file| jinja2 $f > $cluster_workspace/openshift/$fname
+    (yq ".operators.$key" $config_file; yq '.catalog_sources // ""' $config_file) | jinja2 $f > $cluster_workspace/openshift/$fname
   done
 }
 
 install_operators(){
-  readarray -t keys < <(yq ".operators|keys" $operators/operators.yaml|yq '.[]')
+  step "Configuring OpenShift Operators"
+  readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
+  
+  enabled_count=0
+  disabled_count=0
+  
   for ((k=0; k<${#keys[@]}; k++)); do
     key="${keys[$k]}"
     desc=$(yq ".operators.$key.desc" $operators/operators.yaml)
-    enabled_by_default=$(yq ".operators.$key.enabled" $operators/operators.yaml)
 
-    #enabled by default
-    if [[ "true" == "$enabled_by_default" ]]; then
-      #disable by intention
-      if [[ "false" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
-        warn "$desc" "disabled"
-      else
-        info "$desc" "enabled"
-        install_operator $key
-      fi
-    #disabled by default
+    if [[ "true" == $(yq ".operators.$key.enabled" $config_file) ]]; then
+      info "$desc" "enabled"
+      install_operator $key
+      ((enabled_count++))
     else
-      #enable by intention
-      if [[ "true" == $(yq ".day1.operators.$key.enabled" $config_file) ]]; then
-        info "$desc" "enabled"
-        install_operator $key
-      else
-        warn "$desc" "disabled"
-      fi
+      warn "$desc" "disabled"
+      ((disabled_count++))
     fi
   done
+  
+  separator
+  info "Operators enabled" "$enabled_count"
+  info "Operators disabled" "$disabled_count"
   echo
 }
 
 config_operators(){
-  echo "Configuring operators..."
-  #local storage operator
-  if [[ "false" == $(yq ".day1.operators.local-storage.enabled" $config_file) ]]; then
-    sleep 1
-  else
-    # enabled
-    if [[ $(yq ".day1.operators.local-storage.provision" $config_file) == "null" ]]; then
-      sleep 1
-    else
-      # maintain backward compatibility by checking for "provision.lvs"
-      if [[ $(yq '.day1.operators.local-storage.provision.lvs // "null"' $config_file) == "null" ]]; then
-         # using new configuration
-         prov_type=$(yq '.day1.operators.local-storage.provision.type // "partition"' $config_file)
-         partitions_key="partitions"
-      else
-         # maintain backward compatibility with old format
-	 warn "local-storage operator" "using deprecated provision.lvs property"
-         prov_type="lvs"
-         partitions_key="lvs"
-      fi
-      info "local-storage operator: provision ${prov_type}"
-      if [[ "${prov_type}" == "partition" ]]; then
-        jinja2 $templates/day1/local-storage/60-prepare-lso-partition-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-prepare-lso-partition-mc.yaml
-      else
-        export CREATE_LVS_FOR_SNO=$(cat $templates/day1/local-storage/create_lvs_for_lso.sh |base64 -w0)
-        export DISK=$(yq '.day1.operators.local-storage.provision.disk_by_path' $config_file)
-        export LVS=$(yq ".day1.operators.local-storage.provision.${partitions_key}|to_entries|map(.value + \"x\" + .key)|join(\" \")" $config_file)
-        jinja2 $templates/day1/local-storage/60-create-lvs-mc.yaml.j2 $config_file > $cluster_workspace/openshift/60-create-lvs-mc.yaml
+  step "Configuring operator-specific settings"
+
+  readarray -t keys < <(yq ".operators|keys" $config_file|yq '.[]')
+
+  for ((k=0; k<${#keys[@]}; k++)); do
+    key="${keys[$k]}"
+    if [[ $(yq ".operators.$key.enabled" $config_file) == "true" ]]; then
+      # if day1 files under templates/day1/$key exists, then apply them
+      if [[ -d "$templates/day1/$key" ]]; then 
+        # if $templates/day1/$key has any yaml or yaml.j2 file, then apply them
+        if [[ -d "$templates/day1/$key" && -n "$(ls -A $templates/day1/$key/*.yaml $templates/day1/$key/*.yaml.j2 2>/dev/null)" ]]; then
+          manifest_folders="$templates/day1/$key"
+        else
+          manifest_folders=""
+        fi
+      
+        # if .operators.$key contains day1, then use it to override manifest_folders
+        if [[ $(yq ".operators.$key.day1" $config_file) != "null" ]]; then
+          profile_names=$(yq ".operators.$key.day1[].profile" $config_file)
+          for profile_name in $profile_names; do
+            manifest_folders="$manifest_folders $templates/day1/$key/$profile_name"
+          done
+        else
+          if [[ -d "$templates/day1/$key/default" ]]; then
+            manifest_folders="$manifest_folders $templates/day1/$key/default"
+          fi
+        fi
+
+        if [[ -z "$manifest_folders" ]]; then
+          continue
+        fi
+
+        info "$key operator: enabling day1"
+
+        info "  └─ manifest_folders" "$(short_path $manifest_folders) to be applied"
+        for manifest_folder in $manifest_folders; do
+          info "    └─ applying" "$(short_path $manifest_folder)"
+          if [[ -d "$manifest_folder" ]]; then
+            # execute *.sh files in the manifest_folder
+            for f in "$manifest_folder"/*.sh; do
+              if [[ -f "$f" ]]; then
+                info "    └─ executing $(short_path $f)"
+                "$f" "$config_file"
+              fi
+            done
+            # copy *.yaml files in the manifest_folder to $cluster_workspace/openshift/
+            for f in "$manifest_folder"/*.yaml; do
+              if [[ -f "$f" ]]; then
+                info "    └─ applying" "$(short_path $f)"
+                cp "$f" "$cluster_workspace/openshift/"
+              fi
+            done
+            # apply *.yaml.j2 files in the manifest_folder
+            for f in "$manifest_folder"/*.yaml.j2; do
+              if [[ -f "$f" ]]; then
+                info "    └─ applying" "$(short_path $f)"
+                # if data file exists, then render it
+                data_file=$(yq ".operators.$key.data" $config_file)
+                if [[ "$data_file" != "null" ]]; then
+                  yq ".operators.$key.data" $config_file |jinja2 "$f" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                else
+                  jinja2 "$f" "$config_file" > "$cluster_workspace/openshift/$(basename "$f" .j2)"
+                fi
+              fi
+            done
+          else
+            warn "    └─ $manifest_folder" "not found"
+            continue
+          fi
+        done
       fi
     fi
-  fi
-  #lvms
-  if [[ "false" == $(yq ".day1.operators.lvm.enabled" $config_file) ]]; then
-    sleep 1
-  else
-    # enabled
-    if [[ $(yq ".day1.operators.lvm.provision" $config_file) == "null" ]]; then
-      sleep 1
-    else
-      info "lvm operator: provision storage"
-      jinja2 $templates/day1/lvm/98-prepare-lvm-disk-mc.yaml.j2 $config_file > $cluster_workspace/openshift/98-prepare-lvm-disk-mc.yaml
-    fi
-  fi
-}
+  done
 
-setup_ztp_hub(){
-  #will be ztp hub
-  if [ "true" = "$(yq '.day1.ztp_hub' $config_file)" ]; then
-    info "ZTP Hub(LVM, RHACM, GitOps, TALM):" "enabled"
-    cp $operators/lvm/*.yaml $cluster_workspace/openshift/
-    cp $operators/rhacm/*.yaml $cluster_workspace/openshift/
-    jinja2 $operators/lvm/StorageLVMSubscription.yaml.j2 > $cluster_workspace/openshift/StorageLVMSubscription.yaml
-    jinja2 $operators/rhacm/AdvancedClusterManagementSubscription.yaml.j2 > $cluster_workspace/openshift/AdvancedClusterManagementSubscription.yaml
-    jinja2 $operators/talm/TopologyAwareLifeCycleManagerSubscription.yaml.j2 > $cluster_workspace/openshift/TopologyAwareLifeCycleManagerSubscription.yaml
-    jinja2 $operators/gitops/GitopsSubscription.yaml.j2 > $cluster_workspace/openshift/GitopsSubscription.yaml
-
-    echo
-  fi
+  separator
+  echo
 }
 
 # copy platform related configuration from source destination
@@ -498,13 +571,13 @@ copy_platform_config(){
   done < <(find ${_src} -type f -name '*.yaml')
 }
 
-copy_extra_manifests(){
-  extra_manifests=$(yq '.day1.extra_manifests' $config_file)
+extra_manifests(){
+  step "Processing extra manifest files"
+  extra_manifests=$(yq '.extra_manifests.day1' $config_file)
   if [ "$extra_manifests" == "null" ]; then
-    sleep 1
+    warn "Extra manifests" "not configured"
   else
-    echo "Process extra-manifest files"
-    all_paths_config=$(yq '.day1.extra_manifests|join(" ")' $config_file)
+    all_paths_config=$(yq '.extra_manifests.day1|join(" ")' $config_file)
     all_paths=$(eval echo $all_paths_config)
 
     for d in $all_paths; do
@@ -514,17 +587,18 @@ copy_extra_manifests(){
           file="${csr_files[$i]}"
           case "$file" in
             *.yaml)
-              info "$file" "copy to $cluster_workspace/openshift/$file"
+              filename=$(basename "$file")
+              info "  ├─ $filename" "copied"
               cp "$file" "$cluster_workspace"/openshift/ 2>/dev/null
               ;;
 	          *.yaml.j2)
               tname=$(basename $file)
               fname=${tname//.j2/}
-              info "$file" "render to $cluster_workspace/openshift/$fname"
+              info "  ├─ $fname" "rendered"
               jinja2 $file $config_file > "$cluster_workspace"/openshift/$fname
 	            ;;
             *)
-              warn $file "skipped: unknown type"
+              warn "  ├─ $(basename $file)" "skipped (unknown type)"
               ;;
           esac
          done
@@ -534,104 +608,154 @@ copy_extra_manifests(){
 }
 
 operator_catalog_sources(){
-  if [ "4.12" = $ocp_y_release ] || [ "4.13" = $ocp_y_release ] || [ "4.14" = $ocp_y_release ] || [ "4.15" = $ocp_y_release ]; then
-    if [[ $(yq '.container_registry' $config_file) != "null" ]]; then
-      jinja2 $templates/day1/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
-    fi
-  else
-    #4.16+, disable marketplace operator
-    cp $templates/day1/marketplace/09-openshift-marketplace-ns.yaml $cluster_workspace/openshift/
+  step "Configuring operator catalog sources"
+  
+  if [ "true" = "$(yq '.catalog_sources.create_marketplace_ns' $config_file)" ]; then
+    info "Creating marketplace namespace" "enabled"
+    cp $templates/day1/catalogsource/09-openshift-marketplace-ns.yaml $cluster_workspace/openshift/
+  fi
+  
+  if [ "true" = "$(yq '.catalog_sources.update_operator_hub' $config_file)" ]; then
+    info "Updating OperatorHub configuration" "enabled"
+    jinja2 $templates/day1/catalogsource/operatorhub.yaml.j2 $config_file > $cluster_workspace/openshift/operatorhub.yaml
+  fi
 
-    #create unmanaged catalog sources
-    if [[ "$(yq '.container_registry.catalog_sources.defaults' $config_file)" != "null" ]]; then
-      #enable the ones in container_registry.catalog_sources.defaults
-      local size=$(yq '.container_registry.catalog_sources.defaults|length' $config_file)
-      for ((k=0; k<$size; k++)); do
-        local name=$(yq ".container_registry.catalog_sources.defaults[$k]" $config_file)
+  if [ "true" = "$(yq '.catalog_sources.create_default_catalog_sources' $config_file)" ]; then
+    if [[ "$(yq '.catalog_sources.defaults' $config_file)" != "null" ]]; then
+      info "Creating default catalog sources" "enabled"
+      local size=$(yq '.catalog_sources.defaults|length' $config_file)
+      for ((k=1; k<=$size; k++)); do
+        local name=$(yq ".catalog_sources.defaults[$((k-1))]" $config_file)
+        local lead="  ├─"
+        if [[ $k -ge $size ]]; then
+           lead="  └─"
+        fi
+        info "${lead} $name catalog" "created"
         jinja2 $templates/day1/catalogsource/$name.yaml.j2 > $cluster_workspace/openshift/$name.yaml
       done
-    else
-      #by default redhat-operators and certified-operators shall be enabled
-      jinja2 $templates/day1/catalogsource/redhat-operators.yaml.j2 > $cluster_workspace/openshift/redhat-operators.yaml
-      jinja2 $templates/day1/catalogsource/certified-operators.yaml.j2 > $cluster_workspace/openshift/certified-operators.yaml
     fi
-
   fi
 
-  #all versions
-  if [ "$(yq '.container_registry.catalog_sources.customs' $config_file)" != "null" ]; then
-    local size=$(yq '.container_registry.catalog_sources.customs|length' $config_file)
-    for ((k=0; k<$size; k++)); do
-      yq ".container_registry.catalog_sources.customs[$k]" $config_file |jinja2 $templates/day1/catalogsource/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
-    done
-  fi
-
-  #all versions
-  if [ "$(yq '.container_registry.icsp' $config_file)" != "null" ]; then
-    local size=$(yq '.container_registry.icsp|length' $config_file)
-    for ((k=0; k<$size; k++)); do
-      local name=$(yq ".container_registry.icsp[$k]" $config_file)
-      if [ -f "$name" ]; then
-        info "$name" "copy to $cluster_workspace/openshift/"
-        cp $name $cluster_workspace/openshift/
-      else
-        warn "$name" "not a file or not exist"
+  if [ "$(yq '.catalog_sources.customs' $config_file)" != "null" ]; then
+    local size=$(yq '.catalog_sources.customs|length' $config_file)
+    info "Custom catalog sources" "$size configured"
+    for ((k=1; k<=$size; k++)); do
+      local custom_name=$(yq ".catalog_sources.customs[$((k-1))].name // \"custom-$k\"" $config_file)
+      local provide=$(yq ".catalog_sources.customs[$((k-1))].provide // \"$custom_name\"" $config_file)
+      local lead="  ├─"
+      if [[ $k -ge $size ]]; then
+         lead="  └─"
       fi
+      info "${lead} $custom_name($provide)" "created"
+      yq ".catalog_sources.customs[$((k-1))]" $config_file |jinja2 $templates/day1/catalogsource/catalogsource.yaml.j2 > $cluster_workspace/openshift/catalogsource-$k.yaml
     done
   fi
 
 }
 
-echo
-echo "Enabling day1 configuration..."
-day1_config
-echo
+mirror_source(){
+  if [ "$(yq '.container_registry.image_source' $config_file)" != "null" ]; then 
+    step "Configuring mirror source"
+    cat $(yq '.container_registry.image_source' $config_file) >> $cluster_workspace/install-config.yaml
+  fi
 
-echo "Enabling operators..."
+  if [ "$(yq '.container_registry.icsp' $config_file)" != "null" ]; then
+    step "Configuring ICSP"
+    local size=$(yq '.container_registry.icsp|length' $config_file)
+    for ((k=1; k<=$size; k++)); do
+      local name=$(yq ".container_registry.icsp[$((k-1))]" $config_file)
+      local lead="  ├─"
+      if [[ $k -ge $size ]]; then
+         lead="  └─"
+      fi
+      if [ "${name:0:1}" = "/" ]; then
+        if [ -f "$name"  ]; then
+          info "${lead} $(short_path $name)" "copy to $(short_path $cluster_workspace/openshift/)"
+          cp $name $cluster_workspace/openshift/
+        fi
+      elif [ -f "$basedir/$name" ]; then
+        info "${lead} $(short_path $name)" "copy to $(short_path $cluster_workspace/openshift/)"
+        cp $basedir/$name $cluster_workspace/openshift/
+      else
+        warn "${lead} $name" "not a file or not exist"
+      fi
+    done
+  fi
+}
+
+render_install_configs(){
+  step "Rendering install-config.yaml and agent-config.yaml"
+  pull_secret_input=$(yq '.pull_secret' $config_file)
+  pull_secret_path=$(eval echo $pull_secret_input)
+  if [[ -z "$pull_secret_path" ]] || [[ ! -f "$pull_secret_path" ]]; then
+    error "Pull secret not found" "$(short_path $pull_secret_path)"
+    exit 1
+  fi
+
+  export pull_secret=$(cat $pull_secret_path)
+
+  ssh_key_input=$(yq '.ssh_key' $config_file)
+  ssh_key_path=$(eval echo $ssh_key_input)
+  if [[ -z "$ssh_key_path" ]] || [[ ! -f "$ssh_key_path" ]]; then
+    error "SSH key not found" "$(short_path $ssh_key_path)"
+    exit 1
+  fi
+  export ssh_key=$(cat $ssh_key_path)
+
+  bundle_file=$(yq '.additional_trust_bundle' $config_file)
+  if [[ "null" != "$bundle_file" ]]; then
+    if [[ -z "$bundle_file" ]] || [[ ! -f "$bundle_file" ]]; then
+      error "Additional trust bundle not found" "$(short_path $bundle_file)"
+      exit 1
+    fi
+    export additional_trust_bundle=$(cat $bundle_file)
+  fi
+
+  jinja2 $templates/agent-config.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
+  jinja2 $templates/install-config.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
+}
+
+backup_install_configs(){
+  step "Back-up installer configuratino files"
+  cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
+  info "File install-config.yaml" "saved as $(short_path $cluster_workspace/agent-config-backup.yaml)"
+  cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
+  info "File agent-config.yaml" "saved as $(short_path $cluster_workspace/install-config-backup.yaml)"
+}
+
+render_install_configs
+cluster_tunings
+container_storage
 operator_catalog_sources
+mirror_source
 install_operators
 config_operators
-echo
-setup_ztp_hub
-copy_extra_manifests
+extra_manifests
+backup_install_configs
 
 
-pull_secret_input=$(yq '.pull_secret' $config_file)
-pull_secret_path=$(eval echo $pull_secret_input)
-export pull_secret=$(cat $pull_secret_path)
-
-ssh_key_input=$(yq '.ssh_key' $config_file)
-ssh_key_path=$(eval echo $ssh_key_input)
-export ssh_key=$(cat $ssh_key_path)
-
-bundle_file=$(yq '.additional_trust_bundle' $config_file)
-if [[ "null" != "$bundle_file" ]]; then
-  export additional_trust_bundle=$(cat $bundle_file)
-fi
-
-jinja2 $templates/agent-config.yaml.j2 $config_file > $cluster_workspace/agent-config.yaml
-jinja2 $templates/install-config.yaml.j2 $config_file > $cluster_workspace/install-config.yaml
-
-mirror_source=$(yq '.container_registry.image_source' $config_file)
-if [[ "null" != "$mirror_source" ]]; then
-  cat $mirror_source >> $cluster_workspace/install-config.yaml
-fi
-
-cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
-cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
-
-echo
-echo "Generating boot image..."
+step "Generating bootable ISO image"
+info "Using OpenShift installer" "$(short_path $($basedir/openshift-install version | head -1))"
+info "Target architecture" "$ocp_arch"
+info "Log level" "${ABI_LOG_LEVEL:-info}"
 echo
 $basedir/openshift-install --dir $cluster_workspace agent --log-level=${ABI_LOG_LEVEL:-"info"} create image
 
-echo ""
-echo "------------------------------------------------"
-echo "kubeconfig: $cluster_workspace/auth/kubeconfig."
-echo "kubeadmin password: $cluster_workspace/auth/kubeadmin-password."
-echo "------------------------------------------------"
+header "Complete - Summary"
 
-echo
-echo "Next step: Go to your BMC console and boot the node from ISO: $cluster_workspace/agent.${ocp_arch}.iso."
-echo "You can also run ./sno-install.sh to boot the node from the image automatically if you have a HTTP server serves the image."
-echo "Enjoy!"
+info "Bootable ISO generated" "$(ls $cluster_workspace/agent.*.iso)"
+info "Kubeconfig location" "$cluster_workspace/auth/kubeconfig"
+info "Admin password file" "$cluster_workspace/auth/kubeadmin-password"
+info "Configuration file" "$config_file"
+info "OpenShift version" "$ocp_release_version"
+info "Target architecture" "$ocp_arch"
+
+separator
+printf "${BOLD}${GREEN}Next Steps:${RESET}\n"
+printf "${CYAN}Option 1 (Manual):${RESET}\n"
+printf "  └─ Boot node from ISO via BMC console:\n"
+printf "     ${YELLOW}$(ls $cluster_workspace/agent.*.iso)${RESET}\n\n"
+printf "${CYAN}Option 2 (Automated):${RESET}\n"
+printf "  └─ Run automated installation (requires HTTP server):\n"
+printf "     ${YELLOW}./sno-install.sh $cluster_name${RESET}\n\n"
+printf "${BOLD}${GREEN}🎉 ISO generation completed successfully!${RESET}\n"

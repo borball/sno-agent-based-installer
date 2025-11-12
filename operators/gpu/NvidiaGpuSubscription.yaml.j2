@@ -1,3 +1,9 @@
+{% set default_source='certified-operators' -%}
+{% set catsrc = customs|selectattr('provide', '==', default_source)|map(attribute='name')|list -%}
+{% if catsrc -%}
+{% set default_source=catsrc[0] -%}
+{% endif -%}
+---
 # https://docs.nvidia.com/datacenter/cloud-native/openshift/latest/install-gpu-ocp.html
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -7,9 +13,9 @@ metadata:
 spec:
   name: gpu-operator-certified
   channel: {{ channel | default('v24.9') }}
-  source: {{ source | default('certified-operators') }}
+  source: {{ source | default(default_source) }}
   sourceNamespace: openshift-marketplace
-  {% if version is defined -%}
+  {% if version is defined and version is not none -%}
   startingCSV: {{ version }}
   installPlanApproval: Manual
   {% else -%}

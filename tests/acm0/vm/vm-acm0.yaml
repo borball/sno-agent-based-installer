@@ -1,0 +1,98 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  labels:
+    app: acm0
+  name: acm0
+  namespace: acm0
+spec:
+  runStrategy: Halted
+  dataVolumeTemplates:
+    - kind: DataVolume
+      metadata: 
+        name: acm0-rootdisk
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      spec:
+        source:
+          blank: {}
+          size: 120Gi
+        storage:
+          resources:
+            requests:
+              storage: 120Gi
+    - kind: DataVolume
+      metadata:
+        name: acm0-data
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      spec:
+        source:
+          blank: {}
+          size: 100Gi
+        storage:
+          resources:
+            requests:
+              storage: 100Gi
+    - kind: DataVolume
+      metadata:
+        name: acm0-cdrom
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      spec:
+        source:
+          http:
+            url: http://192.168.58.15/iso/acm0.iso
+        storage:
+          resources:
+            requests:
+              storage: 5Gi
+
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: acm0
+    spec:
+      architecture: amd64
+      domain:
+        cpu:
+          cores: 8
+          sockets: 1
+          threads: 2
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+              bootOrder: 1  
+            - disk:
+                bus: virtio
+              name: data
+            - cdrom:
+                bus: scsi
+              name: cdrom
+              bootOrder: 2
+          interfaces:
+            - bridge: {}
+              macAddress: de:ad:be:ee:aa:00
+              model: virtio
+              name: enp1s0
+        memory:
+          guest: 32Gi
+      networks:
+        - multus:
+            networkName: localnet-network
+          name: enp1s0
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - dataVolume:
+            name: acm0-rootdisk
+          name: rootdisk
+        - dataVolume:
+            name: acm0-data
+          name: data
+        - dataVolume:
+            name: acm0-cdrom
+          name: cdrom
+
+

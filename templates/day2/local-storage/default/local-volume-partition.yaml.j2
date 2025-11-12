@@ -1,0 +1,20 @@
+apiVersion: local.storage.openshift.io/v1
+kind: LocalVolume
+metadata:
+  name: {{ local_volume.name or 'local-disks' }}
+  namespace: openshift-local-storage
+spec:
+  logLevel: Normal
+  managementState: Managed
+  storageClassDevices:
+    - devicePaths:
+        {% set ns = namespace(part_ind = 0) -%}
+        {% for part_size,part_count in partitions | dictsort -%}
+        {% for count in range(part_count) -%}
+        {% set ns.part_ind = ns.part_ind + 1 -%}
+        - /dev/disk/by-path/{{ disk_by_path }}-part{{ns.part_ind}}
+        {% endfor -%}
+        {% endfor %}
+      volumeMode: Filesystem
+      fsType: {{ fs_type | default('xfs') }}
+      storageClassName: {{ local_volume.storageClassName or 'general' }}

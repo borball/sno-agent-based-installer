@@ -1,50 +1,42 @@
 cluster:
-  domain: outbound.vz.bos2.lab
-  name: sno148
+  domain: example.com
+  name: mysno
+  profile: ran
 
 host:
-  hostname: sno148.outbound.vz.bos2.lab
   interface: ens1f0
+  hostname: mysno.example.com
   mac: b4:96:91:b4:9d:f0
   ipv4:
     enabled: true
-    dhcp: false
-    ip: 192.168.58.48
+    ip: 192.168.1.100
     dns:
-      - 192.168.58.15
-    gateway: 192.168.58.1
-    prefix: 25
-    machine_network_cidr: 192.168.58.0/25
-    #optional, default 10.128.0.0/14
-    #cluster_network_cidr: 10.128.0.0/14
-    #optional, default 23
-    #cluster_network_host_prefix: 23
-    #optional, default 172.30.0.0/16
-    #service_network: 172.30.0.0/16
-  ipv6:
-    enabled: false
-    dhcp: false
-    ip: 2600:52:7:58::48
-    dns:
-      - 2600:52:7:58::15
-    gateway: 2600:52:7:58::1
-    prefix: 64
-    machine_network_cidr: 2600:52:7:58::/64
-    #optional, default fd01::/48
-    #cluster_network_cidr: fd01::/48
-    #optional, default 64
-    #cluster_network_host_prefix: 64
-    #optional, default fd02::112
-    #service_network: fd02::/112
-  vlan:
-    enabled: false
-    name: ens1f0.58
-    id: 58
-  disk: /dev/nvme0n1
+      - 192.168.1.1
+    gateway: 192.168.1.1
+    prefix: 24
+    machine_network_cidr: 192.168.1.0/24
+  disk: /dev/disk/by-path/TO-BE-CHANGED
 
 cpu:
   isolated: 2-31,34-63
   reserved: 0-1,32-33
+
+container_storage:
+  enabled: true
+  device: /dev/disk/by-path/TO-BE-CHANGED
+  startMiB: 500000
+  sizeMiB: 0
+
+bmc:
+  address: 192.168.1.200
+  username: Administrator
+  password: password
+
+iso:
+  address: http://192.168.1.10/iso/mysno.iso
+
+pull_secret: ${HOME}/pull-secret.json
+ssh_key: ${HOME}/.ssh/id_rsa.pub
 
 proxy:
   enabled: false
@@ -52,13 +44,33 @@ proxy:
   https:
   noproxy:
 
-pull_secret: ./pull-secret.json
-ssh_key: /root/.ssh/id_rsa.pub
+cluster_tunings:
+  excludes:
+    - crun
+    - sctp
 
-bmc:
-  address: 192.168.13.148
-  username: Administrator
-  password: dummy
+node_tunings:
+  performance_profile:
+    spec:
+      net:
+        userLevelNetworking: true
+      cpu:
+        isolated: 2-31,34-63
+        reserved: 0-1,32-33
+      hardwareTuning:
+        isolatedCpuFreq: 2500000
+        reservedCpuFreq: 2500000
 
-iso:
-  address: http://192.168.58.15/iso/agent-148.iso
+operators:
+  lvm:
+    data:
+      disks:
+        - path: /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+          wipe_table: true
+      device_classes:
+        - name: vg1
+          thin_pool_name: thin-pool-1
+          selector:
+            paths:
+              - /dev/disk/by-path/pci-0000:c3:00.0-nvme-1
+
