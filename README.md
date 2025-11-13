@@ -146,6 +146,10 @@ sudo chmod +x /usr/local/bin/yq
 
 # Install jinja2 CLI
 pip3 install jinja2-cli jinja2-cli[yaml]
+
+#oc shall be installed, if you have not:
+sudo curl -L -o openshift-client-linux.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux.tar.gz
+sudo tar -xzvf openshift-client-linux.tar.gz -C /usr/local/bin/
 ```
 
 ## 🚀 Quick Start

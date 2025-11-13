@@ -6,12 +6,18 @@
 
 if ! type "yq" > /dev/null; then
   echo "Cannot find yq in the path, please install yq on the node first. ref: https://github.com/mikefarah/yq#install"
+  exit 1
 fi
 
 if ! type "jinja2" > /dev/null; then
   echo "Cannot find jinja2 in the path, will install it with pip3 install jinja2-cli and pip3 install jinja2-cli[yaml]"
   pip3 install --user jinja2-cli
   pip3 install --user jinja2-cli[yaml]
+fi
+
+if ! type "oc" > /dev/null; then
+  echo "Cannot find oc in the path, please install oc on the node first. ref: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/"
+  exit 1
 fi
 
 # Color codes for better output
@@ -125,8 +131,6 @@ if [ -z "$cluster_profile" ]
 then
   cluster_profile="none"
 fi
-
-
 
 cluster_workspace=$basedir/instances/$cluster_name
 

@@ -18,6 +18,11 @@ if ! type "jinja2" > /dev/null 2>&1; then
   pip3 install --user jinja2-cli[yaml]
 fi
 
+if ! type "oc" > /dev/null 2>&1; then
+  echo "Cannot find oc in the path, please install oc on the node first. ref: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/"
+  exit 1
+fi
+
 SSH="ssh -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -o LogLevel=quiet"
 
 usage(){
