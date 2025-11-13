@@ -188,10 +188,6 @@ host:
     machine_network_cidr: 192.168.1.0/24
   disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
 
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
 bmc:
   address: 192.168.1.200
   username: Administrator
@@ -203,6 +199,23 @@ iso:
 pull_secret: ${HOME}/pull-secret.json
 ssh_key: ${HOME}/.ssh/id_rsa.pub
 
+cluster_tunings:
+  excludes:
+    - crun
+    - sctp
+
+node_tunings:
+  performance_profile:
+    spec:
+      net:
+        userLevelNetworking: true
+      cpu:
+        isolated: 2-31,34-63
+        reserved: 0-1,32-33
+      hardwareTuning:
+        isolatedCpuFreq: 2500000
+        reservedCpuFreq: 2500000
+        
 operators:
   local-storage:
     data:

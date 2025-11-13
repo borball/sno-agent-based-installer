@@ -17,10 +17,6 @@ host:
     machine_network_cidr: 192.168.1.0/24
   disk: /dev/disk/by-path/TO-BE-CHANGED
 
-cpu:
-  isolated: 2-31,34-63
-  reserved: 0-1,32-33
-
 container_storage:
   enabled: true
   device: /dev/disk/by-path/TO-BE-CHANGED
