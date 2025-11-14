@@ -8,7 +8,7 @@ spec:
     - name: ran-du-performance
       # Please note:
       # - The 'include' line must match the associated PerformanceProfile name, following below pattern
-      #   include=openshift-node-performance-${PerformanceProfile.metadata.name}
+      #   include=openshift-node-performance-{{ (spec and spec.performance_profile_name)  or 'openshift-node-performance-profile' }}
       data: |
         [main]
         summary=Top-level ran-du performance tuning overrides
@@ -43,6 +43,6 @@ spec:
         group.ice-dplls=0:f:10:*:ice-dplls.*
   recommend:
     - machineConfigLabels:
-        machineconfiguration.openshift.io/role: $mcp
+        machineconfiguration.openshift.io/role: master
       priority: 18
       profile: ran-du-performance

@@ -632,8 +632,14 @@ tuned_profiles(){
     if [[ $profile ==  ${profiles[-1]} ]]; then
        prefix="  └─"
     fi
-    if [[ -f "$templates/day2/tuned/tuned-$profile.yaml" ]]; then
-      local static_tempalte="$templates/day2/tuned/tuned-$profile.yaml"
+    local static_template=""
+    if [[ -f "$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml" ]]; then
+      static_tempalte="$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml"
+    elif [[ -f "$templates/day2/tuned/tuned-$profile.yaml" ]]; then
+      static_template="$templates/day2/tuned/tuned-$profile.yaml"
+    fi
+
+    if [[ -n "$static_template" ]]; then
       # Use static YAML file
       info "${prefix} $profile" "copying & applying using $(basename $static_template)"
       if safe_copy "$static_template" "$output_file" "Tuned profile ($profile)"; then
@@ -650,29 +656,36 @@ tuned_profiles(){
         ((failed_count++))
       fi
     else
-      if [[ -f "$templates/day2/tuned/tuned-$profile.yaml.j2" ]]; then
+      # use jinja2 template if static template is not found
+      local jinja_template=""
+      if [[ -f "$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml.j2" ]]; then
+         jinja_template="$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml.j2"
+      elif [[ -f "$templates/day2/tuned/tuned-$profile.yaml.j2" ]]; then
          jinja_template="$templates/day2/tuned/tuned-$profile.yaml.j2"
       else
          jinja_template="$templates/day2/tuned/tuned-generic.yaml.j2"
       fi
-      # Use Jinja2 template
-      info "${prefix} $profile" "rendering & applying using $(basename $jinja_template)"
-      local output
-      if output=$((echo "name: $profile"; yq ".node_tunings.tuned_profile.$profile" "$config_file") | jinja2 "$jinja_template" > "$output_file" 2>&1); then
-        debug "  ✓ Successfully rendered tuned profile template: $profile"
-        
-        if output=$(oc apply -f "$output_file" 2>&1); then
-          debug "  ✓ Successfully applied tuned profile: $profile"
-          debug "    Output: $output"
+
+      if [[ -n "$jinja_template" ]]; then
+        # Use Jinja2 template
+        info "${prefix} $profile" "rendering & applying using $(basename $jinja_template)"
+        local output
+        if output=$((echo "name: $profile"; yq ".node_tunings.tuned_profile.$profile" "$config_file") | jinja2 "$jinja_template" > "$output_file" 2>&1); then
+          debug "  ✓ Successfully rendered tuned profile template: $profile"
+          
+          if output=$(oc apply -f "$output_file" 2>&1); then
+            debug "  ✓ Successfully applied tuned profile: $profile"
+            debug "    Output: $output"
+          else
+            error "  ✗ Failed to apply rendered tuned profile: $profile" "ERROR"
+            debug "    Error: $output"
+            ((failed_count++))
+          fi
         else
-          error "  ✗ Failed to apply rendered tuned profile: $profile" "ERROR"
+          error "  ✗ Failed to render tuned profile template: $profile" "ERROR"
           debug "    Error: $output"
           ((failed_count++))
         fi
-      else
-        error "  ✗ Failed to render tuned profile template: $profile" "ERROR"
-        debug "    Error: $output"
-        ((failed_count++))
       fi
     fi
     

@@ -21,7 +21,7 @@ node_tunings:
 
   tuned_profile:
     enabled: true
-    performance-patch-420:
+    performance-patch:
       enabled: true
 
 update_control:
