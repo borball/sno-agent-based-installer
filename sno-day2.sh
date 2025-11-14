@@ -276,26 +276,26 @@ else
   info "Debug mode" "disabled (set DEBUG=true to enable detailed logging)"
 fi
 
-export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+OC='oc --kubeconfig='$cluster_workspace'/auth/kubeconfig'
 
 cluster_info(){
-  oc get clusterversion
+  $OC get clusterversion
   if [[ $? -ne 0 ]]; then
     error "Failed to get cluster version"
     return 1
   fi
   echo
-  oc get nodes
+  $OC get nodes
   echo
-  oc get co
+  $OC get co
   echo
-  oc get operators
+  $OC get operators
   echo
-  oc get subs -A
+  $OC get subs -A
   echo
-  oc get csv -A -o name|sort |uniq
+  $OC get csv -A -o name|sort |uniq
 
-  missing_csv=$(oc get sub -A -o json | jq -cMr '.items[]|select(.status.installedCSV == null) |.metadata|{namespace: .namespace, name: .name}')
+  missing_csv=$($OC get sub -A -o json | jq -cMr '.items[]|select(.status.installedCSV == null) |.metadata|{namespace: .namespace, name: .name}')
   if [[ -n "${missing_csv}" ]]; then
     echo ""
     error "Uninstalled subscriptions found" "Manual intervention required"
@@ -303,9 +303,9 @@ cluster_info(){
   fi
 
   i=1
-  while [[ ! -z "$(oc get csv --no-headers -A |grep -v 'Succeeded')" ]]; do
+  while [[ ! -z "$($OC get csv --no-headers -A |grep -v 'Succeeded')" ]]; do
     warn "CSV installation in progress" "waiting..."
-    oc get csv -A |grep -v "Succeeded"
+    $OC get csv -A |grep -v "Succeeded"
     if [[ $i -le 5 ]]; then
       info "Waiting [$i/5] for another 30 seconds" "..."
       sleep 30
@@ -321,7 +321,7 @@ cluster_info(){
   done
 }
 
-ocp_release=$(oc version --client=false -o json|jq -r '.openshiftVersion')
+ocp_release=$($OC version --client=false -o json|jq -r '.openshiftVersion')
 if [ -z "$ocp_release" ]; then
   error "Failed to get cluster version"
   return 1
@@ -335,7 +335,7 @@ pause_mcp_update(){
   if [ "$(yq '.update_control.pause_before_update' $config_file)" = "true" ]; then
     step "Pausing master machine config pool update"
     trap resume_mcp_update SIGINT SIGABRT SIGKILL
-    oc patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
+    $OC patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
   else
     info "MCP update" "not paused"
     return
@@ -354,7 +354,7 @@ resume_mcp_update(){
       step "Resuming master machine config pool update"
     fi
     for i in {1..20}; do
-      oc patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
+      $OC patch --type=merge --patch='{"spec":{"paused":false}}' mcp/master
       if [[ $? -eq 0 ]]; then
         return
       fi
@@ -363,7 +363,7 @@ resume_mcp_update(){
     done
     error "Failed to resume master MCP" "Manual intervention required"
     printf "${RED}Please manually resume using:${RESET}\n"
-    printf "${YELLOW}oc patch --type=merge --patch='{\"spec\":{\"paused\":false}}' mcp/master${RESET}\n"
+    printf "${YELLOW}\$OC patch --type=merge --patch='{\"spec\":{\"paused\":false}}' mcp/master${RESET}\n"
   else
     return
   fi
@@ -425,7 +425,7 @@ cluster_tunings(){
           if safe_copy "$file" "$tunings_workspace/$filename" "YAML manifest ($filename)"; then
             info "  └─ $filename" "copied & applying"
             local output
-            if output=$(oc apply -f "$tunings_workspace/$filename" 2>&1); then
+            if output=$($OC apply -f "$tunings_workspace/$filename" 2>&1); then
               debug "  ✓ Successfully applied: $filename"
               debug "    Output: $output"
             else
@@ -443,7 +443,7 @@ cluster_tunings(){
           local output
           if output=$(jinja2 "$file" "$config_file" > "$tunings_workspace/$rendered_filename" 2>&1); then
             debug "  ✓ Successfully rendered: $filename -> $rendered_filename"
-            if output=$(oc apply -f "$tunings_workspace/$rendered_filename" 2>&1); then
+            if output=$($OC apply -f "$tunings_workspace/$rendered_filename" 2>&1); then
               debug "  ✓ Successfully applied: $rendered_filename"
               debug "    Output: $output"
             else
@@ -589,7 +589,7 @@ performance_profile(){
   
   # Apply the rendered manifest
   local apply_output
-  if apply_output=$(oc apply -f "$output_file" 2>&1); then
+  if apply_output=$($OC apply -f "$output_file" 2>&1); then
     debug "  ✓ Successfully applied performance profile"
     debug "    Output: $apply_output"
     info "  └─ Performance profile applied" "success"
@@ -644,7 +644,7 @@ tuned_profiles(){
       info "${prefix} $profile" "copying & applying using $(basename $static_template)"
       if safe_copy "$static_template" "$output_file" "Tuned profile ($profile)"; then
         local output
-        if output=$(oc apply -f "$output_file" 2>&1); then
+        if output=$($OC apply -f "$output_file" 2>&1); then
           debug "  ✓ Successfully applied tuned profile: $profile"
           debug "    Output: $output"
         else
@@ -673,7 +673,7 @@ tuned_profiles(){
         if output=$((echo "name: $profile"; yq ".node_tunings.tuned_profile.$profile" "$config_file") | jinja2 "$jinja_template" > "$output_file" 2>&1); then
           debug "  ✓ Successfully rendered tuned profile template: $profile"
           
-          if output=$(oc apply -f "$output_file" 2>&1); then
+          if output=$($OC apply -f "$output_file" 2>&1); then
             debug "  ✓ Successfully applied tuned profile: $profile"
             debug "    Output: $output"
           else
@@ -876,7 +876,7 @@ operator_configs(){
             fi
           done
           debug "Applying kustomization.yaml: $workspace_folder"
-          oc apply -k "$workspace_folder"
+          $OC apply -k "$workspace_folder"
         else
           # Apply YAML files
           for f in "$workspace_folder"/*.yaml; do
@@ -884,7 +884,7 @@ operator_configs(){
               local yaml_name=$(basename "$f")
               info "    └─ applying $yaml_name"
               local output
-              if output=$(oc apply -f "$f" 2>&1); then
+              if output=$($OC apply -f "$f" 2>&1); then
                 debug "  ✓ Successfully applied: $yaml_name"
                 debug "    Output: $output"
               else
@@ -907,7 +907,7 @@ operator_configs(){
               
               if [[ "$data_file" != "null" ]]; then
                 debug "Using custom data for $key template: $template_name"
-                if output=$(yq ".operators.$key.data" "$config_file" | jinja2 "$f" | oc apply -f - 2>&1); then
+                if output=$(yq ".operators.$key.data" "$config_file" | jinja2 "$f" | $OC apply -f - 2>&1); then
                   yq ".operators.$key.data" "$config_file" | jinja2 "$f" > "$workspace_folder/$(basename "$f" .j2)"
                   debug "  ✓ Successfully rendered & applied with custom data: $template_name"
                   debug "    Output: $output"
@@ -918,7 +918,7 @@ operator_configs(){
                 fi
               else
                 debug "Using config file for $key template: $template_name"
-                if output=$(jinja2 "$f" "$config_file" | oc apply -f - 2>&1); then
+                if output=$(jinja2 "$f" "$config_file" | $OC apply -f - 2>&1); then
                   jinja2 "$f" "$config_file" > "$workspace_folder/$(basename "$f" .j2)"
                   debug "  ✓ Successfully rendered & applied: $template_name"
                   debug "    Output: $output"
@@ -973,7 +973,7 @@ operator_configs(){
 install_plan_approval(){
   debug "install_plan_approval: Setting installPlanApproval to '$1'"
   
-  subs=$(oc get subs -A -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}')
+  subs=$($OC get subs -A -o jsonpath='{range .items[*]}{@.metadata.namespace}{" "}{@.metadata.name}{"\n"}{end}')
   debug "Raw subscription data: $subs"
   
   subs=($subs)
@@ -1002,14 +1002,14 @@ install_plan_approval(){
     
     local output
     # Try operators.coreos.com API group first (most common for OpenShift subscriptions)
-    if output=$(oc patch subscription.operators.coreos.com -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
+    if output=$($OC patch subscription.operators.coreos.com -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
       debug "  ✓ Successfully updated subscription: $name in namespace: $ns (operators.coreos.com)"
       debug "    Output: $output"
       ((processed_count++))
     else
       debug "    Failed with operators.coreos.com, trying apps.open-cluster-management.io: $output"
       # Fallback to open-cluster-management API group
-      if output=$(oc patch subscription.apps.open-cluster-management.io -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
+      if output=$($OC patch subscription.apps.open-cluster-management.io -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
         debug "  ✓ Successfully updated subscription: $name in namespace: $ns (apps.open-cluster-management.io)"
         debug "    Output: $output"
         ((processed_count++))
@@ -1130,7 +1130,7 @@ extra_manifests(){
         *.yaml)
           info "  ├─ $filename" "applying"
           local output
-          if output=$(oc apply -f "$file" 2>&1); then
+          if output=$($OC apply -f "$file" 2>&1); then
             debug "  ✓ Successfully applied: $filename"
             debug "    Output: $output"
             ((dir_processed++))
@@ -1144,7 +1144,7 @@ extra_manifests(){
         *.yaml.j2)
           info "  ├─ $filename" "rendering & applying"
           local output
-          if output=$(jinja2 "$file" "$config_file" | oc apply -f - 2>&1); then
+          if output=$(jinja2 "$file" "$config_file" | $OC apply -f - 2>&1); then
             debug "  ✓ Successfully rendered & applied: $filename"
             debug "    Output: $output"
             ((dir_processed++))

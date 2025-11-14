@@ -88,9 +88,9 @@ del(.spec.clusterID) |
 del(.metadata.managedFields)
 '
 
-export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+OC='oc --kubeconfig='$cluster_workspace'/auth/kubeconfig'
 
-ocp_release=$(oc version -o json 2>/dev/null | jq -r '.openshiftVersion')
+ocp_release=$($OC version -o json 2>/dev/null | jq -r '.openshiftVersion')
 ocp_y_version=$(echo "$ocp_release" | cut -d. -f 1-2)
 
 ssh_priv_key_input=$(yq -r '.ssh_priv_key //""' "$config_file")
@@ -183,7 +183,7 @@ short_path(){
 }
 
 export_address(){
-  export address=$(oc get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}' | awk '{print $1;}')
+  export address=$($OC get node -o jsonpath='{..addresses[?(@.type=="InternalIP")].address}' | awk '{print $1;}')
 }
 
 # Display formatted diff with proper headers and limited output
@@ -272,7 +272,7 @@ validate_environment(){
 
 check_node(){
   step "Checking node status"
-  if [ "$(oc get node -o jsonpath='{..conditions[?(@.type=="Ready")].status}')" = "True" ]; then
+  if [ "$($OC get node -o jsonpath='{..conditions[?(@.type=="Ready")].status}')" = "True" ]; then
     info "Node" "ready"
   else
     warn "Node" "not ready"
@@ -281,9 +281,9 @@ check_node(){
 
 check_pods(){
   step "Checking all pods"
-  if [ "$(oc get pods -A | grep -vE "Running|Completed" | wc -l)" -gt 1 ]; then
+  if [ "$($OC get pods -A | grep -vE "Running|Completed" | wc -l)" -gt 1 ]; then
     warn "Some pods are failing or creating."
-    oc get pods -A | grep -vE "Running|Completed"
+    $OC get pods -A | grep -vE "Running|Completed"
   else
     info "No failing pods."
   fi
@@ -291,10 +291,10 @@ check_pods(){
 
 check_cluster_operators(){
   step "Checking cluster operators"
-  for name in $(oc get co -o jsonpath={..metadata.name}); do
-    local progressing=$(oc get co "$name" -o jsonpath='{..conditions[?(@.type=="Progressing")].status}')
-    local available=$(oc get co "$name" -o jsonpath='{..conditions[?(@.type=="Available")].status}')
-    local degraded=$(oc get co "$name" -o jsonpath='{..conditions[?(@.type=="Degraded")].status}')
+  for name in $($OC get co -o jsonpath={..metadata.name}); do
+    local progressing=$($OC get co "$name" -o jsonpath='{..conditions[?(@.type=="Progressing")].status}')
+    local available=$($OC get co "$name" -o jsonpath='{..conditions[?(@.type=="Available")].status}')
+    local degraded=$($OC get co "$name" -o jsonpath='{..conditions[?(@.type=="Degraded")].status}')
     if [ "$available" = "True" ] && [ "$progressing" = "False" ] && [ "$degraded" = "False" ]; then
       info "cluster operator $name " "healthy"
     else
@@ -307,7 +307,7 @@ check_workload_partitioning(){
   step "Checking workload partitioning"
   if [ "true" = "$(yq '.node_tunings.workload_partitioning.enabled' "$config_file")" ]; then
     info "workload_partition" "enabled in $config_file"
-    if [ "$(oc get mc | grep 01-master-cpu-partitioning | wc -l)" -eq 1 ]; then
+    if [ "$($OC get mc | grep 01-master-cpu-partitioning | wc -l)" -eq 1 ]; then
       info "mc 01-master-cpu-partitioning" "found"
     else
       warn "mc 01-master-cpu-partitioning" "not found"
@@ -337,7 +337,7 @@ check_machine_config(){
   local mc_name
   mc_name=$(yq ".metadata.name" "$file")
   if [ "$status" = "included" ]; then
-    if [ "$(oc get mc | grep "$mc_name" | wc -l)" -eq 1 ]; then
+    if [ "$($OC get mc | grep "$mc_name" | wc -l)" -eq 1 ]; then
       tree_info " ├─" "$(basename "$file")" "included and created"
     else
       tree_error " ├─" "$(basename "$file")" "included but not created"
@@ -345,7 +345,7 @@ check_machine_config(){
   fi
 
   if [ "$status" = "excluded" ]; then
-    if [ "$(oc get mc | grep "$mc_name" | wc -l)" -eq 1 ]; then
+    if [ "$($OC get mc | grep "$mc_name" | wc -l)" -eq 1 ]; then
       tree_error " ├─" "$(basename "$file")" "excluded but still found"
     else
       tree_info " ├─" "$(basename "$file")" "excluded and not found"
@@ -395,9 +395,9 @@ check_machine_configs(){
 
 check_machine_config_pools(){
   step "Checking machine config pool"
-  local updated=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Updated")].status}')
-  local updating=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Updating")].status}')
-  local degraded=$(oc get mcp master -o jsonpath='{..conditions[?(@.type=="Degraded")].status}')
+  local updated=$($OC get mcp master -o jsonpath='{..conditions[?(@.type=="Updated")].status}')
+  local updating=$($OC get mcp master -o jsonpath='{..conditions[?(@.type=="Updating")].status}')
+  local degraded=$($OC get mcp master -o jsonpath='{..conditions[?(@.type=="Degraded")].status}')
   if [ "$updated" = "True" ] && [ "$updating" = "False" ] && [ "$degraded" = "False" ]; then
     info "mcp master" "updated and not degraded"
   else
@@ -417,11 +417,11 @@ check_performance_profile(){
     fi
     local pretty_desired_file="$node_tunings_workspace/performance-profile/performance-profile-pretty.yaml"
     local profile_name=$(yq ".metadata.name" "$desired_file")
-    if [ "$(oc get performanceprofile | grep "$profile_name" | wc -l)" -eq 1 ]; then
+    if [ "$($OC get performanceprofile | grep "$profile_name" | wc -l)" -eq 1 ]; then
       info "PerformanceProfile $profile_name found"
       local live_file="$node_tunings_workspace/performance-profile/performance-profile-live.yaml"
       yq eval "${FILTER_FIELDS}" "$desired_file" | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval --prettyPrint > "$pretty_desired_file"
-      oc get performanceprofile "$profile_name" -o yaml | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_file"
+      $OC get performanceprofile "$profile_name" -o yaml | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_file"
       diff -q "$pretty_desired_file" "$live_file" > /dev/null
       if [ $? -eq 0 ]; then
         info "PerformanceProfile $profile_name is identical to the desired one."
@@ -461,7 +461,7 @@ check_tuned_profile(){
       local live_file="$node_tunings_workspace/tuned-profiles/tuned-$profile-live.yaml"
       yq eval "${FILTER_FIELDS}" "$desired_file" | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval --prettyPrint > "${pretty_desired_file}" 2>/dev/null;
       
-      oc get tuned "$profile_name" -n openshift-cluster-node-tuning-operator -o yaml | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_file"
+      $OC get tuned "$profile_name" -n openshift-cluster-node-tuning-operator -o yaml | yq '... comments=""' | yq -P 'sort_keys(..)' | yq eval "${FILTER_FIELDS}" | yq eval --prettyPrint > "$live_file"
       diff -q "$pretty_desired_file" "$live_file" > /dev/null
       if [ $? -eq 0 ]; then
         info "TunedProfile $profile_name is identical to the desired one."
@@ -507,7 +507,7 @@ diff_custom_resource(){
   fi
 
   # Get live resource and create pretty version
-  local oc_cmd="oc get $kind $name"
+  local oc_cmd="$OC get $kind $name"
   if [ -n "$ns" ] && [ "$ns" != "null" ]; then
     oc_cmd="$oc_cmd -n $ns"
   fi
@@ -595,7 +595,7 @@ check_operator(){
 
   debug "Operator: $operator_name, Namespace: $ns"
 
-  local csv=$(oc get csv -n "$ns" | grep -E "$operator_name|$key" | wc -l)
+  local csv=$($OC get csv -n "$ns" | grep -E "$operator_name|$key" | wc -l)
   if [ "$csv" -eq 1 ]; then
     info "$operator_desc" "available"
     check_operator_day2 "$key"
@@ -661,7 +661,7 @@ check_cluster_capabilities(){
 
     local enabled_capabilities
     local config_capabilities
-    readarray -t enabled_capabilities < <(oc get clusterversion version -o yaml | yq -r ".status.capabilities.enabledCapabilities[]")
+    readarray -t enabled_capabilities < <($OC get clusterversion version -o yaml | yq -r ".status.capabilities.enabledCapabilities[]")
     readarray -t config_capabilities < <(yq -r ".cluster.capabilities.additionalEnabledCapabilities[]" "$config_file")
     debug "Enabled capabilities: ${enabled_capabilities[*]}"
     debug "Config capabilities: ${config_capabilities[*]}"
@@ -690,7 +690,7 @@ check_catalog_sources(){
   step "Checking Catalog sources"
 
   if [ "true" = "$(yq '.catalog_sources.create_marketplace_ns' "$config_file")" ]; then
-    if [ "$(oc get namespace openshift-marketplace 2>/dev/null | wc -l)" -eq 0 ]; then
+    if [ "$($OC get namespace openshift-marketplace 2>/dev/null | wc -l)" -eq 0 ]; then
       warn "Namespace openshift-marketplace" "configured but not found"
     else
       info "Namespace openshift-marketplace" "found"
@@ -699,7 +699,7 @@ check_catalog_sources(){
 
   if [ "true" = "$(yq '.catalog_sources.update_operator_hub' "$config_file")" ]; then
     for source in $(yq -r '.catalog_sources.defaults[]' "$config_file"); do
-      local disabled=$(oc get operatorhubs cluster -o yaml | yq '.spec.sources[] | select(.name == "'"$source"'") | .disabled // false')
+      local disabled=$($OC get operatorhubs cluster -o yaml | yq '.spec.sources[] | select(.name == "'"$source"'") | .disabled // false')
       debug "OperatorHub $source disabled: $disabled"
       if [ "$disabled" = "true" ]; then
         warn "OperatorHub $source" "should not be disabled but disabled"
@@ -711,7 +711,7 @@ check_catalog_sources(){
   
   if [ "true" = "$(yq '.catalog_sources.create_default_catalog_sources' "$config_file")" ]; then
     for source in $(yq -r '.catalog_sources.defaults[]' "$config_file"); do
-      if [ "$(oc get catalogsource -n openshift-marketplace 2>/dev/null | grep "$source" | wc -l)" -eq 0 ]; then
+      if [ "$($OC get catalogsource -n openshift-marketplace 2>/dev/null | grep "$source" | wc -l)" -eq 0 ]; then
         warn "Catalog $source" "not created"
       else
         info "Catalog $source" "created"
@@ -722,9 +722,9 @@ check_catalog_sources(){
 
 check_installplans(){
   step "Checking InstallPlans"
-  if [ "$(oc get installplans.operators.coreos.com -A 2>/dev/null | grep false | wc -l)" -gt 0 ]; then
+  if [ "$($OC get installplans.operators.coreos.com -A 2>/dev/null | grep false | wc -l)" -gt 0 ]; then
     warn "InstallPlans below are not approved yet."
-    oc get installplans.operators.coreos.com -A | grep false
+    $OC get installplans.operators.coreos.com -A | grep false
   else
     info "All InstallPlans have been approved or auto-approved."
   fi
@@ -747,7 +747,7 @@ check_extra_readiness(){
           local output
           case "$file" in
             *.yaml)
-              output=$(oc diff -f "$file" 2>&1)
+              output=$($OC diff -f "$file" 2>&1)
               if [[ $? -ne 0 ]]; then
                 warn "$(basename "$file")" "Failed"
               else
@@ -756,7 +756,7 @@ check_extra_readiness(){
               echo "$output"
               ;;
             *.yaml.j2)
-              output=$(jinja2 "$file" "$config_file" | oc diff -f - 2>&1)
+              output=$(jinja2 "$file" "$config_file" | $OC diff -f - 2>&1)
               if [[ $? -ne 0 ]]; then
                 warn "$(basename "$file")" "Failed"
               else
@@ -813,12 +813,12 @@ debug "Target cluster: $cluster_name"
 debug "OpenShift version: ${ocp_release:-unknown}"
 
 step "Gathering cluster information"
-if ! oc get clusterversion >/dev/null 2>&1; then
+if ! $OC get clusterversion >/dev/null 2>&1; then
   error "Cluster is not reachable" "Check KUBECONFIG and connectivity"
   printf "${RED}KUBECONFIG: ${YELLOW}%s${RESET}\n" "${KUBECONFIG:-not set}"
   exit 1
 fi
-oc get clusterversion
+$OC get clusterversion
 
 check_node
 check_cluster_operators

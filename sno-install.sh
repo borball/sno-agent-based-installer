@@ -446,7 +446,7 @@ server_set_boot_once_from_cd() {
 monitor_installation_status(){
   step "Monitoring installation status"
   
-  export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+  OC='oc --kubeconfig='$cluster_workspace'/auth/kubeconfig'
 
   if [ -f $cluster_workspace/.openshift_install_state.json ]; then
     info "Installation state file" "exists"
@@ -567,14 +567,14 @@ approve_pending_install_plans(){
   step "Checking for pending InstallPlans"
   for i in {1..5}; do
     info "  └─ Checking attempt" "$i/5"
-    oc get installplan -A
+    $OC get installplan -A
     while read -s IP; do
       info "    └─ Approving InstallPlan" "$IP"
-      oc patch $IP --type merge --patch '{"spec":{"approved":true}}'
-    done < <(oc get sub -A -o json |
+      $OC patch $IP --type merge --patch '{"spec":{"approved":true}}'
+    done < <($OC get sub -A -o json |
       jq -r '.items[]|select( (.spec.startingCSV != null) and (.status.installedCSV == null) and (.status.installPlanRef != null) )|.status.installPlanRef|"-n \(.namespace) installplan \(.name)"')
 
-    if [[ 0 ==  $(oc get sub -A -o json|jq '[.items[]|select(.status.installedCSV==null)]|length') ]]; then
+    if [[ 0 ==  $($OC get sub -A -o json|jq '[.items[]|select(.status.installedCSV==null)]|length') ]]; then
       info "  └─ All subscriptions installed" "✓"
       break
     fi
@@ -586,7 +586,7 @@ approve_pending_install_plans(){
 
   separator
   info "📋 Operator versions installed" "summary"
-  oc get csv -A -o custom-columns="0AME:.metadata.name,DISPLAY:.spec.displayName,VERSION:.spec.version" |sort -f|uniq|sed 's/0AME/NAME/'
+  $OC get csv -A -o custom-columns="0AME:.metadata.name,DISPLAY:.spec.displayName,VERSION:.spec.version" |sort -f|uniq|sed 's/0AME/NAME/'
 }
 
 wait_for_stable_cluster(){
@@ -608,7 +608,7 @@ wait_for_stable_cluster(){
        echo -n .
        skipped="$line"
      fi
-  done < <(oc adm wait-for-stable-cluster --minimum-stable-period=1m  2>&1)
+  done < <($OC adm wait-for-stable-cluster --minimum-stable-period=1m  2>&1)
   set -e
   if [[ ! -z "$skipped" ]]; then
     echo
@@ -635,7 +635,7 @@ post_install(){
   
   # Set KUBECONFIG for any post-installation operations
   if [ -f "$cluster_workspace/auth/kubeconfig" ]; then
-    export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+    OC='oc --kubeconfig='$cluster_workspace'/auth/kubeconfig'
     info "KUBECONFIG set" "$cluster_workspace/auth/kubeconfig"
   else
     warn "Kubeconfig not found" "Post-install operations may be limited"
@@ -655,7 +655,7 @@ else
   redfish_install
 fi
 
-export KUBECONFIG=$cluster_workspace/auth/kubeconfig
+OC='oc --kubeconfig='$cluster_workspace'/auth/kubeconfig'
 
 wait_for_stable_cluster
 approve_pending_install_plans
