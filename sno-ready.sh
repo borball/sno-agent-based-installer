@@ -765,7 +765,7 @@ check_extra_readiness(){
               echo "$output"
               ;;
             *.sh)
-              output=$(. "$file" 2>&1)
+              output=$(. "$file" "$config_file" "$cluster_workspace/auth/kubeconfig" 2>&1)
               if [[ $? -ne 0 ]]; then
                 warn "$(basename "$file")" "Failed"
               else
