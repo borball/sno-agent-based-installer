@@ -225,6 +225,10 @@ else
   cat $cluster_profile_file | envsubst > $cluster_profile_file_temp
 fi
 
+if [ $(cat $config_file_temp |grep -E 'KUBECONFIG' |wc -l) -gt 0 ]; then
+  sed "s/KUBECONFIG/${cluster_workspace}\/auth\/kubeconfig/g" $config_file_temp > $config_file_temp
+fi
+
 yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
 info "Configuration resolved" "$config_file"
 info "" "Will be used by other sno-* scripts"

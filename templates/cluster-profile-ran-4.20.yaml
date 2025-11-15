@@ -177,7 +177,7 @@ operators:
       - profile: wipe-disks
     readiness:
       - name: lvmcluster shall be ready
-        variable: "oc get lvmclusters.lvm.topolvm.io -n openshift-storage singlenode -o jsonpath='{.status.state}'"
+        variable: "oc --kubeconfig=KUBECONFIG get lvmclusters.lvm.topolvm.io -n openshift-storage singlenode -o jsonpath='{.status.state}'"
         expected: "Ready"
 
 
