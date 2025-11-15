@@ -213,20 +213,16 @@ config_file="$cluster_workspace/config-resolved.yaml"
 config_file_temp=$cluster_workspace/config-resolved.yaml.tmp
 cluster_profile_file_temp=$cluster_workspace/cluster-profile-resolved.yaml.tmp
 
-if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $config_file_input| envsubst > $config_file_temp
+if [ $(cat $config_file_input |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE|KUBECONFIG' |wc -l) -gt 0 ]; then
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g;s/KUBECONFIG/${cluster_workspace}\/auth\/kubeconfig/g" $config_file_input| envsubst > $config_file_temp
 else
   cat $config_file_input| envsubst > $config_file_temp
 fi
 
-if [ $(cat $cluster_profile_file |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE' |wc -l) -gt 0 ]; then
-  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g" $cluster_profile_file | envsubst> $cluster_profile_file_temp
+if [ $(cat $cluster_profile_file |grep -E 'OCP_Y_RELEASE|OCP_Z_RELEASE|KUBECONFIG' |wc -l) -gt 0 ]; then
+  sed "s/OCP_Y_RELEASE/$ocp_y_release/g;s/OCP_Z_RELEASE/$ocp_release_version/g;s/KUBECONFIG/${cluster_workspace}\/auth\/kubeconfig/g" $cluster_profile_file | envsubst> $cluster_profile_file_temp
 else
   cat $cluster_profile_file | envsubst > $cluster_profile_file_temp
-fi
-
-if [ $(cat $config_file_temp |grep -E 'KUBECONFIG' |wc -l) -gt 0 ]; then
-  sed "s/KUBECONFIG/${cluster_workspace}\/auth\/kubeconfig/g" $config_file_temp > $config_file_temp
 fi
 
 yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
