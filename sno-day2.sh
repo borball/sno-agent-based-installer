@@ -411,7 +411,7 @@ cluster_tunings(){
         *.sh)
           if safe_copy "$file" "$tunings_workspace/$filename" "Shell script ($filename)"; then
             info "  └─ $filename" "copied & executing"
-            if . "$file"; then
+            if . "$file" "$config_file" "$cluster_workspace/auth/kubeconfig" 2>&1; then
               debug "  ✓ Successfully executed: $filename"
             else
               warn "  ✗ Failed to execute: $filename" "ERROR"
@@ -938,7 +938,7 @@ operator_configs(){
             local script_name=$(basename "$f")
             info "    └─ executing $script_name"
             local output
-            if output=$("$f" "$config_file" 2>&1); then
+            if output=$("$f" "$config_file" "$cluster_workspace/auth/kubeconfig" 2>&1); then
               debug "  ✓ Successfully executed: $script_name"
               debug "    Output: $output"
             else
@@ -1158,7 +1158,7 @@ extra_manifests(){
         *.sh)
           info "  ├─ $filename" "executing"
           local output
-          if output=$(. "$file" 2>&1); then
+          if output=$(. "$file" "$config_file" "$cluster_workspace/auth/kubeconfig" 2>&1); then
             debug "  ✓ Successfully executed: $filename"
             debug "    Output: $output"
             ((dir_processed++))
