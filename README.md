@@ -265,7 +265,7 @@ Generate a bootable ISO image with pre-configured operators and tunings:
 
 **Available Options:**
 - `config file`: Path to configuration file (optional, defaults to `config.yaml`)
-- `ocp version`: OpenShift version or channel (optional, defaults to `stable-4.14`)
+- `ocp version`: OpenShift version or channel (optional, defaults to `stable-4.18`)
 
 ### Automated Deployment
 
@@ -327,9 +327,6 @@ host:
   mac: b4:96:91:b4:9d:f0      # MAC address
   disk: /dev/nvme0n1          # Installation disk
 
-cpu:
-  isolated: 2-31,34-63        # Isolated CPUs for workloads
-  reserved: 0-1,32-33         # Reserved CPUs for system
 ```
 
 ### Network Configuration
@@ -560,7 +557,6 @@ host:
 node_tunings:
   performance_profile:
     enabled: true
-    profile: ran-aarch64          # Use ARM64-specific performance profile
     kernelPageSize: 64k           # ARM64-specific page size
 ```
 
