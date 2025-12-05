@@ -194,12 +194,12 @@ catalog_sources:
   customs: 
     - name: prega
       display: Red Hat Operators OCP_Y_RELEASE PreGA
-      image: quay.io/prega/prega-operator-index:v4.20
+      image: quay.io/prega/prega-operator-index:v4.21
       publisher: Red Hat
       provide: redhat-operators
     - name: certified-operators
       display: Certified Operators
-      image: registry.redhat.io/redhat/certified-operator-index:v4.19
+      image: registry.redhat.io/redhat/certified-operator-index:v4.20
       publisher: Red Hat
 container_registry:
   icsp:
