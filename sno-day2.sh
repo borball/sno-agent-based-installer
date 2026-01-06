@@ -297,9 +297,14 @@ cluster_info(){
 
   missing_csv=$($OC get sub -A -o json | jq -cMr '.items[]|select(.status.installedCSV == null) |.metadata|{namespace: .namespace, name: .name}')
   if [[ -n "${missing_csv}" ]]; then
-    echo ""
-    error "Uninstalled subscriptions found" "Manual intervention required"
-    echo "${missing_csv}"
+    if [[ $(yq '.update_control.ignore_missing_csv // "false"' $config_file) != "true" ]]; then
+      error "Uninstalled subscriptions found" "Manual intervention required"
+      echo "Subscriptions missing CSV: ${missing_csv}"
+      exit 1
+    else
+      warn "Uninstalled subscriptions found" "Ignoring due to ignore_missing_csv=true"
+      echo "Subscriptions missing CSV: ${missing_csv}"
+    fi
   fi
 
   i=1
@@ -310,15 +315,20 @@ cluster_info(){
       info "Waiting [$i/5] for another 30 seconds" "..."
       sleep 30
     else
-      error "CSV installation timeout" "Manual intervention required"
-      if [[ $(yq '.update_control.ignore_missing_csv // "false"' $config_file) != "true" ]]; then
-        #don't block operation if there are uninstalled subscriptions
-        exit 1
-      fi
-      return
+      break
     fi
     ((i=i+1))
   done
+
+  # Block if there are non-succeeded CSVs (unless ignore_missing_csv is true)
+  if [[ -n "$($OC get csv --no-headers -A | grep -v 'Succeeded')" ]]; then
+    if [[ $(yq '.update_control.ignore_missing_csv // "false"' $config_file) != "true" ]]; then
+      error "Not all CSVs are in Succeeded state" "Manual intervention required"
+      exit 1
+    else
+      warn "Not all CSVs are in Succeeded state" "Ignoring due to ignore_missing_csv=true"
+    fi
+  fi
 }
 
 ocp_release=$($OC version --client=false -o json|jq -r '.openshiftVersion')
@@ -1001,24 +1011,14 @@ install_plan_approval(){
     info "${prefix} $name subscription installPlanApproval" "$1"
     
     local output
-    # Try operators.coreos.com API group first (most common for OpenShift subscriptions)
     if output=$($OC patch subscription.operators.coreos.com -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
-      debug "  ✓ Successfully updated subscription: $name in namespace: $ns (operators.coreos.com)"
+      debug "  ✓ Successfully updated subscription: $name in namespace: $ns"
       debug "    Output: $output"
       ((processed_count++))
     else
-      debug "    Failed with operators.coreos.com, trying apps.open-cluster-management.io: $output"
-      # Fallback to open-cluster-management API group
-      if output=$($OC patch subscription.apps.open-cluster-management.io -n $ns $name --type='json' -p="[{\"op\": \"replace\", \"path\": \"/spec/installPlanApproval\", \"value\":\"$1\"}]" 2>&1); then
-        debug "  ✓ Successfully updated subscription: $name in namespace: $ns (apps.open-cluster-management.io)"
-        debug "    Output: $output"
-        ((processed_count++))
-      else
-        warn "  ✗ Failed to update subscription: $name in namespace: $ns" "ERROR"
-        debug "    Error (operators.coreos.com): Failed with operators.coreos.com API group"
-        debug "    Error (apps.open-cluster-management.io): $output"
-        ((failed_count++))
-      fi
+      warn "  ✗ Failed to update subscription: $name in namespace: $ns" "ERROR"
+      debug "    Error: $output"
+      ((failed_count++))
     fi
   done
   
