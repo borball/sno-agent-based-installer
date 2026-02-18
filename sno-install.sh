@@ -313,6 +313,10 @@ virtual_media_insert(){
   fi
   
   check_rest_result "$action" "$rest_result" "$rest_response"
+  if [[ -z "$rest_result" ]] || [[ $rest_result -ge 300 ]]; then
+    error "Insert Virtual Media failed" "HTTP $rest_result - cannot mount image"
+    exit -1
+  fi
 }
 
 server_power_off() {
