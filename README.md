@@ -642,10 +642,12 @@ operators:
       - profile: a             # Uses templates/day1/example/a/
       - profile: b             # Uses templates/day1/example/b/
     
-    # Day-2 configurations with profiles  
+    # Day-2 configurations with profiles
+    # Profile can be a name (subfolder under templates/day2/example/) or a path (file or directory)
     day2:
       - profile: a             # Uses templates/day2/example/a/
       - profile: b             # Uses templates/day2/example/b/
+      # - profile: ${HOME}/day2/ptp/c   # Path: if file, that file is applied; if directory, files under it
 
   local-storage:
     enabled: false
@@ -673,10 +675,11 @@ operators:
 ```
 
 **Profile System:**
-- If no profiles specified: uses `default/` directory
-- Profiles allow multiple configurations per operator
+- **Day2 not specified:** applies files under `templates/day2/<operator>/` and `templates/day2/<operator>/default/`
+- **Profile as name:** applies files under `templates/day2/<operator>/<profile>/` (e.g. `a`, `b`)
+- **Profile as path:** path is expanded (e.g. `${HOME}`). If it is a **file**, only that file is applied; if a **directory**, all supported files under it are applied
 - Supports `.sh`, `.yaml`, and `.yaml.j2` files
-- Shell scripts execute before other files
+- **Execution order:** `.sh` scripts run first, then `.yaml` and `.yaml.j2` are applied
 
 ### Profile Templates
 

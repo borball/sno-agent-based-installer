@@ -25,11 +25,18 @@
   - New `tuned-performance-patch-420.yaml.j2` for 4.20-specific tunings
   - Improvements to performance profiles and hardware tuning
 
+- **📁 Day2 operator profiles (path and execution order)**:
+  - Day2 `profile` can be a **path** (e.g. `${HOME}/day2/ptp/c`): if a file, only that file is applied; if a directory, files under it are applied
+  - Execution order: `*.sh` runs first, then `*.yaml` and `*.yaml.j2`
+  - Cluster profile comments and README updated to document the behavior
+
 - **🐛 Bug Fixes**:
   - Fixed operator subscription templates
   - Resolved virtual_media and iDRAC12 issues
   - Fixed shell script issues in sno-ready.sh
   - Added null checks in sno-day2.sh
+  - Fixed typo `static_tempalte` → `static_template` in tuned_profiles (sno-day2.sh)
+  - Fixed `OCP_Y_VERSION` export using wrong variable (`ocp_y_release` → `ocp_y_version`) in sno-day2.sh
 
 ## 2025-09 and 2025-10 (September-October)
 - **📋 Configuration Management**:

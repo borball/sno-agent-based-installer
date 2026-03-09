@@ -338,7 +338,7 @@ if [ -z "$ocp_release" ]; then
 fi
 
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
-export OCP_Y_VERSION=$ocp_y_release
+export OCP_Y_VERSION=$ocp_y_version
 export OCP_Z_VERSION=$ocp_release
 
 pause_mcp_update(){
@@ -644,7 +644,7 @@ tuned_profiles(){
     fi
     local static_template=""
     if [[ -f "$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml" ]]; then
-      static_tempalte="$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml"
+      static_template="$templates/day2/tuned/tuned-$profile-$ocp_y_version.yaml"
     elif [[ -f "$templates/day2/tuned/tuned-$profile.yaml" ]]; then
       static_template="$templates/day2/tuned/tuned-$profile.yaml"
     fi
@@ -811,19 +811,46 @@ operator_configs(){
         profile_names=$(yq ".operators.$key.day2[].profile" "$config_file" 2>/dev/null)
         manifest_folders=""
         
+        local profile_index=0
         for profile_name in $profile_names; do
           debug "Processing profile: $profile_name for operator: $key"
-          local profile_source="$source_dir/$profile_name"
-          local profile_workspace="$operator_workspace/$profile_name"
-          
-          if [[ -d "$profile_source" ]]; then
-            if prepare_workspace "$profile_workspace" "Profile ($profile_name)"; then
-              safe_copy "$profile_source/*" "$profile_workspace" "Profile files for $key/$profile_name"
-              manifest_folders="$manifest_folders $profile_source"
+          local resolved_profile
+          resolved_profile=$(eval echo "$profile_name")
+          local profile_source
+          local profile_workspace
+          if [[ "$resolved_profile" == /* ]] || [[ "$resolved_profile" == */* ]]; then
+            # Profile is a path (absolute or relative with /): use as-is
+            if [[ -d "$resolved_profile" ]]; then
+              profile_source="$resolved_profile"
+              profile_workspace="$operator_workspace/custom-$(basename "$resolved_profile")"
+              if prepare_workspace "$profile_workspace" "Profile ($profile_name)"; then
+                safe_copy "$profile_source/*" "$profile_workspace" "Profile files for $key/$profile_name"
+                manifest_folders="$manifest_folders $profile_workspace"
+              fi
+            elif [[ -f "$resolved_profile" ]]; then
+              # Single file: copy and apply only that file
+              profile_workspace="$operator_workspace/custom-$(basename "$resolved_profile")"
+              if prepare_workspace "$profile_workspace" "Profile ($profile_name)"; then
+                safe_copy "$resolved_profile" "$profile_workspace" "Profile file for $key/$profile_name"
+                manifest_folders="$manifest_folders $profile_workspace"
+              fi
+            else
+              warn "Profile path not found: $resolved_profile" "skipping"
             fi
           else
-            warn "Profile directory not found: $profile_source" "skipping"
+            # Profile is a name: subfolder under templates/day2/$key
+            profile_source="$source_dir/$profile_name"
+            profile_workspace="$operator_workspace/$profile_name"
+            if [[ -d "$profile_source" ]]; then
+              if prepare_workspace "$profile_workspace" "Profile ($profile_name)"; then
+                safe_copy "$profile_source/*" "$profile_workspace" "Profile files for $key/$profile_name"
+                manifest_folders="$manifest_folders $profile_source"
+              fi
+            else
+              warn "Profile directory not found: $profile_source" "skipping"
+            fi
           fi
+          ((profile_index++))
         done
         
         # Add base directory back to manifest folders
@@ -868,12 +895,29 @@ operator_configs(){
            debug "Using profile workspace: $workspace_folder"
          fi
          
-         if [[ ! -d "$workspace_folder" ]]; then
-           error "Workspace folder not found: $workspace_folder" "ERROR"
-           continue
-         fi
+        if [[ ! -d "$workspace_folder" ]]; then
+          error "Workspace folder not found: $workspace_folder" "ERROR"
+          continue
+        fi
 
-        # if kustomization.yaml exists, then apply it
+        # Execute shell scripts first (per spec: *.sh before *.yaml / *.yaml.j2)
+        for f in "$workspace_folder"/*.sh; do
+          if [[ -f "$f" ]]; then
+            local script_name=$(basename "$f")
+            info "    └─ executing $script_name"
+            local output
+            if output=$("$f" "$config_file" "$cluster_workspace/auth/kubeconfig" 2>&1); then
+              debug "  ✓ Successfully executed: $script_name"
+              debug "    Output: $output"
+            else
+              warn "  ✗ Failed to execute: $script_name" "ERROR"
+              debug "    Error: $output"
+              operator_failed=true
+            fi
+          fi
+        done
+
+        # Then apply YAML / Jinja2 (after shell scripts)
         if [[ -f "$workspace_folder/kustomization.yaml" ]]; then
           info "    └─ applying kustomization.yaml"
 
@@ -941,23 +985,6 @@ operator_configs(){
             fi
           done
         fi
-
-        # Execute shell scripts
-        for f in "$workspace_folder"/*.sh; do
-          if [[ -f "$f" ]]; then
-            local script_name=$(basename "$f")
-            info "    └─ executing $script_name"
-            local output
-            if output=$("$f" "$config_file" "$cluster_workspace/auth/kubeconfig" 2>&1); then
-              debug "  ✓ Successfully executed: $script_name"
-              debug "    Output: $output"
-            else
-              warn "  ✗ Failed to execute: $script_name" "ERROR"
-              debug "    Error: $output"
-              operator_failed=true
-            fi
-          fi
-        done
       done
       
       if $operator_failed; then

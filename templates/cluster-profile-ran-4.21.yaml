@@ -68,17 +68,24 @@ operators:
   #  # if day2 specified,
   #  #   files under templates/day2/example/ directory will be applied
   #  #   for each profile in day2, files under templates/day2/example/$profile will be applied
+  #  # if day2 specified with profile,
+  #  #   if $profile is a name, files under templates/day2/example/$profile will be applied
+  #  #   if $profile is a path:
+  #  #     if $profile is a file, the file will be applied
+  #  #     if $profile is a directory, files under $profile will be applied
   #  # for the case below:
   #  #   files under templates/day2/example/ will be applied
-  #  #   files under templates/day2/example/a will be applied
-  #  #   files under templates/day2/example/b will be applied
+  #  #   files under templates/day2/example/a will be applied for profile a
+  #  #   files under templates/day2/example/b will be applied for profile b
+  #  #   the file or files under ${HOME}/day2/ptp/c will be applied (single file or directory)
   #  # supported file types:
   #  #   *.sh (executed before other files)
-  #  #   *.yaml
-  #  #   *.yaml.j2
+  #  #   *.yaml (executed after other files)
+  #  #   *.yaml.j2 (executed after other files)
   #  day2:
   #    - profile: a
   #    - profile: b
+  #    - profile: ${HOME}/day2/ptp/c (path to a file or directory)
   ###############################################################################################
 
   local-storage:
