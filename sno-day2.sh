@@ -331,10 +331,18 @@ cluster_info(){
   fi
 }
 
-ocp_release=$($OC version --client=false -o json|jq -r '.openshiftVersion')
+for i in {1..20}; do
+  ocp_release=$($OC version --request-timeout 5s --client=false -o json|jq -r '.openshiftVersion // ""')
+  if [[ ! -z "$ocp_release"  ]]; then
+     break
+  fi
+  warn "Obtain openshift version, retry ($i/20) in 15 seconds..." "Failed"
+  sleep 15
+done
+
 if [ -z "$ocp_release" ]; then
   error "Failed to get cluster version"
-  return 1
+  exit 1
 fi
 
 ocp_y_version=$(echo $ocp_release | cut -d. -f 1-2)
