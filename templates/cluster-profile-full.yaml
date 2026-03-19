@@ -86,6 +86,22 @@ host:
     enabled: false
     name: vlan58
     id: 58
+  #optional, add additional interfaces, by default those interfaces will be disabled
+  # additional_interfaces:
+  #   - name: eno8403np1
+  #     mac: c4:d6:d3:5e:34:3b
+  #     #optional, set the interface state: up|down|unknown
+  #     state: up
+  #     #optional, set the interface ipv4 configuration, if not present, the interface will be disabled
+  #     ipv4:
+  #       enabled: false
+  #       dhcp: false
+  #     #optional, set the interface ipv6 configuration
+  #     ipv6:
+  #       enabled: false
+  #       dhcp: false
+  #   - name: eno8403np2
+  #     mac: c4:d6:d3:5e:34:3c
   disk: /dev/nvme0n1
 
 container_storage:

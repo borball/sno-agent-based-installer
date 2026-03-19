@@ -106,6 +106,7 @@ sno-agent-based-installer/
 │   ├── sriov/                # SR-IOV Network Operator
 │   └── talm/                 # Topology Aware Lifecycle Manager
 ├── templates/                 # Configuration templates and profiles
+│   ├── agent-config.yaml.j2   # AgentConfig: rendezvous IP, NTP, host interfaces, NMState network
 │   ├── cluster-profile-*.yaml # Deployment profile templates
 │   ├── day1/                 # Day-1 (installation-time) configurations
 │   │   ├── catalogsource/    # Custom catalog sources
@@ -323,20 +324,28 @@ cluster:
 
 host:
   hostname: mysno.example.com  # Node hostname
-  interface: ens1f0            # Primary network interface
-  mac: b4:96:91:b4:9d:f0      # MAC address
+  interface: ens1f0            # Primary network interface (or bond name when bonding is enabled)
+  mac: b4:96:91:b4:9d:f0      # MAC address (see bonding section—required for bond NMState in generated AgentConfig)
   disk: /dev/nvme0n1          # Installation disk
 
 ```
 
 ### Network Configuration
 
+The ISO build merges your config into `templates/agent-config.yaml.j2`, which produces the **`AgentConfig`** embedded in the agent-based installer image. The sections below match what that template renders.
+
+#### Rendezvous IP, NTP, and host inventory
+
+- **rendezvousIP**: Set to `host.ipv4.ip` when `host.ipv4.enabled` is true; otherwise set to `host.ipv6.ip` (IPv6 must be enabled and provide an address suitable for the installer).
+- **additionalNTPSources**: When `cluster.ntps` is set, each entry is copied here.
+- **`hosts[].interfaces`** (discovery): If `host.bond.enabled` is true, one entry per bond **member** (`interface` + `mac`). Otherwise one entry for `host.interface` and `host.mac`. Any **`host.additional_interfaces`** entries are appended the same way (`name` + `mac`).
+
 #### IPv4 Configuration
 ```yaml
 host:
   ipv4:
     enabled: true
-    dhcp: false
+    dhcp: false                 # when true, static address block is omitted
     ip: 192.168.1.100
     dns: 
       - 192.168.1.1
@@ -350,7 +359,7 @@ host:
 host:
   ipv6:
     enabled: true
-    dhcp: false
+    dhcp: false                 # when true, static address block is omitted
     ip: 2001:db8::100
     dns: 
       - 2001:db8::1
@@ -360,12 +369,65 @@ host:
 ```
 
 #### VLAN Configuration
+
+When **`host.vlan.enabled`** is true, the template creates an NMState VLAN interface named **`host.vlan.name`** on parent **`host.interface`** with id **`host.vlan.id`**. IPv4/IPv6 addresses (or DHCP) are applied on the **VLAN** interface, not on the raw parent. Default routes use **`next-hop-interface: <host.vlan.name>`**.
+
+With VLAN **disabled**, a single Ethernet interface **`host.interface`** is brought up with addresses and routes; default routes use **`next-hop-interface: <host.interface>`**.
+
 ```yaml
 host:
   vlan:
     enabled: true
-    name: ens1f0.100
+    name: ens1f0.100           # logical interface name in NMState / route next-hop
     id: 100
+```
+
+#### Bond configuration
+
+**`host.vlan.enabled` must be true** for bond NMState to be generated: the bond and its members are only rendered in the VLAN network branch of `agent-config.yaml.j2`. Without VLAN, the template falls back to a single Ethernet stanza for **`host.interface`**, which is not valid for a bond-only layout—use VLAN on the bond (as in `samples/config-bond.yaml`).
+
+When **`host.bond.enabled`** is true, **`host.interface`** is the **bond** interface name (for example `bond0`). The template emits NMState **`type: bond`** with **`link-aggregation.mode`** from **`host.bond.mode`**, optional **`miimon`** from **`host.bond.miimon`**, and **`mac-address: host.mac`** on the bond. Each **member** can optionally set layer-2 **`ethernet`** (`auto_negotiation`, `duplex`, `speed`), which is rendered under NMState **`ethernet`** for that member interface.
+
+See `samples/config-bond.yaml` and `templates/cluster-profile-full.yaml` for full examples.
+
+```yaml
+host:
+  interface: bond0
+  mac: 02:00:00:ab:cd:ef      # used on the bond in generated networkConfig
+  bond:
+    enabled: true
+    mode: 802.3ad
+    miimon: 100               # optional
+    members:
+      - interface: ens1f0
+        mac: b4:96:91:b4:9d:f0
+        # optional per-member NMState Ethernet overrides:
+        # ethernet:
+        #   auto_negotiation: true
+        #   duplex: full
+        #   speed: 10000
+      - interface: ens2f0
+        mac: b4:96:91:b4:9e:f0
+```
+
+Bonding combines with VLAN as follows: the VLAN’s **`base-iface`** is still **`host.interface`** (the bond name). Slaves are defined L2-only (no cluster addresses on member ports); addresses and default routes remain on the VLAN interface when VLAN is enabled.
+
+#### Additional interfaces
+
+**`host.additional_interfaces`** lists extra NICs to include in **`hosts[].interfaces`** and in NMState. Each item has **`name`** and **`mac`**. Optional **`state`** (`up` / `down` / `unknown`) and optional **`ipv4`** / **`ipv6`** blocks with **`enabled`** (and DHCP flags in samples) control whether those stacks are enabled on that port in NMState; if omitted, IPv4 and IPv6 are disabled on that interface in the generated config.
+
+See `samples/config-full.yaml` for an example.
+
+```yaml
+host:
+  additional_interfaces:
+    - name: eno8403np1
+      mac: c4:d6:d3:5e:34:3b
+      state: up
+      ipv4:
+        enabled: false
+      ipv6:
+        enabled: false
 ```
 
 ### Configuration Structure

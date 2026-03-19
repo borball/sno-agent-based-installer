@@ -1,5 +1,14 @@
 # 2.x Change logs
 
+## 2026-03 (March)
+- **📖 AgentConfig template documentation (`agent-config.yaml.j2` + README)**:
+  - README **Configuration Reference** now describes how the ISO build renders **AgentConfig**: `rendezvousIP` (IPv4 when enabled, else IPv6), `cluster.ntps` → `additionalNTPSources`, and how **`hosts[].interfaces`** are built from the primary NIC, **bond members**, or **`host.additional_interfaces`**
+  - Documented **DHCP** flags for IPv4/IPv6 (static addresses omitted when DHCP is enabled)
+  - **VLAN**: L3 addresses and default routes target **`host.vlan.name`**; **`host.interface`** is the VLAN parent (including bond name when bonding)
+  - **Bond**: NMState bond and slaves are emitted only when **`host.vlan.enabled`** is true; optional **`miimon`**, **`mode`**, and per-member **`ethernet`** (`auto_negotiation`, `duplex`, `speed`); bond **`mac-address`** from **`host.mac`**
+  - **Additional interfaces**: optional **`state`**, **`ipv4.enabled`**, **`ipv6.enabled`** in generated NMState
+  - Directory structure in README lists **`templates/agent-config.yaml.j2`**
+
 ## 2025-11 (November)
 - **🚀 OpenShift 4.21 Support**:
   - Added `cluster-profile-ran-4.21.yaml` template with latest optimizations

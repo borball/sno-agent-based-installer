@@ -236,6 +236,25 @@ host:
     gateway: 192.168.14.1
     prefix: 27
     machine_network_cidr: 192.168.14.0/27
+  additional_interfaces:
+    - name: eno8403np1
+      mac: c4:d6:d3:5e:34:3b
+      state: up
+      ipv4:
+        enabled: false
+        dhcp: false
+      ipv6:
+        enabled: false
+        dhcp: false
+    - name: eno8403np2
+      mac: c4:d6:d3:5e:34:3c
+      state: up
+      ipv4:
+        enabled: false
+        dhcp: false
+      ipv6:
+        enabled: false
+        dhcp: false
   disk: /dev/disk/by-path/pci-0000:c2:00.0-nvme-1
 
 container_storage:
