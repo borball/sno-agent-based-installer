@@ -191,6 +191,29 @@ hosts:
           ipv6:
             enabled: false
           {% endif %}
+        {% if host.additional_interfaces is defined %}
+        {%- for interface in host.additional_interfaces %}
+        - name: {{ interface.name }}
+          type: ethernet
+          identifier: mac-address
+          mac-address: {{ interface.mac }}
+          {%- if interface.state is defined %}
+          state: {{ interface.state }}
+          {%- endif %}
+          ipv4:
+            {%- if interface.ipv4 is defined %}
+            enabled: {{ interface.ipv4.enabled | default(false) |lower }}
+            {%- else %}
+            enabled: false
+            {%- endif %}
+          ipv6:
+            {%- if interface.ipv6 is defined %}
+            enabled: {{ interface.ipv6.enabled | default(false) |lower }}
+            {%- else %}
+            enabled: false
+            {%- endif %}
+        {%- endfor %}
+        {%- endif %}
       dns-resolver:
         config:
           server:

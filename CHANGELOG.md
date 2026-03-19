@@ -8,6 +8,7 @@
   - **Bond**: NMState bond and slaves are emitted only when **`host.vlan.enabled`** is true; optional **`miimon`**, **`mode`**, and per-member **`ethernet`** (`auto_negotiation`, `duplex`, `speed`); bond **`mac-address`** from **`host.mac`**
   - **Additional interfaces**: optional **`state`**, **`ipv4.enabled`**, **`ipv6.enabled`** in generated NMState
   - Directory structure in README lists **`templates/agent-config.yaml.j2`**
+  - **`agent-config.yaml.j2`**: emit **`host.additional_interfaces`** NMState stanzas in the **non-VLAN** `networkConfig` branch as well (previously only rendered when **`host.vlan.enabled`** was true, while discovery **`hosts[].interfaces`** always listed them)
 
 ## 2025-11 (November)
 - **🚀 OpenShift 4.21 Support**:
