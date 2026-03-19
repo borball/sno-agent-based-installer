@@ -9,6 +9,8 @@
   - **Additional interfaces**: optional **`state`**, **`ipv4.enabled`**, **`ipv6.enabled`** in generated NMState
   - Directory structure in README lists **`templates/agent-config.yaml.j2`**
   - **`agent-config.yaml.j2`**: emit **`host.additional_interfaces`** NMState stanzas in the **non-VLAN** `networkConfig` branch as well (previously only rendered when **`host.vlan.enabled`** was true, while discovery **`hosts[].interfaces`** always listed them)
+  - **`agent-config.yaml.j2`**: **`additional_interfaces`** **`ipv4`** / **`ipv6`** support **`dhcp`**, static **`ip`** / **`prefix`** (same rules as the primary **`host.interface`**); README, `config.yaml.sample`, `samples/config-additional-interfaces.yaml` (new), `samples/config-ipv4.yaml`, `samples/config-full.yaml`, and `cluster-profile-full.yaml` comments updated
+  - **`agent-config.yaml.j2`**: emit **`state:`** on **`additional_interfaces`** only when **`state`** is a non-empty value (omit for missing / null / whitespace); README and **`cluster-profile-full.yaml`** comments updated
 
 ## 2025-11 (November)
 - **🚀 OpenShift 4.21 Support**:

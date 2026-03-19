@@ -414,9 +414,9 @@ Bonding combines with VLAN as follows: the VLAN’s **`base-iface`** is still **
 
 #### Additional interfaces
 
-**`host.additional_interfaces`** lists extra NICs to include in **`hosts[].interfaces`** and in NMState. Each item has **`name`** and **`mac`**. Optional **`state`** (`up` / `down` / `unknown`) and optional **`ipv4`** / **`ipv6`** blocks with **`enabled`** (and DHCP flags in samples) control whether those stacks are enabled on that port in NMState; if omitted, IPv4 and IPv6 are disabled on that interface in the generated config.
+**`host.additional_interfaces`** lists extra NICs to include in **`hosts[].interfaces`** and in NMState. Each item has **`name`** and **`mac`**. Optional **`state`** (`up` / `down` / `unknown`); omit the key (or use null / empty string) to omit **`state:`** from NMState for that NIC. Per-stack **`ipv4`** / **`ipv6`** blocks support the same shape as the primary interface: **`enabled`**, **`dhcp`** (omit static **`address`** when true), and for static addressing **`ip`** plus **`prefix`** (rendered as **`prefix-length`** in NMState). If a stack is omitted or **`enabled`** is false, that stack is disabled in the generated interface stanza.
 
-See `samples/config-full.yaml` for an example.
+See `samples/config-additional-interfaces.yaml` (minimal) and `samples/config-full.yaml` (full stack).
 
 ```yaml
 host:
@@ -425,9 +425,13 @@ host:
       mac: c4:d6:d3:5e:34:3b
       state: up
       ipv4:
-        enabled: false
+        enabled: true
+        dhcp: false
+        ip: 192.168.14.31
+        prefix: 27
       ipv6:
         enabled: false
+        dhcp: false
 ```
 
 ### Configuration Structure
@@ -795,6 +799,7 @@ The repository includes various sample configurations for different scenarios:
 | Configuration | Description | Use Case |
 |---------------|-------------|----------|
 | `config-full.yaml` | Complete configuration with all options | Production deployments |
+| `config-additional-interfaces.yaml` | Primary NIC + extra interfaces (`host.additional_interfaces` with static IPv4/IPv6 or DHCP) | Multi-homed / L3 on secondary NICs |
 | `config-ipv4.yaml` | Basic IPv4 networking | Standard deployments |
 | `config-ipv6.yaml` | IPv6 networking | IPv6-only environments |
 | `config-dual-stack.yaml` | IPv4 + IPv6 dual-stack | Dual-stack networking |

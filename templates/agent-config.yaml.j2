@@ -116,21 +116,39 @@ hosts:
           type: ethernet
           identifier: mac-address
           mac-address: {{ interface.mac }}
-          {%- if interface.state is defined %}
+          {%- if interface.state is defined and interface.state is not none and interface.state | string | trim | length > 0 %}
           state: {{ interface.state }}
           {%- endif %}
+          {% if interface.ipv4 is defined and interface.ipv4.enabled -%}
           ipv4:
-            {%- if interface.ipv4 is defined %}
-            enabled: {{ interface.ipv4.enabled | default(false) |lower }}
-            {%- else %}
+            enabled: true
+            {% if not interface.ipv4.dhcp | default(false) -%}
+            {% if interface.ipv4.ip is defined -%}
+            address:
+              - ip: {{ interface.ipv4.ip }}
+                prefix-length: {{ interface.ipv4.prefix }}
+            {% endif -%}
+            {% endif -%}
+            dhcp: {{ interface.ipv4.dhcp|default('false')|lower }}
+          {% else %}
+          ipv4:
             enabled: false
-            {%- endif %}
+          {% endif -%}
+          {% if interface.ipv6 is defined and interface.ipv6.enabled -%}
           ipv6:
-            {%- if interface.ipv6 is defined %}
-            enabled: {{ interface.ipv6.enabled | default(false) |lower }}
-            {%- else %}
+            enabled: true
+            {% if not interface.ipv6.dhcp | default(false) -%}
+            {% if interface.ipv6.ip is defined -%}
+            address:
+              - ip: {{ interface.ipv6.ip }}
+                prefix-length: {{ interface.ipv6.prefix }}
+            {% endif -%}
+            {% endif -%}
+            dhcp: {{ interface.ipv6.dhcp|default('false')|lower }}
+          {% else %}
+          ipv6:
             enabled: false
-            {%- endif %}
+          {% endif %}
         {%- endfor %}
         {%- endif %}
       dns-resolver:
@@ -197,21 +215,39 @@ hosts:
           type: ethernet
           identifier: mac-address
           mac-address: {{ interface.mac }}
-          {%- if interface.state is defined %}
+          {%- if interface.state is defined and interface.state is not none and interface.state | string | trim | length > 0 %}
           state: {{ interface.state }}
           {%- endif %}
+          {% if interface.ipv4 is defined and interface.ipv4.enabled -%}
           ipv4:
-            {%- if interface.ipv4 is defined %}
-            enabled: {{ interface.ipv4.enabled | default(false) |lower }}
-            {%- else %}
+            enabled: true
+            {% if not interface.ipv4.dhcp | default(false) -%}
+            {% if interface.ipv4.ip is defined -%}
+            address:
+              - ip: {{ interface.ipv4.ip }}
+                prefix-length: {{ interface.ipv4.prefix }}
+            {% endif -%}
+            {% endif -%}
+            dhcp: {{ interface.ipv4.dhcp|default('false')|lower }}
+          {% else %}
+          ipv4:
             enabled: false
-            {%- endif %}
+          {% endif -%}
+          {% if interface.ipv6 is defined and interface.ipv6.enabled -%}
           ipv6:
-            {%- if interface.ipv6 is defined %}
-            enabled: {{ interface.ipv6.enabled | default(false) |lower }}
-            {%- else %}
+            enabled: true
+            {% if not interface.ipv6.dhcp | default(false) -%}
+            {% if interface.ipv6.ip is defined -%}
+            address:
+              - ip: {{ interface.ipv6.ip }}
+                prefix-length: {{ interface.ipv6.prefix }}
+            {% endif -%}
+            {% endif -%}
+            dhcp: {{ interface.ipv6.dhcp|default('false')|lower }}
+          {% else %}
+          ipv6:
             enabled: false
-            {%- endif %}
+          {% endif %}
         {%- endfor %}
         {%- endif %}
       dns-resolver:

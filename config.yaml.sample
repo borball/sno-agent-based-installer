@@ -15,6 +15,21 @@ host:
     gateway: 192.168.1.1
     prefix: 24
     machine_network_cidr: 192.168.1.0/24
+  # Optional extra NICs (AgentConfig discovery + NMState). Per NIC: name, mac, optional state,
+  # and ipv4/ipv6 blocks with enabled, dhcp, and for static: ip + prefix (same as primary stack).
+  # See samples/config-additional-interfaces.yaml and samples/config-full.yaml.
+  # additional_interfaces:
+  #   - name: ens2f0
+  #     mac: b4:96:91:b4:9d:f1
+  #     state: up
+  #     ipv4:
+  #       enabled: true
+  #       dhcp: false
+  #       ip: 192.168.2.10
+  #       prefix: 24
+  #     ipv6:
+  #       enabled: false
+  #       dhcp: false
   disk: /dev/disk/by-path/TO-BE-CHANGED
 
 container_storage:

@@ -86,20 +86,26 @@ host:
     enabled: false
     name: vlan58
     id: 58
-  #optional, add additional interfaces, by default those interfaces will be disabled
+  #optional, extra NICs: always appear in AgentConfig + NMState (L2). Optional state: up|down|unknown (omit key, null, or "" to leave state out of NMState; see agent-config.yaml.j2)
+  # If ipv4 or ipv6 block is omitted, the template still emits that stack with enabled: false (matches agent-config.yaml.j2)
   # additional_interfaces:
   #   - name: eno8403np1
   #     mac: c4:d6:d3:5e:34:3b
   #     #optional, set the interface state: up|down|unknown
   #     state: up
-  #     #optional, set the interface ipv4 configuration, if not present, the interface will be disabled
+  #     #optional per-stack ipv4; omit ipv4 entirely, or set enabled: false, to leave IPv4 off on this NIC
   #     ipv4:
-  #       enabled: false
+  #       enabled: true
   #       dhcp: false
-  #     #optional, set the interface ipv6 configuration
+  #       # when dhcp is false, set ip and prefix for static address (prefix -> prefix-length in NMState)
+  #       # ip: 192.168.14.31
+  #       # prefix: 27
+  #     #optional per-stack ipv6; omit or enabled: false for IPv6 off on this NIC
   #     ipv6:
   #       enabled: false
   #       dhcp: false
+  #       # ip: 2001:db8::31
+  #       # prefix: 64
   #   - name: eno8403np2
   #     mac: c4:d6:d3:5e:34:3c
   disk: /dev/nvme0n1

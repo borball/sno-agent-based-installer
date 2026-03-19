@@ -18,4 +18,5 @@ host:
     machine_network_cidr: 192.168.58.0/25
   disk: /dev/nvme0n1
 
+# Extra NICs in AgentConfig/NMState: samples/config-additional-interfaces.yaml, samples/config-full.yaml
 # omit for other settings, refer to templates/cluster-profile-full.yaml for all settings

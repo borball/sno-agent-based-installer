@@ -1,0 +1,48 @@
+# Minimal example: primary NIC + extra interfaces for AgentConfig / NMState.
+# Renders discovery entries under hosts[].interfaces and full L3 stanzas under networkConfig
+# (templates/agent-config.yaml.j2). Use DHCP or static ip+prefix per stack like host.ipv4/host.ipv6.
+
+cluster:
+  domain: example.com
+  name: mysno
+  profile: ran
+
+host:
+  hostname: mysno.example.com
+  interface: ens1f0
+  mac: b4:96:91:b4:9d:f0
+  ipv4:
+    enabled: true
+    dhcp: false
+    ip: 192.168.1.100
+    dns:
+      - 192.168.1.1
+    gateway: 192.168.1.1
+    prefix: 24
+    machine_network_cidr: 192.168.1.0/24
+  additional_interfaces:
+    - name: ens2f0
+      mac: b4:96:91:b4:9d:f1
+      state: up
+      ipv4:
+        enabled: true
+        dhcp: false
+        ip: 192.168.2.10
+        prefix: 24
+      ipv6:
+        enabled: false
+        dhcp: false
+    - name: ens2f1
+      mac: b4:96:91:b4:9d:f2
+      state: up
+      ipv4:
+        enabled: false
+        dhcp: false
+      ipv6:
+        enabled: true
+        dhcp: false
+        ip: 2001:db8:2::10
+        prefix: 64
+  disk: /dev/nvme0n1
+
+# For bonding + VLAN + additional NICs, see samples/config-bond.yaml and samples/config-full.yaml.
