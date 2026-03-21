@@ -104,7 +104,7 @@ if [ -f "$config_file" ]; then
   info "Target cluster" "$cluster_name"
 else
   error "Config file not found" "$config_file"
-  exit -1
+  exit 1
 fi
 
 iso_info(){
@@ -122,7 +122,7 @@ deploy_iso(){
   local result=$?
   if [[ $result -ne 0 ]]; then
     error "ISO deployment failed" "Exit code: $result"
-    exit -1
+    exit 1
   fi
 }
 
@@ -138,7 +138,7 @@ redfish_init(){
   if [[ -n "${password_var}" ]]; then
     if [[ -z "${!password_var}" ]]; then
       error "BMC password not found" "Environment variable '${password_var}' is empty"
-      exit -1
+      exit 1
     fi
     username_password="${bmc_user}:${!password_var}"
   else
@@ -184,7 +184,7 @@ redfish_init(){
     status_code=$(get_redfish_status "$system")
     if [ "$status_code" -ne 200 ]; then
       error "Redfish initialization failed" "System is not available"
-      exit -1
+      exit 1
     fi
 
     manager=https://$bmc_address/redfish/v1/Managers/$kvm_uuid
@@ -197,7 +197,7 @@ redfish_init(){
     status_code=$(get_redfish_status "https://$bmc_address/redfish/v1/Systems")
     if [ "$status_code" -ne 200 ]; then
       error "Redfish initialization failed" "System is not available"
-      exit -1
+      exit 1
     else
       system=https://$bmc_address$($redfish_curl_cmd  https://$bmc_address/redfish/v1/Systems | jq -r '.Members[0]."@odata.id"' )
     fi
@@ -220,7 +220,7 @@ redfish_init(){
     virtual_medias=$($redfish_curl_cmd $virtual_media_root | jq -r '.Members[]."@odata.id"' 2>/dev/null)
     if [[ -z "$virtual_medias" ]]; then
       echo "Failed to get virtual media"
-      exit -1
+      exit 1
     fi
   fi
   set -e
@@ -234,7 +234,7 @@ redfish_init(){
 
   if [ "$virtual_media" == "null" ] || [ -z "$virtual_media" ]; then
     error "Virtual media path not found" "Cannot start deployment"
-    exit -1
+    exit 1
   else
     virtual_media=https://$bmc_address$virtual_media
   fi
@@ -315,7 +315,7 @@ virtual_media_insert(){
   check_rest_result "$action" "$rest_result" "$rest_response"
   if [[ -z "$rest_result" ]] || [[ $rest_result -ge 300 ]]; then
     error "Insert Virtual Media failed" "HTTP $rest_result - cannot mount image"
-    exit -1
+    exit 1
   fi
 }
 
@@ -456,7 +456,7 @@ monitor_installation_status(){
     info "Installation state file" "exists"
   else
     error "Installation state file" "does not exist"
-    exit -1
+    exit 1
   fi
 
   domain_name=$(yq '.cluster.domain' $config_file)

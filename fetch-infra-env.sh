@@ -1,7 +1,7 @@
 #!/bin/bash
 # Helper script to fetch infra-env from assisted-installer
 # usage: ./fetch-infra-env.sh
-# usage: ./fetch-infor-env <cluster-name>
+# usage: ./fetch-infra-env <cluster-name>
 #
 # based on https://github.com/openshift/assisted-service/tree/master/docs/user-guide/samples
 
@@ -41,8 +41,8 @@ config_file=$cluster_workspace/config-resolved.yaml
 if [ -f "$config_file" ]; then
   echo "Will access cluster $cluster_name with config: $config_file"
 else
-  "Config file $config_file not exist, please check."
-  exit -1
+  echo "Config file $config_file not exist, please check."
+  exit 1
 fi
 
 domain_name=$(yq '.cluster.domain' $config_file)
@@ -57,7 +57,7 @@ export KUBECONFIG=$cluster_workspace/auth/kubeconfig
 bmc_noproxy=$(yq ".bmc.bypass_proxy" $config_file)
 
 CURL=curl
-if [[ "true"=="${bmc_noproxy}" ]]; then
+if [[ "true" == "${bmc_noproxy}" ]]; then
   CURL+=" --noproxy ${bmc_address}"
 fi
 

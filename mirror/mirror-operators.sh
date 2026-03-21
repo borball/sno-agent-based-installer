@@ -18,7 +18,7 @@ fi
 if [[ "$LOCAL_REPOSITORY" =~ "/" ]]; then
   echo "LOCAL_REPOSITORY must be single folder for oc adm catlog mirror: '$LOCAL_REPOSITORY'"
   echo "or adjust --max-components=n in the script to allow it"
-  exit -1
+  exit 1
 fi
 
 OPERATOR_RELEASE=$(echo "${OCP_RELEASE}" |cut -f 1-2 -d .)
@@ -81,7 +81,7 @@ mirrorOperators() {
     opm generate dockerfile ${CATALOG_DIR}
     if [[ $? -ne 0 ]] ; then
       printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-      exit -1
+      exit 1
     fi
   fi
 
@@ -93,7 +93,7 @@ mirrorOperators() {
     DOCKER_CONFIG=${DOCKER_CONFIG_DIR} opm render registry.redhat.io/${PRODUCT_REPO}/${CATALOG_SRC}:v${OPERATOR_RELEASE} -o json > "${CATALOG_DIR}.json"
     if [[ $? -ne 0 ]] ; then
       printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-      exit -1
+      exit 1
     fi
   fi
 
@@ -101,14 +101,14 @@ mirrorOperators() {
   jq -M "$(filter_expression)" "${CATALOG_DIR}.json" > "${CATALOG_DIR}/index.json"
   if [[ $? -ne 0 ]] ; then
     printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-    exit -1
+    exit 1
   fi
 
   echo "$(date -u) Validate ${CATALOG_DIR}"
   opm validate "${CATALOG_DIR}"
   if [[ $? -ne 0 ]] ; then
     printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-    exit -1
+    exit 1
   fi
 
   echo "$(date -u) Build container image ${CATALOG_DIR}.Dockerfile"
@@ -116,14 +116,14 @@ mirrorOperators() {
       -t "${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}/${CATALOG_SRC}:v${OPERATOR_RELEASE}"
   if [[ $? -ne 0 ]] ; then
     printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-    exit -1
+    exit 1
   fi
 
   echo "$(date -u) Push container image ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}/${CATALOG_SRC}:v${OPERATOR_RELEASE}"
   ${cmd} push ${LOCAL_REGISTRY}/${LOCAL_REPOSITORY}/${CATALOG_SRC}:v${OPERATOR_RELEASE}
   if [[ $? -ne 0 ]] ; then
     printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-    exit -1
+    exit 1
   fi
 
   # mirror based on the pruned index
@@ -136,7 +136,7 @@ mirrorOperators() {
     --continue-on-error=false --dir="${CATALOG_DIR}"
   if [[ $? -ne 0 ]] ; then
     printf  $(tput setaf 3)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Failed"
-    exit -1
+    exit 1
   else
     printf  $(tput setaf 2)"%-60s %-30s"$(tput sgr0)"\n" "== Mirroring $CATALOG_SRC" "Completed"
   fi

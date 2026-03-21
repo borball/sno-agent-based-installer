@@ -266,7 +266,7 @@ if [ -f "$config_file" ]; then
   info "Configuration file" "$(short_path $config_file)"
 else
   error "Config file not found" "$config_file"
-  exit -1
+  exit 1
 fi
 
 # Show debug status
@@ -352,7 +352,7 @@ export OCP_Z_VERSION=$ocp_release
 pause_mcp_update(){
   if [ "$(yq '.update_control.pause_before_update' $config_file)" = "true" ]; then
     step "Pausing master machine config pool update"
-    trap resume_mcp_update SIGINT SIGABRT SIGKILL
+    trap resume_mcp_update SIGINT SIGABRT
     $OC patch --type=merge --patch='{"spec":{"paused":true}}' mcp/master
   else
     info "MCP update" "not paused"

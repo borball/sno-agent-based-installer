@@ -100,7 +100,6 @@ sno-agent-based-installer/
 │   ├── metallb/              # MetalLB Load Balancer
 │   ├── nfd/                  # Node Feature Discovery
 │   ├── nmstate/              # NMState Network Configuration
-│   ├── operators/            # Nested operators directory (alternative structure)
 │   ├── ptp/                  # Precision Time Protocol
 │   ├── rhacm/                # Red Hat Advanced Cluster Management
 │   ├── sriov/                # SR-IOV Network Operator
@@ -119,7 +118,7 @@ sno-agent-based-installer/
 │       ├── sriov/            # SR-IOV configurations
 │       └── */                # Operator-specific day-2 configs
 ├── samples/                   # Sample configuration files
-├── test/                      # Test scripts and configurations
+├── tests/                     # Test scripts and configurations
 ├── mirror/                    # Mirroring scripts for disconnected environments
 └── instances/                 # Generated cluster instances (created during deployment)
 ```
@@ -784,12 +783,11 @@ RAN profiles are available for different OpenShift versions with version 2.x enh
 The repository includes comprehensive test configurations:
 
 ```bash
-# Run basic test
-./test/test.sh
+# SNO cluster test (with specific OCP version)
+./tests/sno130/test-sno130-4.20.sh
 
 # Hub cluster test
-./test/test-acm0.sh                     # RHACM hub test
-                  # Virtual machine deployment
+./tests/acm0/test-acm0.sh
 ```
 
 ## 📁 Sample Configurations

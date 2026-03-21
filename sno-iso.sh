@@ -720,11 +720,11 @@ render_install_configs(){
 }
 
 backup_install_configs(){
-  step "Back-up installer configuratino files"
+  step "Back-up installer configuration files"
   cp $cluster_workspace/agent-config.yaml $cluster_workspace/agent-config-backup.yaml
-  info "File install-config.yaml" "saved as $(short_path $cluster_workspace/agent-config-backup.yaml)"
+  info "File agent-config.yaml" "saved as $(short_path $cluster_workspace/agent-config-backup.yaml)"
   cp $cluster_workspace/install-config.yaml $cluster_workspace/install-config-backup.yaml
-  info "File agent-config.yaml" "saved as $(short_path $cluster_workspace/install-config-backup.yaml)"
+  info "File install-config.yaml" "saved as $(short_path $cluster_workspace/install-config-backup.yaml)"
 }
 
 render_install_configs
