@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Helper script to generate bootable ISO with OpenShift agent based installer
 # usage: ./sno-iso.sh -h
@@ -253,7 +253,19 @@ download_openshift_installer(){
   fi
 
   openshift_install_tar_file=openshift-install-client-${client_arch}-target-${ocp_arch}.$ocp_release_version.tar.gz
-  openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release_version}
+
+  # Determine the correct mirror path: ocp for GA releases, ocp-dev-preview for EC/nightly
+  if [[ $ocp_release_version == *"ec"* ]] || [[ $ocp_release_version == *"nightly"* ]]; then
+    openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${release_arch}/clients/ocp-dev-preview/${ocp_release_version}
+  else
+    openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${release_arch}/clients/ocp/${ocp_release_version}
+  fi
+
+  # Determine installer platform: mac for macOS, linux for Linux
+  installer_os="linux"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    installer_os="mac"
+  fi
 
   if [ ! -f $basedir/$openshift_install_tar_file ]; then
     info "Downloading OpenShift installer" "$ocp_release_version"
@@ -263,16 +275,16 @@ download_openshift_installer(){
     status_code=$(curl --connect-timeout 10 -s -o /dev/null -w "%{http_code}" $openshift_mirror_path/)
     if [ $status_code = "200" ]; then
       #try to download the file with the client arch first
-      curl -L ${openshift_mirror_path}/openshift-install-linux-${client_arch}.tar.gz -o $basedir/$openshift_install_tar_file
-      
+      curl -L ${openshift_mirror_path}/openshift-install-${installer_os}-${client_arch}.tar.gz -o $basedir/$openshift_install_tar_file
+
       if [[ $(is_gzipped $basedir/$openshift_install_tar_file) -eq 1 ]]; then
-        info "Downloaded installer" "openshift-install-linux-${client_arch}.tar.gz"
+        info "Downloaded installer" "openshift-install-${installer_os}-${client_arch}.tar.gz"
       else
         rm -f $basedir/$openshift_install_tar_file
-        #if not found, try to download the default linux file
-        curl -L ${openshift_mirror_path}/openshift-install-linux.tar.gz -o $basedir/$openshift_install_tar_file
+        #if not found, try to download the default file for the platform
+        curl -L ${openshift_mirror_path}/openshift-install-${installer_os}.tar.gz -o $basedir/$openshift_install_tar_file
         if [[ $(is_gzipped $basedir/$openshift_install_tar_file) -eq 1 ]]; then
-          info "Downloaded installer" "openshift-install-linux.tar.gz"
+          info "Downloaded installer" "openshift-install-${installer_os}.tar.gz"
         else
           rm -f $basedir/$openshift_install_tar_file
           error "Download failed" "Could not download installer from ${openshift_mirror_path}"
@@ -342,10 +354,14 @@ EOF
 
       info "- Extracting from release image" "$release_image"
       info "- Platform" "${client_arch}"
-      oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
+      extract_os="linux"
+      if [[ "$(uname -s)" == "Darwin" ]]; then
+        extract_os="mac"
+      fi
+      oc adm release extract --command-os=${extract_os}/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION} || {
         error "Release extraction failed" "Check oc command and connectivity"
         printf "${RED}Failed command:${RESET}\n"
-        printf "${YELLOW}oc adm release extract --command-os=linux/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION}${RESET}\n"
+        printf "${YELLOW}oc adm release extract --command-os=${extract_os}/${client_arch} --command=openshift-install $release_image --to="$basedir" ${OC_OPTION}${RESET}\n"
         exit 1
       }
     fi
@@ -668,6 +684,29 @@ mirror_source(){
     local size=$(yq '.container_registry.icsp|length' $config_file)
     for ((k=1; k<=$size; k++)); do
       local name=$(yq ".container_registry.icsp[$((k-1))]" $config_file)
+      local lead="  ├─"
+      if [[ $k -ge $size ]]; then
+         lead="  └─"
+      fi
+      if [ "${name:0:1}" = "/" ]; then
+        if [ -f "$name"  ]; then
+          info "${lead} $(short_path $name)" "copy to $(short_path $cluster_workspace/openshift/)"
+          cp $name $cluster_workspace/openshift/
+        fi
+      elif [ -f "$basedir/$name" ]; then
+        info "${lead} $(short_path $name)" "copy to $(short_path $cluster_workspace/openshift/)"
+        cp $basedir/$name $cluster_workspace/openshift/
+      else
+        warn "${lead} $name" "not a file or not exist"
+      fi
+    done
+  fi
+
+  if [ "$(yq '.container_registry.idms' $config_file)" != "null" ]; then
+    step "Configuring IDMS"
+    local size=$(yq '.container_registry.idms|length' $config_file)
+    for ((k=1; k<=$size; k++)); do
+      local name=$(yq ".container_registry.idms[$((k-1))]" $config_file)
       local lead="  ├─"
       if [[ $k -ge $size ]]; then
          lead="  └─"

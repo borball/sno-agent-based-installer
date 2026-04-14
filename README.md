@@ -1,7 +1,7 @@
 # SNO Agent-Based Installer
 
 <p align="center">
-<img src="https://img.shields.io/badge/OpenShift-4.14--4.21-red?style=flat-square&logo=redhat">
+<img src="https://img.shields.io/badge/OpenShift-4.14--4.22-red?style=flat-square&logo=redhat">
 <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square">
 <img src="https://img.shields.io/badge/Platform-Single%20Node%20OpenShift-orange?style=flat-square">
 <img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20ARM64-blue?style=flat-square">
@@ -13,7 +13,7 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 
 **Version 2.x** introduces a redesigned configuration system with deployment profiles to simplify configuration management and improve maintainability.
 
-> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.21). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
+> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.22). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
 
 ## 🆕 What's New in Version 2.x
 
@@ -23,7 +23,10 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **🔧 Enhanced Operator Management**: Improved operator version locking and catalog source management
 - **⚙️ Update Control**: New mechanisms to control operator updates and upgrades
 
-### Latest Updates (November 2025)
+### Latest Updates (April 2026)
+- **🚀 OpenShift 4.22 Support**: New RAN profile template for OpenShift 4.22 (EC builds)
+
+### Previous Updates (November 2025)
 - **🚀 OpenShift 4.21 Support**: New RAN profile template for OpenShift 4.21
 - **🔧 ARM64/AArch64 Architecture**: Full support for ARM64-based deployments with dedicated performance profiles
 - **⚡ Power Saving Mode**: New tuned profile for power-efficient configurations
@@ -110,7 +113,8 @@ sno-agent-based-installer/
 │   ├── day1/                 # Day-1 (installation-time) configurations
 │   │   ├── catalogsource/    # Custom catalog sources
 │   │   ├── cluster-tunings/  # Version-specific cluster tunings
-│   │   ├── icsp/             # Image Content Source Policies
+│   │   ├── icsp/             # Image Content Source Policies (deprecated)
+│   │   ├── idms/             # Image Digest Mirror Sets
 │   │   └── */                # Operator-specific day-1 configs
 │   └── day2/                 # Day-2 (post-installation) configurations
 │       ├── performance-profile/ # Performance tuning profiles
@@ -126,7 +130,7 @@ sno-agent-based-installer/
 ## 📋 Prerequisites
 
 ### System Requirements
-- OpenShift 4.14 or later (tested up to 4.21)
+- OpenShift 4.14 or later (tested up to 4.22)
 - Linux system with internet access (x86_64 or ARM64/AArch64)
 - BMC/Redfish access to target hardware
 - HTTP server for ISO hosting
@@ -458,7 +462,7 @@ All configuration sections
 
 | Profile | Template File | Use Case | Key Features |
 |---------|---------------|----------|--------------|
-| `ran` | `cluster-profile-ran-4.20.yaml` | Telco RAN workloads | Performance tuning, RAN operators, workload partitioning |
+| `ran` | `cluster-profile-ran-4.22.yaml` | Telco RAN workloads | Performance tuning, RAN operators, workload partitioning |
 | `hub` | `cluster-profile-hub.yaml` | Hub cluster management | RHACM, GitOps, TALM, cluster logging |
 | `none` | `cluster-profile-none.yaml` | Minimal setup | Basic cluster capabilities only |
 | Not specified | No template loaded | Custom configuration | Manual configuration of all settings |
@@ -767,9 +771,10 @@ RAN profiles are available for different OpenShift versions with version 2.x enh
 - `cluster-profile-ran-4.18.yaml` - OpenShift 4.18 optimizations
 - `cluster-profile-ran-4.19.yaml` - OpenShift 4.19 optimizations
 - `cluster-profile-ran-4.20.yaml` - OpenShift 4.20 optimizations with new features
-- `cluster-profile-ran-4.21.yaml` - **Latest** OpenShift 4.21 optimizations
+- `cluster-profile-ran-4.21.yaml` - OpenShift 4.21 optimizations
+- `cluster-profile-ran-4.22.yaml` - **Latest** OpenShift 4.22 optimizations
 
-**New in 4.20/4.21 Profiles:**
+**New in 4.20/4.21/4.22 Profiles:**
 - Enhanced operator profile system
 - Update control mechanisms
 - PreGA catalog source support

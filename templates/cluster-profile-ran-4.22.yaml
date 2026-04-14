@@ -5,9 +5,9 @@ cluster:
       - NodeTuning
       - OperatorLifecycleManager
       - Ingress
-      
-cluster_tunings: 
-  version: 4.20
+
+cluster_tunings:
+  version: 4.22
   excludes:
     # - crun
     # - sctp
@@ -33,7 +33,7 @@ operators:
   ###############################################################################################
   #example:
   #  enabled: false
-  #  version: example.v4.18.0-202507211933
+  #  version: example.v4.22.0-202507211933
   #  # data will be passed to the manifests(j2 templates) as env variables
   #  data:
   #    key1: value1
@@ -108,7 +108,7 @@ operators:
     #day2:
       #- profile: event-notification-api
       #- profile: boundary-clock
-    data: 
+    data:
       event_api_version: "2.0"
       clock_threshold_tuning:
         hold_over_timeout: 5
@@ -144,7 +144,7 @@ operators:
   sriov:
     enabled: true
     #Do not lock version in preGA
-    #version: sriov-network-operator.v4.20.0-202507211933
+    #version: sriov-network-operator.v4.22.0-202507211933
 
   fec:
     enabled: true
@@ -153,13 +153,14 @@ operators:
 
   cluster-logging:
     enabled: true
+    channel: stable-6.5
     #Do not lock version in preGA
     #version: cluster-logging.v6.2.4
-    
+
   lca:
     enabled: true
     #Do not lock version in preGA
-    #version: lifecycle-agent.v4.20.0
+    #version: lifecycle-agent.v4.22.0
   adp:
     enabled: true
     channel: stable
@@ -169,7 +170,7 @@ operators:
   lvm:
     enabled: true
     #Do not lock version in preGA
-    #version: lvm-operator.v4.20.0
+    #version: lvm-operator.v4.22.0
     # data:
     #   disks:
     #     - path: /dev/disk/by-path/example-to-be-replaced
@@ -197,9 +198,34 @@ catalog_sources:
   create_marketplace_ns: true
   update_operator_hub: false
   create_default_catalog_sources: true
-  defaults:
-    - redhat-operators
-    - certified-operators
+  defaults: []
+  customs:
+    - name: prega
+      display: Red Hat Operators OCP_Y_RELEASE PreGA
+      image: quay.io/prega/prega-operator-index:v4.22-20260413T134803
+      publisher: Red Hat
+      provide: redhat-operators
+# ==================================================
+# ┌────────────────────────┬─────────────┬─────────────────────────────────────────────┐
+# │ Package Name           │ Channel(s)  │ Version/Bundle                              │
+# ├────────────────────────┼─────────────┼─────────────────────────────────────────────┤
+# │ cluster-logging        │ stable-6.5  │ cluster-logging.v6.5.1                      │
+# │ lifecycle-agent        │ 4.22,stable │ lifecycle-agent.v4.22.0                     │
+# │ local-storage-operator │ stable      │ local-storage-operator.v4.22.0-202604130309 │
+# │ lvms-operator          │ stable-4.21 │ lvms-operator.v4.21.0                       │
+# │ lvms-operator          │ stable-4.22 │ lvms-operator.v4.22.0                       │
+# │ ptp-operator           │ stable      │ ptp-operator.v4.22.0-202604130309           │
+# │ redhat-oadp-operator   │ stable-1.0  │ oadp-operator.v1.0.17                       │
+# │ redhat-oadp-operator   │ stable      │ oadp-operator.v1.5.2                        │
+# │ sriov-network-operator │ stable      │ sriov-network-operator.v4.22.0-202604130955 │
+# └────────────────────────┴─────────────┴─────────────────────────────────────────────┘
+    - name: certified-operators
+      display: Certified Operators
+      image: registry.redhat.io/redhat/certified-operator-index:v4.21
+      publisher: Red Hat
+container_registry:
+  idms:
+    - templates/day1/idms/prega-OCP_Y_RELEASE.yaml
 
 readiness:
   default: true

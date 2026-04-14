@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # 
 # Helper script to apply the day2 operations on SNO node
 # Usage: ./sno-day2.sh

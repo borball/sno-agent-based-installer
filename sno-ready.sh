@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Helper script to validate if the SNO node contains all the necessary tunings
 # usage: ./sno-ready.sh

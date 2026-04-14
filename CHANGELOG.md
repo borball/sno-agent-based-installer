@@ -1,5 +1,23 @@
 # 2.x Change logs
 
+## 2026-04 (April)
+- **🚀 OpenShift 4.22 Support**:
+  - Added `cluster-profile-ran-4.22.yaml` template with latest optimizations
+  - Added cluster tunings for 4.22 (`templates/day1/cluster-tunings/4.22/`)
+  - Added `tuned-performance-patch-4.22.yaml.j2` for 4.22-specific tuned profiles
+  - Added test script `tests/sno130/test-sno130-4.22.sh` (default: 4.22.0-ec.5)
+  - Updated catalog sources for 4.22 preGA testing
+- **🔄 IDMS support** (ImageDigestMirrorSet):
+  - Added `container_registry.idms` config option (replaces `icsp` for 4.22+)
+  - 4.22 profile uses IDMS by default; older profiles retain ICSP for backward compatibility
+- **🖥️ macOS compatibility**:
+  - Scripts now use `#!/usr/bin/env bash` for Bash 4+ on macOS
+  - ISO generation detects macOS and downloads correct installer binary
+  - EC/nightly builds use `ocp-dev-preview` mirror path
+  - Fixed GNU date dependency in `sno-install.sh`
+- **4.21 GA update**:
+  - Updated `cluster-profile-ran-4.21.yaml` to use default catalog sources (no longer preGA)
+
 ## 2026-03 (March)
 - **📖 AgentConfig template documentation (`agent-config.yaml.j2` + README)**:
   - README **Configuration Reference** now describes how the ISO build renders **AgentConfig**: `rendezvousIP` (IPv4 when enabled, else IPv6), `cluster.ntps` → `additionalNTPSources`, and how **`hosts[].interfaces`** are built from the primary NIC, **bond members**, or **`host.additional_interfaces`**

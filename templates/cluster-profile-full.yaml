@@ -209,8 +209,11 @@ catalog_sources:
 
 container_registry:
   image_source: ${HOME}/registry/local-mirror.yaml
-  icsp:
-    - templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
+  # Use icsp for OCP 4.21 and earlier, idms for OCP 4.22+
+  #icsp:
+  #  - templates/day1/icsp/prega-OCP_Y_RELEASE.yaml
+  idms:
+    - templates/day1/idms/prega-OCP_Y_RELEASE.yaml
 
 readiness:
   default: true

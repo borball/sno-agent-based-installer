@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Helper script to boot the node via redfish API from the ISO image
 # usage: ./sno-install.sh
 # usage: ./sno-install.sh <cluster-name>
@@ -600,7 +600,7 @@ wait_for_stable_cluster(){
   set +e
   while IFS= read -r line; do
     [[ -z "$line" ]] && continue
-    local current=$(date +%s --date="now")
+    local current=$(date +%s)
     if [[ $current -gt $next_run ]]; then
       if [[ ! -z "$skipped" ]]; then
 	echo

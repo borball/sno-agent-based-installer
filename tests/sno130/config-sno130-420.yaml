@@ -1,6 +1,7 @@
 cluster:
   domain: outbound.vz.bos2.lab
   name: sno130
+  platform: intel
   profile: ran
 
 host:

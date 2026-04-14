@@ -218,8 +218,11 @@ catalog_sources:
       publisher: Red Hat
 
 container_registry:
-  icsp:
-    - templates/day1/icsp/prega-4.20.yaml
+  # Use icsp for OCP 4.21 and earlier, idms for OCP 4.22+
+  #icsp:
+  #  - templates/day1/icsp/prega-4.20.yaml
+  idms:
+    - templates/day1/idms/prega-4.22.yaml
 
 readiness:
   default: true
