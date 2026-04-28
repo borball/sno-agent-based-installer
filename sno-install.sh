@@ -145,6 +145,7 @@ redfish_init(){
     username_password="${bmc_user}:${bmc_password}"
   fi
   bmc_noproxy=$(yq ".bmc.bypass_proxy" $config_file)
+  kvm_uuid=$(yq ".bmc.kvm_uuid" $config_file)
 
   redfish_curl_cmd="curl -s"
   if [[ "true"=="${bmc_noproxy}" ]]; then
