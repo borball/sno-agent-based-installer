@@ -242,10 +242,14 @@ redfish_init(){
 
   # Detect Dell iDRAC with ServerBoot.1.FirstBootDevice capability (iDRAC 10+)
   use_dell_oem_boot=false
+  dell_oem_attr_url=""
   if [[ "$manager" == *iDRAC* ]]; then
-    local first_boot_device=$($redfish_curl_cmd "$manager/Attributes" | jq -r '.Attributes."ServerBoot.1.FirstBootDevice" // empty')
+    local idrac_id="${manager##*/}"
+    local oem_attr_url="${manager}/Oem/Dell/DellAttributes/${idrac_id}"
+    local first_boot_device=$($redfish_curl_cmd "$oem_attr_url" | jq -r '.Attributes."ServerBoot.1.FirstBootDevice" // empty')
     if [[ -n "$first_boot_device" ]]; then
       use_dell_oem_boot=true
+      dell_oem_attr_url="$oem_attr_url"
     fi
   fi
 
@@ -436,7 +440,7 @@ server_set_boot_once_from_cd() {
   # Dell iDRAC 10+: BootSourceOverrideTarget "Cd" only targets the physical CD drive,
   # not the Redfish-mounted virtual media. Use Dell OEM Manager Attributes instead.
   if [[ "$use_dell_oem_boot" == "true" ]]; then
-    patch_url="$manager/Attributes"
+    patch_url="$dell_oem_attr_url"
     patch_data='{"Attributes":{"ServerBoot.1.FirstBootDevice":"VCD-DVD","VirtualMedia.1.BootOnce":"Enabled"}}'
     info "Dell OEM boot" "Using Manager Attributes for virtual media boot"
   fi
