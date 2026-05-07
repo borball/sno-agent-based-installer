@@ -240,8 +240,11 @@ redfish_init(){
     virtual_media=https://$bmc_address$virtual_media
   fi
 
+  # Detect iDRAC generation from Manager Model (e.g. "17G Monolithic" = iDRAC 10)
+  manager_model=$($redfish_curl_cmd "$manager" | jq -r '.Model // empty')
   info "System" "$system"
   info "Manager" "$manager"
+  info "Manager model" "$manager_model"
   info "Virtual media" "$virtual_media"
 
 }
@@ -418,33 +421,42 @@ virtual_media_status(){
 }
 
 server_set_boot_once_from_cd() {
-  # Set boot
   local action="Boot node from Virtual Media Once"
   local temp_file=$(mktemp)
-  
+  local patch_url="$system"
+  local patch_data='{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}'
+
+  # iDRAC 10 (17G+): BootSourceOverrideTarget "Cd" only targets the physical CD drive,
+  # not the Redfish-mounted virtual media. Use Dell OEM Manager Attributes instead.
+  if [[ "$manager_model" =~ 1[7-9]G|[2-9][0-9]G ]]; then
+    patch_url="$manager/Attributes"
+    patch_data='{"Attributes":{"ServerBoot.1.FirstBootDevice":"VCD-DVD","VirtualMedia.1.BootOnce":"Enabled"}}'
+    info "iDRAC 10 detected" "Using Manager Attributes for virtual media boot"
+  fi
+
   if [[ "true"=="${bmc_noproxy}" ]]; then
     rest_result=$(curl -s --noproxy "${bmc_address}" -ku "${username_password}" \
       -H 'Content-Type: application/json' -H 'Accept: application/json' \
       --globoff -L -w "%{http_code}" \
-      -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
-      -o "$temp_file" -X PATCH "$system" 2>&1 | tail -c 3)
+      -d "$patch_data" \
+      -o "$temp_file" -X PATCH "$patch_url" 2>&1 | tail -c 3)
   else
     rest_result=$(curl -s -ku "${username_password}" \
       -H 'Content-Type: application/json' -H 'Accept: application/json' \
       --globoff -L -w "%{http_code}" \
-      -d '{"Boot":{ "BootSourceOverrideEnabled": "Once", "BootSourceOverrideTarget": "Cd" }}' \
-      -o "$temp_file" -X PATCH "$system" 2>&1 | tail -c 3)
+      -d "$patch_data" \
+      -o "$temp_file" -X PATCH "$patch_url" 2>&1 | tail -c 3)
   fi
-  
+
   # Copy temp response to rest_response for check_rest_result
   cp "$temp_file" "$rest_response"
   rm -f "$temp_file"
-  
+
   # Fallback if rest_result is not a valid HTTP code
   if [[ ! "$rest_result" =~ ^[0-9]{3}$ ]]; then
     rest_result="000"
   fi
-  
+
   check_rest_result "$action" "$rest_result" "$rest_response"
 }
 
