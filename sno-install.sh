@@ -244,12 +244,15 @@ redfish_init(){
   use_dell_oem_boot=false
   dell_oem_attr_url=""
   if [[ "$manager" == *iDRAC* ]]; then
-    local idrac_id="${manager##*/}"
-    local oem_attr_url="${manager}/Oem/Dell/DellAttributes/${idrac_id}"
-    local first_boot_device=$($redfish_curl_cmd "$oem_attr_url" | jq -r '.Attributes."ServerBoot.1.FirstBootDevice" // empty')
-    if [[ -n "$first_boot_device" ]]; then
-      use_dell_oem_boot=true
-      dell_oem_attr_url="$oem_attr_url"
+    local manager_id="${manager##*/}"
+    local dell_oem_attribute_url=$($redfish_curl_cmd "$manager" | jq -r '.Links.Oem.Dell.DellAttributes[]|select(."@odata.id"|endswith("/'"${manager_id}"'"))|."@odata.id" // empty')
+    if [[ -n "$dell_oem_attribute_url" ]]; then
+      dell_oem_attribute_url="https://${bmc_address}${dell_oem_attribute_url}"
+      local first_boot_device=$($redfish_curl_cmd "$dell_oem_attribute_url" | jq -r '.Attributes."ServerBoot.1.FirstBootDevice" // empty')
+      if [[ -n "$first_boot_device" ]]; then
+        use_dell_oem_boot=true
+        dell_oem_attr_url="$dell_oem_attribute_url"
+      fi
     fi
   fi
 
