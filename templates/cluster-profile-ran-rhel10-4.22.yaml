@@ -1,12 +1,12 @@
 cluster:
   featureSet: TechPreviewNoUpgrade
-  osImageStream: rhel-10
   capabilities:
     baselineCapabilitySet: None
     additionalEnabledCapabilities:
       - NodeTuning
       - OperatorLifecycleManager
       - Ingress
+      - CloudCredential
 
 cluster_tunings:
   version: 4.22
@@ -203,6 +203,10 @@ catalog_sources:
   defaults:
     - redhat-operators
     - certified-operators
+
+extra_manifests:
+  day2:
+    - templates/day2/rhel10
 
 readiness:
   default: true

@@ -1,0 +1,48 @@
+cluster:
+  domain: ran.eric.bos2.lab
+  name: sno002
+  platform: intel
+  profile: ran
+
+host:
+  interface: enp1s0
+  hostname: sno002-master0.sno002.ran.eric.bos2.lab
+  mac: de:ad:be:00:02:01
+  ipv4:
+    enabled: true
+    ip: 192.168.14.26
+    dns:
+      - 192.168.14.30
+    gateway: 192.168.14.1
+    prefix: 24
+    machine_network_cidr: 192.168.14.0/24
+  disk: /dev/vda
+
+bmc:
+  address: http://192.168.14.30:9001
+  username: admin
+  password: password
+  kvm_uuid: fb327fab-b41c-4d90-9840-923a4c20b2fa
+  bypass_proxy: true
+
+iso:
+  address: http://192.168.14.30/iso/sno002.iso
+
+node_tunings:
+  workload_partitioning:
+    enabled: true
+  performance_profile:
+    spec:
+      cpu:
+        isolated: 2-15
+        reserved: 0-1
+
+operators:
+  ptp:
+    enabled: false
+  sriov:
+    enabled: false
+  fec:
+    enabled: false
+  lvm:
+    enabled: false
