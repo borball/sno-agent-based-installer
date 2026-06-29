@@ -200,34 +200,9 @@ catalog_sources:
   create_marketplace_ns: true
   update_operator_hub: false
   create_default_catalog_sources: true
-  defaults: []
-  customs:
-    - name: prega
-      display: Red Hat Operators OCP_Y_RELEASE PreGA
-      image: quay.io/prega/prega-operator-index:v4.22-20260413T134803
-      publisher: Red Hat
-      provide: redhat-operators
-# ==================================================
-# ┌────────────────────────┬─────────────┬─────────────────────────────────────────────┐
-# │ Package Name           │ Channel(s)  │ Version/Bundle                              │
-# ├────────────────────────┼─────────────┼─────────────────────────────────────────────┤
-# │ cluster-logging        │ stable-6.5  │ cluster-logging.v6.5.1                      │
-# │ lifecycle-agent        │ 4.22,stable │ lifecycle-agent.v4.22.0                     │
-# │ local-storage-operator │ stable      │ local-storage-operator.v4.22.0-202604130309 │
-# │ lvms-operator          │ stable-4.21 │ lvms-operator.v4.21.0                       │
-# │ lvms-operator          │ stable-4.22 │ lvms-operator.v4.22.0                       │
-# │ ptp-operator           │ stable      │ ptp-operator.v4.22.0-202604130309           │
-# │ redhat-oadp-operator   │ stable-1.0  │ oadp-operator.v1.0.17                       │
-# │ redhat-oadp-operator   │ stable      │ oadp-operator.v1.5.2                        │
-# │ sriov-network-operator │ stable      │ sriov-network-operator.v4.22.0-202604130955 │
-# └────────────────────────┴─────────────┴─────────────────────────────────────────────┘
-    - name: certified-operators
-      display: Certified Operators
-      image: registry.redhat.io/redhat/certified-operator-index:v4.21
-      publisher: Red Hat
-container_registry:
-  idms:
-    - templates/day1/idms/prega-OCP_Y_RELEASE.yaml
+  defaults:
+    - redhat-operators
+    - certified-operators
 
 readiness:
   default: true
