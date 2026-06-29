@@ -131,6 +131,13 @@ redfish_init(){
   rest_response=$(mktemp)
 
   bmc_address=$(yq '.bmc.address' $config_file)
+  if [[ "$bmc_address" == http://* ]] || [[ "$bmc_address" == https://* ]]; then
+    bmc_base_url="${bmc_address}"
+    bmc_address="${bmc_address#http://}"
+    bmc_address="${bmc_address#https://}"
+  else
+    bmc_base_url="https://${bmc_address}"
+  fi
   bmc_user="$(yq '.bmc.username' $config_file)"
   bmc_password="$(yq '.bmc.password' $config_file)"
   password_var=$(echo "$bmc_password" |sed -n 's;^ENV{\(.*\)}$;\1;gp')
@@ -181,34 +188,34 @@ redfish_init(){
   }
 
   if [ ! -z $kvm_uuid ] && [ ! $kvm_uuid == "null" ]; then
-    system=https://$bmc_address/redfish/v1/Systems/$kvm_uuid
+    system=$bmc_base_url/redfish/v1/Systems/$kvm_uuid
     status_code=$(get_redfish_status "$system")
     if [ "$status_code" -ne 200 ]; then
       error "Redfish initialization failed" "System is not available"
       exit 1
     fi
 
-    manager=https://$bmc_address/redfish/v1/Managers/$kvm_uuid
+    manager=$bmc_base_url/redfish/v1/Managers/$kvm_uuid
     status_code=$(get_redfish_status "$manager")
     if [ "$status_code" -ne 200 ]; then
       warn "Redfish initialization failed" "Manager is not available, will try to use system instead"
       manager=$system
     fi
   else
-    status_code=$(get_redfish_status "https://$bmc_address/redfish/v1/Systems")
+    status_code=$(get_redfish_status "$bmc_base_url/redfish/v1/Systems")
     if [ "$status_code" -ne 200 ]; then
       error "Redfish initialization failed" "System is not available"
       exit 1
     else
-      system=https://$bmc_address$($redfish_curl_cmd  https://$bmc_address/redfish/v1/Systems | jq -r '.Members[0]."@odata.id"' )
+      system=$bmc_base_url$($redfish_curl_cmd  $bmc_base_url/redfish/v1/Systems | jq -r '.Members[0]."@odata.id"' )
     fi
 
-    status_code=$(get_redfish_status "https://$bmc_address/redfish/v1/Managers")
+    status_code=$(get_redfish_status "$bmc_base_url/redfish/v1/Managers")
     if [ "$status_code" -ne 200 ]; then
       warn "Redfish initialization failed" "Manager is not available, will try to use system instead"
       manager=$system
     else
-      manager=https://$bmc_address$($redfish_curl_cmd  https://$bmc_address/redfish/v1/Managers | jq -r '.Members[0]."@odata.id"' )
+      manager=$bmc_base_url$($redfish_curl_cmd  $bmc_base_url/redfish/v1/Managers | jq -r '.Members[0]."@odata.id"' )
     fi
   fi
 
@@ -227,7 +234,7 @@ redfish_init(){
   set -e
 
   for vm in $virtual_medias; do
-    if [ $($redfish_curl_cmd https://$bmc_address$vm | jq -r '.MediaTypes[]' |grep -ciE 'CD|DVD|cdrom') -gt 0 ]; then
+    if [ $($redfish_curl_cmd $bmc_base_url$vm | jq -r '.MediaTypes[]' |grep -ciE 'CD|DVD|cdrom') -gt 0 ]; then
       virtual_media=$vm
       break
     fi
@@ -237,7 +244,7 @@ redfish_init(){
     error "Virtual media path not found" "Cannot start deployment"
     exit 1
   else
-    virtual_media=https://$bmc_address$virtual_media
+    virtual_media=$bmc_base_url$virtual_media
   fi
 
   # Detect Dell iDRAC with ServerBoot.1.FirstBootDevice capability (iDRAC 10+)
@@ -247,7 +254,7 @@ redfish_init(){
     local manager_id="${manager##*/}"
     local dell_oem_attribute_url=$($redfish_curl_cmd "$manager" | jq -r '.Links.Oem.Dell.DellAttributes[]|select(."@odata.id"|endswith("/'"${manager_id}"'"))|."@odata.id" // empty')
     if [[ -n "$dell_oem_attribute_url" ]]; then
-      dell_oem_attribute_url="https://${bmc_address}${dell_oem_attribute_url}"
+      dell_oem_attribute_url="${bmc_base_url}${dell_oem_attribute_url}"
       local first_boot_device=$($redfish_curl_cmd "$dell_oem_attribute_url" | jq -r '.Attributes."ServerBoot.1.FirstBootDevice" // empty')
       if [[ -n "$first_boot_device" ]]; then
         use_dell_oem_boot=true

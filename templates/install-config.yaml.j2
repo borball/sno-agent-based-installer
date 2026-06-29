@@ -1,5 +1,11 @@
 apiVersion: v1
 baseDomain: {{ cluster.domain }}
+{%- if cluster.featureSet is defined %}
+featureSet: {{ cluster.featureSet }}
+{%- endif %}
+{%- if cluster.osImageStream is defined %}
+osImageStream: {{ cluster.osImageStream }}
+{%- endif %}
 {%- if node_tunings.workload_partitioning is defined and node_tunings.workload_partitioning.enabled %}
 cpuPartitioningMode: AllNodes
 {%- endif %}
