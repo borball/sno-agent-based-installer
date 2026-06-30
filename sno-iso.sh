@@ -226,6 +226,15 @@ else
 fi
 
 yq '. *=load("'$config_file_temp'")' $cluster_profile_file_temp > $config_file
+
+for array_key in extra_manifests.day1 extra_manifests.day2; do
+  profile_arr=$(yq ".$array_key // []" "$cluster_profile_file_temp")
+  user_arr=$(yq ".$array_key // []" "$config_file_temp")
+  if [[ "$profile_arr" != "[]" && "$user_arr" != "[]" ]]; then
+    yq -i ".$array_key = (load(\"$cluster_profile_file_temp\").$array_key + load(\"$config_file_temp\").$array_key | unique)" "$config_file"
+  fi
+done
+
 info "Configuration resolved" "$config_file"
 info "" "Will be used by other sno-* scripts"
 
