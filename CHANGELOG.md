@@ -8,6 +8,7 @@
   - OCP below 4.20 or OCP version not in the file: warning, no versions pinned; missing/undownloadable/non-YAML file: error
   - `operators/operators.yaml`: new optional `csv_prefix` (defaults to `name`); set to `oadp-operator` for OADP
   - The file used is saved to `instances/<cluster-name>/operator-versions.yaml`; `DEBUG=true` prints how each entry is handled
+- **📦 RAN 4.20 profile**: cluster-logging channel set to `stable-6.4` (was the template default `stable-6.2`)
 - **📝 Fixed LVMS CSV name examples**: `lvm-operator.v…` → `lvms-operator.v…` in `samples/config-full.yaml` and RAN 4.20/4.21/4.22 profiles
 
 ## 2026-04 (April)
