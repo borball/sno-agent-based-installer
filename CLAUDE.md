@@ -10,7 +10,7 @@ SNO Agent-Based Installer is a Bash-based toolkit for deploying and managing Sin
 
 The four main scripts run sequentially as a pipeline:
 
-1. **`sno-iso.sh <config.yaml> [version]`** - Generates bootable ISO with operators and tunings baked in
+1. **`sno-iso.sh <config.yaml> [version] [operator-versions.yaml]`** - Generates bootable ISO with operators and tunings baked in. Optional operator versions file (OCP 4.20+) pins enabled operators to the versions mapped to the OCP release
 2. **`sno-install.sh [cluster-name]`** - Deploys via BMC/Redfish (boots from ISO). Uses latest cluster if no name given
 3. **`sno-day2.sh [cluster-name]`** - Applies post-deployment configuration (operators, tuning)
 4. **`sno-ready.sh [cluster-name]`** - Validates cluster health and configuration

@@ -23,10 +23,13 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **🔧 Enhanced Operator Management**: Improved operator version locking and catalog source management
 - **⚙️ Update Control**: New mechanisms to control operator updates and upgrades
 
-### Latest Updates (April 2026)
+### Latest Updates (September 2026)
+- **📌 Operator Version Pinning**: `sno-iso.sh` takes an optional operator versions file (OCP 4.20+) that pins each operator to the version released with the target OCP z-stream. See [Operator Version Pinning](#operator-version-pinning)
+
+### Previous Updates (April 2026)
 - **🚀 OpenShift 4.22 Support**: New RAN profile template for OpenShift 4.22 (EC builds)
 
-### Previous Updates (November 2025)
+### Earlier Updates (November 2025)
 - **🚀 OpenShift 4.21 Support**: New RAN profile template for OpenShift 4.21
 - **🔧 ARM64/AArch64 Architecture**: Full support for ARM64-based deployments with dedicated performance profiles
 - **⚡ Power Saving Mode**: New tuned profile for power-efficient configurations
@@ -265,11 +268,15 @@ Generate a bootable ISO image with pre-configured operators and tunings:
 
 # Use specific release channel
 ./sno-iso.sh config-mysno.yaml stable-4.14
+
+# Pin operator versions from an OCP-to-operator version mapping file (OCP 4.20+)
+./sno-iso.sh config-mysno.yaml 4.20.40 https://raw.githubusercontent.com/borball/openshift-operator-releases/master/snapshots/4.20.yaml
 ```
 
 **Available Options:**
 - `config file`: Path to configuration file (optional, defaults to `config.yaml`)
 - `ocp version`: OpenShift version or channel (optional, defaults to `stable-4.18`)
+- `operator versions file`: Local path or URL of an operator versions mapping file (optional, OCP 4.20+). See [Operator Version Pinning](#operator-version-pinning)
 
 ### Automated Deployment
 
@@ -749,6 +756,47 @@ operators:
 - **Profile as path:** path is expanded (e.g. `${HOME}`). If it is a **file**, only that file is applied; if a **directory**, all supported files under it are applied
 - Supports `.sh`, `.yaml`, and `.yaml.j2` files
 - **Execution order:** `.sh` scripts run first, then `.yaml` and `.yaml.j2` are applied
+
+### Operator Version Pinning
+
+`sno-iso.sh` accepts an optional third argument: an operator versions file that maps each OpenShift release to the operator versions released with it, e.g. [snapshots/4.20.yaml](https://github.com/borball/openshift-operator-releases/blob/master/snapshots/4.20.yaml):
+
+```yaml
+"4.20.40":
+  _first_seen_at: 2026-09-25T16:07:01Z     # keys starting with "_" are ignored
+  ptp-operator: v4.20.0-202609200357        # <OLM package name>: <version>
+  redhat-oadp-operator: v1.5.8
+  ...
+```
+
+```bash
+./sno-iso.sh config-mysno.yaml 4.20.40 https://raw.githubusercontent.com/borball/openshift-operator-releases/master/snapshots/4.20.yaml
+./sno-iso.sh config-mysno.yaml stable-4.20 ./4.20.yaml
+```
+
+The file is only a source for operator versions. For each entry under the resolved OCP version (e.g. `stable-4.20` → `4.20.40`):
+
+- The package name is matched against `.name` in `operators/operators.yaml` to find the operator key
+- If that operator is **enabled** in the merged config, `.operators.<key>.version` is set to `<csv_prefix>.<version>` (e.g. `ptp-operator.v4.20.0-202609200357`, `oadp-operator.v1.5.8`). `csv_prefix` in `operators/operators.yaml` defaults to `.name`
+- The Subscription is then rendered with `startingCSV` and `installPlanApproval: Manual`; `sno-install.sh` approves the InstallPlans
+
+Rules:
+
+| Case | Behavior |
+|------|----------|
+| `version` set explicitly in your config | Your value is kept; a warning shows both values |
+| Operator disabled | Skipped (the file does not enable operators) |
+| Package not in `operators/operators.yaml` | Warning, skipped |
+| Enabled operator not listed in the file | Warning; installed at latest in its channel (or your `version`) |
+| OCP version below 4.20 | Warning, no versions pinned |
+| OCP version not found in the file | Warning listing the newest available versions, no versions pinned |
+| File not found, download fails, or not a YAML mapping | Error, exit |
+
+Notes:
+- Channels and catalog sources still come from the merged config. The channel must contain the pinned version, e.g. `cluster-logging.v6.4.6` requires `channel: stable-6.4`
+- In disconnected environments, the mirrored catalogs must include the pinned bundles
+- GitHub `blob/` URLs are converted to `raw.githubusercontent.com` automatically
+- The file used is saved as `instances/<cluster-name>/operator-versions.yaml`; run with `DEBUG=true` to see how each entry is handled
 
 ### Profile Templates
 

@@ -45,6 +45,7 @@ operators:
     enabled: false
   adp:
     name: redhat-oadp-operator
+    csv_prefix: oadp-operator
     desc: OpenShift API for Data Protection Operator
     enabled: false
   lca:

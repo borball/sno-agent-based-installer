@@ -169,7 +169,7 @@ operators:
   lvm:
     enabled: true
     #Do not lock version in preGA
-    #version: lvm-operator.v4.20.0
+    #version: lvms-operator.v4.20.0
     # data:
     #   disks:
     #     - path: /dev/disk/by-path/example-to-be-replaced

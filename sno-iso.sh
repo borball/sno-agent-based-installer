@@ -85,10 +85,13 @@ short_path(){
 }
 
 usage(){
-  info "Usage: $0 [config file] [ocp version]"
+  info "Usage: $0 [config file] [ocp version] [operator versions file]"
   info "config file and ocp version are optional, examples:"
   info "- $0 sno130.yaml" " equals: $0 sno130.yaml stable-4.14"
   info "- $0 sno130.yaml 4.14.33"
+  info "- $0 sno130.yaml 4.20.40 4.20.yaml" " pin operator versions (OCP 4.20+)"
+  info "  operator versions file can be a local path or http(s) URL, format:"
+  info "  https://raw.githubusercontent.com/borball/openshift-operator-releases/master/snapshots/4.20.yaml"
   echo
   info "Prepare a configuration file by following the example in config.yaml.sample"
   echo "-----------------------------------"
@@ -119,6 +122,12 @@ operators=$basedir/operators
 
 config_file_input=$1; shift
 ocp_release=$1; shift
+operator_versions_input=$1; shift
+
+if [[ -n "$operator_versions_input" ]] && [[ ! "$operator_versions_input" =~ ^https?:// ]] && [[ ! -f "$operator_versions_input" ]]; then
+  error "Operator versions file not found" "$operator_versions_input"
+  exit 1
+fi
 
 if [ -z "$config_file_input" ]
 then
@@ -237,6 +246,73 @@ done
 
 info "Configuration resolved" "$config_file"
 info "" "Will be used by other sno-* scripts"
+
+# fill .operators.<key>.version from an operator versions file (OCP version -> operator package -> version)
+apply_operator_versions(){
+  step "Applying operator versions"
+  info "Operator versions file" "$operator_versions_input"
+
+  if [[ "$(printf '%s\n' "4.20" "$OCP_Y_VERSION" | sort -V | head -1)" != "4.20" ]]; then
+    warn "Operator versions file requires OpenShift 4.20+" "$OCP_Y_VERSION, operator versions not pinned"
+    return
+  fi
+
+  local versions_file=$cluster_workspace/operator-versions.yaml
+  if [[ "$operator_versions_input" =~ ^https?:// ]]; then
+    local url=$(echo "$operator_versions_input" | sed -E 's#^https://github.com/([^/]+)/([^/]+)/blob/#https://raw.githubusercontent.com/\1/\2/#')
+    if ! curl --connect-timeout 10 -fsSL "$url" -o "$versions_file"; then
+      error "Failed to download operator versions file" "$url"
+      exit 1
+    fi
+  else
+    cp "$operator_versions_input" "$versions_file"
+  fi
+
+  if [[ "$(yq 'tag' "$versions_file" 2>/dev/null)" != "!!map" ]]; then
+    error "Operator versions file is not a valid YAML mapping" "$operator_versions_input"
+    exit 1
+  fi
+
+  if [[ "$(yq ".[\"$ocp_release_version\"]" "$versions_file")" == "null" ]]; then
+    warn "OpenShift version not found in operator versions file" "$ocp_release_version, operator versions not pinned"
+    printf "${YELLOW}Available versions:${RESET}\n"
+    yq 'keys | .[]' "$versions_file" | sort -Vr | head -10 | sed 's/^/  - /'
+    return
+  fi
+
+  local pkg op_key op_version csv
+  while read -r pkg; do
+    op_version=$(yq ".[\"$ocp_release_version\"][\"$pkg\"]" "$versions_file")
+    op_key=$(yq ".operators | to_entries | .[] | select(.value.name == \"$pkg\") | .key" $operators/operators.yaml | head -1)
+    debug "$pkg: version $op_version, operator key ${op_key:-<none>}"
+    if [[ -z "$op_key" ]]; then
+      warn "$pkg" "$op_version (unknown operator, skipped)"
+      continue
+    fi
+    if [[ "true" != $(yq ".operators.$op_key.enabled" $config_file) ]]; then
+      debug "$pkg: operator $op_key disabled, version $op_version skipped"
+      continue
+    fi
+    if [[ "null" != $(yq ".operators.$op_key.version // \"null\"" $config_file_temp) ]]; then
+      warn "$pkg" "$(yq ".operators.$op_key.version" $config_file_temp) (from config, overrides $op_version)"
+      continue
+    fi
+    csv="$(yq ".operators.$op_key.csv_prefix // .operators.$op_key.name" $operators/operators.yaml).$op_version"
+    yq -i ".operators.$op_key.version = \"$csv\"" $config_file
+    info "$pkg" "$csv"
+  done < <(yq ".[\"$ocp_release_version\"] | keys | .[] | select(test(\"^_\") | not)" "$versions_file")
+
+  while read -r op_key; do
+    pkg=$(yq ".operators.$op_key.name" $operators/operators.yaml)
+    if [[ "null" == $(yq ".[\"$ocp_release_version\"][\"$pkg\"] // \"null\"" "$versions_file") ]]; then
+      warn "$pkg" "$(yq ".operators.$op_key.version // \"latest\"" $config_file) (not in operator versions file)"
+    fi
+  done < <(yq '.operators | to_entries | .[] | select(.value.enabled == true) | .key' $config_file)
+}
+
+if [[ -n "$operator_versions_input" ]]; then
+  apply_operator_versions
+fi
 
 is_gzipped(){
   if [ $(file $1 -- |grep -E 'gzip|bzip2|xz' |wc -l) -gt 0 ]; then

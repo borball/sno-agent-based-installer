@@ -1,5 +1,15 @@
 # 2.x Change logs
 
+## 2026-09 (September)
+- **📌 Operator version pinning** (OCP 4.20+):
+  - `sno-iso.sh <config.yaml> [ocp-version] [operator-versions.yaml]`: new optional third argument, a local path or http(s) URL of an OCP-to-operator version mapping file (format: [openshift-operator-releases snapshots](https://github.com/borball/openshift-operator-releases/tree/master/snapshots)); GitHub `blob/` URLs are converted to raw
+  - For each enabled operator listed under the resolved OCP version, fills `.operators.<key>.version` (`startingCSV`, manual approval) in `config-resolved.yaml`; channels and catalog sources still come from the merged config
+  - A `version` set explicitly in the user config takes precedence; unknown packages and enabled operators not in the file are reported as warnings
+  - OCP below 4.20 or OCP version not in the file: warning, no versions pinned; missing/undownloadable/non-YAML file: error
+  - `operators/operators.yaml`: new optional `csv_prefix` (defaults to `name`); set to `oadp-operator` for OADP
+  - The file used is saved to `instances/<cluster-name>/operator-versions.yaml`; `DEBUG=true` prints how each entry is handled
+- **📝 Fixed LVMS CSV name examples**: `lvm-operator.v…` → `lvms-operator.v…` in `samples/config-full.yaml` and RAN 4.20/4.21/4.22 profiles
+
 ## 2026-04 (April)
 - **🚀 OpenShift 4.22 Support**:
   - Added `cluster-profile-ran-4.22.yaml` template with latest optimizations
