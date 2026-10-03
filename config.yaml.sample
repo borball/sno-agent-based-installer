@@ -73,6 +73,10 @@ node_tunings:
         reservedCpuFreq: 2500000
 
 operators:
+  # optional (OCP 4.20+): pin enabled operators to the versions mapped to the OCP release,
+  # local path or http(s) URL, e.g.
+  # https://raw.githubusercontent.com/borball/openshift-operator-releases/master/snapshots/4.20.yaml
+  # version_mapping: ${HOME}/ocp/config/operator-mapping.yaml
   lvm:
     data:
       disks:
