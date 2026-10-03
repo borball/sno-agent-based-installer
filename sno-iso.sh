@@ -85,12 +85,12 @@ short_path(){
 }
 
 usage(){
-  info "Usage: $0 [config file] [ocp version] [operator versions file]"
+  info "Usage: $0 [config file] [ocp version]"
   info "config file and ocp version are optional, examples:"
   info "- $0 sno130.yaml" " equals: $0 sno130.yaml stable-4.14"
   info "- $0 sno130.yaml 4.14.33"
-  info "- $0 sno130.yaml 4.20.40 4.20.yaml" " pin operator versions (OCP 4.20+)"
-  info "  operator versions file can be a local path or http(s) URL, format:"
+  info "Pin operator versions (OCP 4.20+) by setting in the config file:"
+  info "  operators.version_mapping: <local path or http(s) URL>, format:"
   info "  https://raw.githubusercontent.com/borball/openshift-operator-releases/master/snapshots/4.20.yaml"
   echo
   info "Prepare a configuration file by following the example in config.yaml.sample"
@@ -122,12 +122,6 @@ operators=$basedir/operators
 
 config_file_input=$1; shift
 ocp_release=$1; shift
-operator_versions_input=$1; shift
-
-if [[ -n "$operator_versions_input" ]] && [[ ! "$operator_versions_input" =~ ^https?:// ]] && [[ ! -f "$operator_versions_input" ]]; then
-  error "Operator versions file not found" "$operator_versions_input"
-  exit 1
-fi
 
 if [ -z "$config_file_input" ]
 then
@@ -244,6 +238,15 @@ for array_key in extra_manifests.day1 extra_manifests.day2; do
   fi
 done
 
+# operators.version_mapping is a setting, not an operator: take it out of the resolved config
+operator_versions_input=$(yq '.operators.version_mapping // ""' "$config_file")
+yq -i 'del(.operators.version_mapping)' "$config_file"
+
+if [[ -n "$operator_versions_input" ]] && [[ ! "$operator_versions_input" =~ ^https?:// ]] && [[ ! -f "$operator_versions_input" ]]; then
+  error "Operator versions file not found" "$operator_versions_input"
+  exit 1
+fi
+
 info "Configuration resolved" "$config_file"
 info "" "Will be used by other sno-* scripts"
 
@@ -283,7 +286,7 @@ apply_operator_versions(){
   local pkg op_key op_version csv
   while read -r pkg; do
     op_version=$(yq ".[\"$ocp_release_version\"][\"$pkg\"]" "$versions_file")
-    op_key=$(yq ".operators | to_entries | .[] | select(.value.name == \"$pkg\") | .key" $operators/operators.yaml | head -1)
+    op_key=$(yq ".operators | to_entries | .[] | select(.value.name == \"$pkg\" or .value.csv_prefix == \"$pkg\") | .key" $operators/operators.yaml | head -1)
     debug "$pkg: version $op_version, operator key ${op_key:-<none>}"
     if [[ -z "$op_key" ]]; then
       warn "$pkg" "$op_version (unknown operator, skipped)"
@@ -304,7 +307,8 @@ apply_operator_versions(){
 
   while read -r op_key; do
     pkg=$(yq ".operators.$op_key.name" $operators/operators.yaml)
-    if [[ "null" == $(yq ".[\"$ocp_release_version\"][\"$pkg\"] // \"null\"" "$versions_file") ]]; then
+    csv_pkg=$(yq ".operators.$op_key.csv_prefix // \"\"" $operators/operators.yaml)
+    if [[ "null" == $(yq ".[\"$ocp_release_version\"][\"$pkg\"] // \"null\"" "$versions_file") && "null" == $(yq ".[\"$ocp_release_version\"][\"${csv_pkg:-$pkg}\"] // \"null\"" "$versions_file") ]]; then
       warn "$pkg" "$(yq ".operators.$op_key.version // \"latest\"" $config_file) (not in operator versions file)"
     fi
   done < <(yq '.operators | to_entries | .[] | select(.value.enabled == true) | .key' $config_file)
