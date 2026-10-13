@@ -632,9 +632,13 @@ tuned_profiles(){
     return 1
   fi
   
-  # Get all profiles from config
-  local profiles
-  readarray -t profiles < <(yq '.node_tunings.tuned_profile|keys[]|select(.!="enabled")' "$config_file" 2>/dev/null)
+  # Get profiles from config; only profiles with enabled: true are applied
+  local profiles disabled_profiles
+  readarray -t profiles < <(yq '.node_tunings.tuned_profile|to_entries[]|select(.key!="enabled" and (.value|tag) == "!!map" and .value.enabled == true)|.key' "$config_file" 2>/dev/null)
+  readarray -t disabled_profiles < <(yq '.node_tunings.tuned_profile|to_entries[]|select(.key!="enabled" and ((.value|tag) != "!!map" or .value.enabled != true))|.key' "$config_file" 2>/dev/null)
+  for profile in "${disabled_profiles[@]}"; do
+    warn "Tuned profile $profile" "disabled"
+  done
   if [[ ${#profiles[@]} -le 0 ]]; then
     warn "No tuned profiles configured" "skipping"
     return 0

@@ -590,9 +590,18 @@ node_tunings:
         isolatedCpuFreq: 3000000  # Override: higher frequency
         reservedCpuFreq: 3200000
   tuned_profile:
-    profiles:
-      - profile: performance-patch
-      - profile: hpe-settings     # Override: HPE-specific tuning instead of Dell
+    enabled: true
+    performance-patch:
+      enabled: true               # Only profiles with enabled: true are applied
+    hpe-settings:                 # Custom tuned profile, rendered with tuned-generic.yaml.j2
+      enabled: true
+      spec:
+        summary: HPE-specific tuning on top of ran-du-performance
+        include: ran-du-performance
+        priority: 17              # Lower than ran-du-performance (18) so it takes precedence
+        data:
+          sysctl:
+            - vm.stat_interval=10
 ```
 
 **Example 5: Power Saving Mode Configuration**

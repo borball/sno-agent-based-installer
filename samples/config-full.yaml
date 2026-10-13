@@ -36,18 +36,24 @@ node_tunings:
         reservedCpuFreq: 2500000
   tuned_profile:
     enabled: true
-    profiles:
-      # Dell XR8620t example
-      - profile: performance-patch
-        #spec:
-        # performance_profile_name: sno-perfprofile
-      - profile: dell-nmi
-        #- profile: dell-microcode
-    # HPE DL110 Gen 11 example
-    # - profile: performance-patch
-    #   spec:
-    #     performance_profile_name: sno-perfprofile
-    # - profile: hpe-microcode
+    # a tuned profile is applied only when it has enabled: true
+    # templates/day2/tuned/tuned-<name>-<ocp_y_version>.yaml(.j2) or tuned-<name>.yaml(.j2) is used if present,
+    # otherwise the profile is rendered with tuned-generic.yaml.j2 from its spec
+    performance-patch:
+      enabled: true
+      #spec:
+      #  # must match node_tunings.performance_profile.name if it is set
+      #  performance_profile_name: sno-perfprofile
+    # custom tuned profile layered on top of ran-du-performance (lower priority number wins)
+    #custom-sysctl:
+    #  enabled: true
+    #  spec:
+    #    summary: Custom sysctl settings on top of ran-du-performance
+    #    include: ran-du-performance
+    #    priority: 17
+    #    data:
+    #      sysctl:
+    #        - vm.stat_interval=10
 update_control:
   pause_before_update: true
   delay_after_update: 60

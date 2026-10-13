@@ -15,6 +15,7 @@
   - cluster-logging channel `stable-6.6` in `cluster-profile-ran-4.22.yaml` and `cluster-profile-ran-rhel10-4.22.yaml` (was `stable-6.5`)
   - `tuned-performance-patch-4.21.yaml.j2`: `kernel.timer_migration=1` workaround for OCPBUGS-86541
   - Added `performance-profile-ran-{x86_64,aarch64}-{4.21,4.22}.yaml.j2`: `kubeletconfig.experimental` (systemReserved 11Gi; 4.22 adds graceful node shutdown), RCU/EFI/irdma kernel args moved to the TunedPerformancePatch; 4.20 and earlier keep the shared templates
+- **🐛 Fixed** `node_tunings.tuned_profile.<profile>.enabled` being ignored: `sno-day2.sh` applies (and `sno-ready.sh` checks) a tuned profile only when both `tuned_profile.enabled` and `tuned_profile.<profile>.enabled` are `true`, e.g. `performance-patch` → `tuned-performance-patch-*`; profiles without `enabled: true` are skipped with a warning
 - **🐛 Fixed** `latest-*` release channels not being resolved in `sno-iso.sh` (case pattern was misspelled `lastest-*`)
 
 ## 2026-09 (September)
