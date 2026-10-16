@@ -1,0 +1,43 @@
+apiVersion: performance.openshift.io/v2
+kind: PerformanceProfile
+metadata:
+  # if you change this name make sure the 'include' line in the TunedPerformancePatch
+  # matches this name: include=openshift-node-performance-${PerformanceProfile.metadata.name}
+  name: {{ name or 'openshift-node-performance-profile' }}
+  annotations:
+    ran.openshift.io/ztp-deploy-wave: "10"
+    ran.openshift.io/reference-configuration: "ran-du.redhat.com"
+    # systemReserved: when used, it should be tailored for each environment.
+    # shutdownGracePeriod: enables kubelet GracefulNodeShutdown to reduce
+    # IBU upgrade downtime. Non-critical pods get 20s, critical pods get 10s.
+    kubeletconfig.experimental: |
+      {
+       "systemReserved":{"memory":"11Gi"},
+       "shutdownGracePeriod":"30s",
+       "shutdownGracePeriodCriticalPods":"10s"
+      }
+spec:
+  # rcupdate.rcu_normal_after_boot=0, efi=runtime and module_blacklist=irdma are set by the TunedPerformancePatch
+  # Optional kernel arguments:
+  #   To enable acpi_idle CPUIdle driver
+  #     - intel_idle.max_cstate=0
+  additionalKernelArgs:
+    - vfio_pci.enable_sriov=1
+    - vfio_pci.disable_idle_d3=1
+  machineConfigPoolSelector:
+    pools.operator.machineconfiguration.openshift.io/master: ""
+  nodeSelector:
+    node-role.kubernetes.io/master: ""
+  numa:
+    topologyPolicy: "restricted"
+  # To use the standard (non-realtime) kernel, set enabled to false
+  realTimeKernel:
+    enabled: true
+  workloadHints:
+    # WorkloadHints defines the set of upper level flags for different type of workloads.
+    # See https://github.com/openshift/cluster-node-tuning-operator/blob/master/docs/performanceprofile/performance_profile.md#workloadhints
+    # for detailed descriptions of each item.
+    # The configuration below is set for a low latency, performance mode.
+    realTime: true
+    highPowerConsumption: false
+    perPodPowerManagement: false

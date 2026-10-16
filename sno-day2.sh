@@ -508,11 +508,15 @@ performance_profile(){
   
   # for x86_64 use performance-profile-ran-x86_64.yaml.j2, for aarch64 use performance-profile-ran-aarch64.yaml.j2
   # platform is detected in config file
+  # a version-specific template (performance-profile-ran-<arch>-<ocp_y_version>.yaml.j2) takes precedence if present
   local platform=$(yq '.cluster.platform // "x86_64"' $config_file)
+  local perf_arch="x86_64"
   if [[ $platform == "arm" ]] ; then
-    local source_template="$templates/day2/performance-profile/performance-profile-ran-aarch64.yaml.j2"
-  else
-    local source_template="$templates/day2/performance-profile/performance-profile-ran-x86_64.yaml.j2"
+    perf_arch="aarch64"
+  fi
+  local source_template="$templates/day2/performance-profile/performance-profile-ran-${perf_arch}-${ocp_y_version}.yaml.j2"
+  if [[ ! -f "$source_template" ]]; then
+    source_template="$templates/day2/performance-profile/performance-profile-ran-${perf_arch}.yaml.j2"
   fi
 
   local profile_default_file="$templates/cluster-profile-${profile}-${ocp_y_version}.yaml"
@@ -628,9 +632,13 @@ tuned_profiles(){
     return 1
   fi
   
-  # Get all profiles from config
-  local profiles
-  readarray -t profiles < <(yq '.node_tunings.tuned_profile|keys[]|select(.!="enabled")' "$config_file" 2>/dev/null)
+  # Get profiles from config; only profiles with enabled: true are applied
+  local profiles disabled_profiles
+  readarray -t profiles < <(yq '.node_tunings.tuned_profile|to_entries[]|select(.key!="enabled" and (.value|tag) == "!!map" and .value.enabled == true)|.key' "$config_file" 2>/dev/null)
+  readarray -t disabled_profiles < <(yq '.node_tunings.tuned_profile|to_entries[]|select(.key!="enabled" and ((.value|tag) != "!!map" or .value.enabled != true))|.key' "$config_file" 2>/dev/null)
+  for profile in "${disabled_profiles[@]}"; do
+    warn "Tuned profile $profile" "disabled"
+  done
   if [[ ${#profiles[@]} -le 0 ]]; then
     warn "No tuned profiles configured" "skipping"
     return 0

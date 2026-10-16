@@ -155,7 +155,7 @@ operators:
 
   cluster-logging:
     enabled: true
-    channel: stable-6.5
+    channel: stable-6.6
     #Do not lock version in preGA
     #version: cluster-logging.v6.2.4
 

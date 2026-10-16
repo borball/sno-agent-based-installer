@@ -186,13 +186,22 @@ fetch_archs(){
 
 fetch_archs
 
+# mirror.openshift.com base path for a release or Y version: openshift-v5 for 5.x+, openshift-v4 otherwise
+openshift_mirror_base(){
+  if [[ "${1%%.*}" =~ ^[0-9]+$ ]] && [[ "${1%%.*}" -ge 5 ]]; then
+    echo "https://mirror.openshift.com/pub/openshift-v5"
+  else
+    echo "https://mirror.openshift.com/pub/openshift-v4"
+  fi
+}
+
 case ${ocp_release} in
-  fast-* | lastest-* | stable-* | candidate-*)
-    ocp_release_version=$(curl --connect-timeout 10 -s https://mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
+  fast-* | latest-* | stable-* | candidate-*)
+    ocp_release_version=$(curl --connect-timeout 10 -s $(openshift_mirror_base ${ocp_release#*-})/${ocp_arch}/clients/ocp/${ocp_release}/release.txt | grep 'Version:' | awk -F ' ' '{print $2}')
     ;;
 esac
 
-#if release not available on mirror.openshift.com/pub/openshift-v4/${ocp_arch}/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
+#if release not available on mirror.openshift.com/pub/openshift-v{4,5}/${ocp_arch}/clients/ocp/, probably ec (early candidate) version, or nightly/ci build.
 if [ -z $ocp_release_version ]; then
   ocp_release_version=$ocp_release
 fi
@@ -344,10 +353,11 @@ download_openshift_installer(){
   openshift_install_tar_file=openshift-install-client-${client_arch}-target-${ocp_arch}.$ocp_release_version.tar.gz
 
   # Determine the correct mirror path: ocp for GA releases, ocp-dev-preview for EC/nightly
+  local mirror_base=$(openshift_mirror_base $ocp_release_version)
   if [[ $ocp_release_version == *"ec"* ]] || [[ $ocp_release_version == *"nightly"* ]]; then
-    openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${release_arch}/clients/ocp-dev-preview/${ocp_release_version}
+    openshift_mirror_path=${mirror_base}/${release_arch}/clients/ocp-dev-preview/${ocp_release_version}
   else
-    openshift_mirror_path=https://mirror.openshift.com/pub/openshift-v4/${release_arch}/clients/ocp/${ocp_release_version}
+    openshift_mirror_path=${mirror_base}/${release_arch}/clients/ocp/${ocp_release_version}
   fi
 
   # Determine installer platform: mac for macOS, linux for Linux

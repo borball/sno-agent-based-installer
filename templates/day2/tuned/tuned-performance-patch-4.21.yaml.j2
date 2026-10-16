@@ -14,6 +14,10 @@ spec:
         summary=Top-level ran-du performance tuning overrides
         include=openshift-node-performance-{{ (spec and spec.performance_profile_name)  or 'openshift-node-performance-profile' }},ran-du-performance-architecture-common
     - name: ran-du-performance-architecture-common
+      # Timer migration is enabled by this profile explicitly to workaround
+      # https://redhat.atlassian.net/browse/OCPBUGS-86541.
+      # Once the NTO patch https://github.com/openshift/cluster-node-tuning-operator/pull/1542
+      # is backported to 4.21 you can remove this override.
       data: |
         [main]
         summary=Common cross-architecture performance tuning which also includes architecture-specific profiles
@@ -24,14 +28,19 @@ spec:
         [bootloader]
         cmdline_ran_rcu=rcupdate.rcu_normal_after_boot=0
         cmdline_ran_efi=efi=runtime
+        [sysctl]
+        kernel.timer_migration=1
     - name: ran-du-common-aarch64
       data: |
         [main]
         summary=Configuration specific to aarch64 performance
+        # No aarch64-specific tuning needed at this time
     - name: ran-du-common-x86
       data: |
         [main]
         summary=Configuration specific to x86_64 performance
+        # Note: If processor family-specific tuning is needed, uncomment this line and add appropriate profiles for 'ran-du-intel' and 'ran-du-amd'
+        #include=ran-du-${f:lscpu_check:Vendor ID\:\s*GenuineIntel:intel:Vendor ID\:\s*AuthenticAMD:amd}
         [scheduler]
         group.ice-ptp=0:f:10:*:ice-ptp.*
         group.ice-gnss=0:f:10:*:ice-gnss.*

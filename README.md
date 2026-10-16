@@ -1,7 +1,7 @@
 # SNO Agent-Based Installer
 
 <p align="center">
-<img src="https://img.shields.io/badge/OpenShift-4.14--4.22-red?style=flat-square&logo=redhat">
+<img src="https://img.shields.io/badge/OpenShift-4.14--5.0-red?style=flat-square&logo=redhat">
 <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat-square">
 <img src="https://img.shields.io/badge/Platform-Single%20Node%20OpenShift-orange?style=flat-square">
 <img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20ARM64-blue?style=flat-square">
@@ -13,7 +13,7 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 
 **Version 2.x** introduces a redesigned configuration system with deployment profiles to simplify configuration management and improve maintainability.
 
-> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.22). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
+> **Note**: This repository requires OpenShift 4.14 or later (tested up to 4.22; 5.0 preGA). For multi-node deployments, see the sister repository: [Multiple Nodes OpenShift](https://github.com/borball/mno-with-abi)
 
 ## 🆕 What's New in Version 2.x
 
@@ -23,10 +23,13 @@ The SNO Agent-Based Installer is a comprehensive toolkit for deploying and manag
 - **🔧 Enhanced Operator Management**: Improved operator version locking and catalog source management
 - **⚙️ Update Control**: New mechanisms to control operator updates and upgrades
 
-### Latest Updates (September 2026)
+### Latest Updates (October 2026)
+- **🚀 OpenShift 5.0 Support**: New RAN profile template for OpenShift 5.0 (preGA: RC/EC builds, prega catalog); 5.x installers and release channels are fetched from `mirror.openshift.com/pub/openshift-v5`
+
+### Previous Updates (September 2026)
 - **📌 Operator Version Pinning**: `sno-iso.sh` supports an optional `operators.version_mapping` file (OCP 4.20+) that pins each operator to the version released with the target OCP z-stream. See [Operator Version Pinning](#operator-version-pinning)
 
-### Previous Updates (April 2026)
+### Earlier Updates (April 2026)
 - **🚀 OpenShift 4.22 Support**: New RAN profile template for OpenShift 4.22 (EC builds)
 
 ### Earlier Updates (November 2025)
@@ -133,7 +136,7 @@ sno-agent-based-installer/
 ## 📋 Prerequisites
 
 ### System Requirements
-- OpenShift 4.14 or later (tested up to 4.22)
+- OpenShift 4.14 or later (tested up to 4.22; 5.0 preGA)
 - Linux system with internet access (x86_64 or ARM64/AArch64)
 - BMC/Redfish access to target hardware
 - HTTP server for ISO hosting
@@ -469,7 +472,7 @@ All configuration sections
 
 | Profile | Template File | Use Case | Key Features |
 |---------|---------------|----------|--------------|
-| `ran` | `cluster-profile-ran-4.22.yaml` | Telco RAN workloads | Performance tuning, RAN operators, workload partitioning |
+| `ran` | `cluster-profile-ran-5.0.yaml` | Telco RAN workloads | Performance tuning, RAN operators, workload partitioning |
 | `hub` | `cluster-profile-hub.yaml` | Hub cluster management | RHACM, GitOps, TALM, cluster logging |
 | `none` | `cluster-profile-none.yaml` | Minimal setup | Basic cluster capabilities only |
 | Not specified | No template loaded | Custom configuration | Manual configuration of all settings |
@@ -587,9 +590,18 @@ node_tunings:
         isolatedCpuFreq: 3000000  # Override: higher frequency
         reservedCpuFreq: 3200000
   tuned_profile:
-    profiles:
-      - profile: performance-patch
-      - profile: hpe-settings     # Override: HPE-specific tuning instead of Dell
+    enabled: true
+    performance-patch:
+      enabled: true               # Only profiles with enabled: true are applied
+    hpe-settings:                 # Custom tuned profile, rendered with tuned-generic.yaml.j2
+      enabled: true
+      spec:
+        summary: HPE-specific tuning on top of ran-du-performance
+        include: ran-du-performance
+        priority: 17              # Lower than ran-du-performance (18) so it takes precedence
+        data:
+          sysctl:
+            - vm.stat_interval=10
 ```
 
 **Example 5: Power Saving Mode Configuration**
@@ -824,9 +836,10 @@ RAN profiles are available for different OpenShift versions with version 2.x enh
 - `cluster-profile-ran-4.19.yaml` - OpenShift 4.19 optimizations
 - `cluster-profile-ran-4.20.yaml` - OpenShift 4.20 optimizations with new features
 - `cluster-profile-ran-4.21.yaml` - OpenShift 4.21 optimizations
-- `cluster-profile-ran-4.22.yaml` - **Latest** OpenShift 4.22 optimizations
+- `cluster-profile-ran-4.22.yaml` - OpenShift 4.22 optimizations
+- `cluster-profile-ran-5.0.yaml` - **Latest** OpenShift 5.0 optimizations (preGA)
 
-**New in 4.20/4.21/4.22 Profiles:**
+**New in 4.20/4.21/4.22/5.0 Profiles:**
 - Enhanced operator profile system
 - Update control mechanisms
 - PreGA catalog source support

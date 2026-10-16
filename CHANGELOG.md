@@ -1,5 +1,23 @@
 # 2.x Change logs
 
+## 2026-10 (October)
+- **🚀 OpenShift 5.0 Support**:
+  - `sno-iso.sh` downloads 5.x installers (GA/RC from `clients/ocp`, EC/nightly from `clients/ocp-dev-preview`) and resolves 5.x release channels (e.g. `candidate-5.0`) from `mirror.openshift.com/pub/openshift-v5`; 4.x keeps using `openshift-v4`
+  - Added `cluster-profile-ran-5.0.yaml` (cluster-logging channel `stable-6.6`); 5.0 is preGA, so the profile uses the prega catalog (`quay.io/prega/prega-operator-index:v5.0`, provides `redhat-operators`), certified-operators from the 4.22 index, and IDMS `templates/day1/idms/prega-5.0.yaml` (copied from `prega-4.22.yaml` for now)
+  - Added test script `tests/sno130/test-sno130-5.0.sh` (default: 5.0.0-rc.6)
+  - Added cluster tunings `templates/day1/cluster-tunings/5.0/` aligned with upstream [telco-reference release-5.0](https://github.com/openshift-kni/telco-reference/tree/release-5.0/telco-ran)
+  - Added `tuned-performance-patch-5.0.yaml.j2` aligned with upstream (`rd.driver.pre=iavf` on x86_64)
+  - Added `performance-profile-ran-{x86_64,aarch64}-5.0.yaml.j2` aligned with upstream: `kubeletconfig.experimental` annotation (systemReserved 11Gi, graceful node shutdown 30s/10s); `rcupdate.rcu_normal_after_boot=0`, `efi=runtime`, `module_blacklist=irdma` dropped from kernel args (set by the TunedPerformancePatch); aarch64 drops `pci=realloc=off`
+  - `sno-day2.sh` uses `performance-profile-ran-<arch>-<ocp_y_version>.yaml.j2` when present, otherwise the shared per-arch template
+- **🔄 RAN 4.21/4.22 aligned with upstream telco-reference** (`release-4.21`/`release-4.22`):
+  - Cluster tunings for 4.21+ (`4.21/` new, `4.22/`, `5.0/`): `/run/netns` shared-mount fix (OCPBUGS-83562) in `01-container-mount-ns-and-kubelet-conf`; `99-sync-time-once` runs as `chrony-wait.service`; `99-crio-disable-wipe` removed (dropped upstream since 4.21)
+  - `cluster-profile-ran-4.21.yaml` uses the new 4.21 cluster tunings (was 4.20) and cluster-logging channel `stable-6.4`
+  - cluster-logging channel `stable-6.6` in `cluster-profile-ran-4.22.yaml` and `cluster-profile-ran-rhel10-4.22.yaml` (was `stable-6.5`)
+  - `tuned-performance-patch-4.21.yaml.j2`: `kernel.timer_migration=1` workaround for OCPBUGS-86541
+  - Added `performance-profile-ran-{x86_64,aarch64}-{4.21,4.22}.yaml.j2`: `kubeletconfig.experimental` (systemReserved 11Gi; 4.22 adds graceful node shutdown), RCU/EFI/irdma kernel args moved to the TunedPerformancePatch; 4.20 and earlier keep the shared templates
+- **🐛 Fixed** `node_tunings.tuned_profile.<profile>.enabled` being ignored: `sno-day2.sh` applies (and `sno-ready.sh` checks) a tuned profile only when both `tuned_profile.enabled` and `tuned_profile.<profile>.enabled` are `true`, e.g. `performance-patch` → `tuned-performance-patch-*`; profiles without `enabled: true` are skipped with a warning
+- **🐛 Fixed** `latest-*` release channels not being resolved in `sno-iso.sh` (case pattern was misspelled `lastest-*`)
+
 ## 2026-09 (September)
 - **📌 Operator version pinning** (OCP 4.20+):
   - `operators.version_mapping` in the config file: a local path or http(s) URL of an OCP-to-operator version mapping file (format: [openshift-operator-releases snapshots](https://github.com/borball/openshift-operator-releases/tree/master/snapshots)); GitHub `blob/` URLs are converted to raw
